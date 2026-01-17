@@ -100,6 +100,30 @@ class HighScoreUpdate(BaseModel):
 class SettingsResponse(BaseModel):
     logo_url: Optional[str] = None
 
+class PlaySessionCreate(BaseModel):
+    game_id: str
+    duration_seconds: int = 0
+    score: Optional[int] = None
+
+class GameAnalytics(BaseModel):
+    game_id: str
+    title: str
+    total_plays: int
+    unique_players: int
+    avg_duration: float
+    total_play_time: int
+    plays_today: int
+    plays_this_week: int
+
+class OverallAnalytics(BaseModel):
+    total_games: int
+    total_plays: int
+    total_users: int
+    active_users_today: int
+    top_games: List[dict]
+    plays_by_category: dict
+    plays_by_day: List[dict]
+
 # ==================== AUTH HELPERS ====================
 
 def hash_password(password: str) -> str:
