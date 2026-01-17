@@ -751,15 +751,15 @@ async def update_game_with_files(
     if is_visible is not None:
         update_data["is_visible"] = is_visible
     
-    # Process thumbnail image
+    # Process thumbnail image with compression
     if thumbnail_file and thumbnail_file.filename:
         content = await thumbnail_file.read()
-        update_data["thumbnail_url"] = f"data:{thumbnail_file.content_type};base64,{base64.b64encode(content).decode()}"
+        update_data["thumbnail_url"] = compress_image(content, max_size=800, quality=75)
     
-    # Process explore image
+    # Process explore image with compression
     if explore_image_file and explore_image_file.filename:
         content = await explore_image_file.read()
-        update_data["explore_image_url"] = f"data:{explore_image_file.content_type};base64,{base64.b64encode(content).decode()}"
+        update_data["explore_image_url"] = compress_image(content, max_size=400, quality=70)
     
     # Process game file
     if game_file and game_file.filename:
