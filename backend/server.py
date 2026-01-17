@@ -1181,7 +1181,7 @@ async def update_game_with_files(
         if game.get("game_file_id"):
             try:
                 await fs.delete(ObjectId(game["game_file_id"]))
-            except:
+            except Exception:
                 pass
         
         content = await game_file.read()
