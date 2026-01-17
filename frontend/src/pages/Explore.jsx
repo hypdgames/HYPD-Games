@@ -108,14 +108,14 @@ export default function Explore() {
       <div className="p-4">
         {/* Categories */}
         <section className="mb-8">
-          <h2 className="text-lg font-bold text-white mb-4">Categories</h2>
+          <h2 className="text-lg font-bold text-foreground mb-4">Categories</h2>
           <div className="flex gap-3 overflow-x-auto hide-scrollbar pb-2">
             <button
               onClick={() => setSelectedCategory("all")}
               className={`flex-shrink-0 px-5 py-3 rounded-full font-medium transition-all ${
                 selectedCategory === "all"
                   ? "bg-lime text-black"
-                  : "bg-card text-white border border-white/10 hover:border-lime/50"
+                  : "bg-card text-foreground border border-border hover:border-lime/50"
               }`}
               data-testid="category-all"
             >
@@ -130,7 +130,7 @@ export default function Explore() {
                   className={`flex-shrink-0 flex items-center gap-2 px-5 py-3 rounded-full font-medium transition-all ${
                     selectedCategory === category
                       ? "bg-lime text-black"
-                      : "bg-card text-white border border-white/10 hover:border-lime/50"
+                      : "bg-card text-foreground border border-border hover:border-lime/50"
                   }`}
                   data-testid={`category-${category.toLowerCase()}`}
                 >
@@ -144,7 +144,7 @@ export default function Explore() {
 
         {/* Games Grid */}
         <section>
-          <h2 className="text-lg font-bold text-white mb-4">
+          <h2 className="text-lg font-bold text-foreground mb-4">
             {selectedCategory === "all" ? "All Games" : selectedCategory}
             <span className="text-muted-foreground font-normal ml-2">
               ({filteredGames.length})
