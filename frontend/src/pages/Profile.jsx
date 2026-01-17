@@ -302,6 +302,9 @@ export default function Profile() {
               data-testid="logout-button"
             >
               <LogOut className="w-5 h-5" />
+            </Button>
+          </div>
+        </div>
       </div>
 
       <div className="p-6">
