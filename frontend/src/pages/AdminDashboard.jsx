@@ -403,7 +403,7 @@ export default function AdminDashboard() {
 
       <div className="p-4 space-y-6">
         {/* Quick Actions */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <label className="cursor-pointer">
             <input
               type="file"
@@ -411,7 +411,7 @@ export default function AdminDashboard() {
               onChange={handleLogoUpload}
               className="hidden"
             />
-            <div className="bg-card border border-white/5 rounded-xl p-4 text-center hover:border-lime/30 transition-colors">
+            <div className="bg-card border border-white/5 rounded-xl p-4 text-center hover:border-lime/30 transition-colors h-full">
               <Image className="w-8 h-8 text-lime mx-auto mb-2" />
               <p className="text-sm font-medium text-white">Upload Logo</p>
             </div>
@@ -423,7 +423,16 @@ export default function AdminDashboard() {
             data-testid="seed-games-button"
           >
             <Database className="w-8 h-8 text-violet mx-auto mb-2" />
-            <p className="text-sm font-medium text-white">Seed Sample Games</p>
+            <p className="text-sm font-medium text-white">Seed Games</p>
+          </button>
+
+          <button
+            onClick={() => navigate("/admin/analytics")}
+            className="bg-card border border-lime/30 rounded-xl p-4 text-center hover:border-lime/50 transition-colors"
+            data-testid="analytics-button"
+          >
+            <BarChart3 className="w-8 h-8 text-lime mx-auto mb-2" />
+            <p className="text-sm font-medium text-white">Analytics</p>
           </button>
         </div>
 
