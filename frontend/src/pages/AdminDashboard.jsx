@@ -52,13 +52,6 @@ export default function AdminDashboard() {
   const thumbnailRef = useRef(null);
   const exploreImageRef = useRef(null);
 
-  useEffect(() => {
-    if (!user?.is_admin) {
-      toast.warning("Admin features require admin privileges");
-    }
-    fetchGames();
-  }, [user]);
-
   const fetchGames = async () => {
     try {
       const res = await fetch(`${API}/admin/games`, {
@@ -78,6 +71,14 @@ export default function AdminDashboard() {
     }
     setLoading(false);
   };
+
+  useEffect(() => {
+    if (!user?.is_admin) {
+      toast.warning("Admin features require admin privileges");
+    }
+    fetchGames();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   const handleFileChange = (e, type) => {
     const file = e.target.files?.[0];
