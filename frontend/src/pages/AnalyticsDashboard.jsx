@@ -28,10 +28,6 @@ export default function AnalyticsDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const [exporting, setExporting] = useState(false);
 
-  useEffect(() => {
-    fetchAnalytics();
-  }, []);
-
   const fetchAnalytics = async () => {
     if (!token) return;
     try {
@@ -58,6 +54,11 @@ export default function AnalyticsDashboard() {
     }
     setLoading(false);
   };
+
+  useEffect(() => {
+    fetchAnalytics();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const fetchGameAnalytics = async (gameId) => {
     if (!token) return;
