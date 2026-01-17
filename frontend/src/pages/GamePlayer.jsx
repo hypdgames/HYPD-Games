@@ -8,6 +8,7 @@ export default function GamePlayer() {
   const navigate = useNavigate();
   const { API, token, user } = useAuth();
   const iframeRef = useRef(null);
+  const startTimeRef = useRef(null);
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -18,16 +19,47 @@ export default function GamePlayer() {
   const buttonStartY = useRef(0);
 
   useEffect(() => {
-    // Set game URL
+    // Set game URL and start tracking time
     setGameUrl(`${API}/games/${gameId}/play`);
+    startTimeRef.current = Date.now();
     
     // Simulate loading time for iframe
     const timer = setTimeout(() => {
       setLoading(false);
     }, 1500);
 
-    return () => clearTimeout(timer);
+    // Cleanup: record play session on unmount
+    return () => {
+      clearTimeout(timer);
+      recordPlaySession();
+    };
   }, [gameId, API]);
+
+  const recordPlaySession = async () => {
+    if (!startTimeRef.current) return;
+    
+    const durationSeconds = Math.round((Date.now() - startTimeRef.current) / 1000);
+    
+    // Only record sessions longer than 3 seconds
+    if (durationSeconds < 3) return;
+    
+    try {
+      await fetch(`${API}/analytics/play-session`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          game_id: gameId,
+          duration_seconds: durationSeconds,
+          score: null
+        })
+      });
+    } catch (e) {
+      console.error("Failed to record play session:", e);
+    }
+  };
 
   const handleDragStart = useCallback((e) => {
     e.preventDefault();
@@ -66,6 +98,8 @@ export default function GamePlayer() {
   }, [isDragging, handleDragMove, handleDragEnd]);
 
   const handleBack = () => {
+    // Record session before navigating
+    recordPlaySession();
     navigate(-1);
   };
 
