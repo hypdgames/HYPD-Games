@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Crown, Zap, Shield, Star, Check, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/App";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const features = [
   {
@@ -46,28 +47,33 @@ export default function Pro() {
   const { settings } = useAuth();
 
   const handleSubscribe = (plan) => {
-    // Placeholder - would integrate with payment system
     alert(`Subscription to ${plan} plan coming soon!`);
   };
 
   return (
     <div className="min-h-screen bg-background pb-24 overflow-hidden" data-testid="pro-page">
+      {/* Header */}
+      <div className="glass p-4 border-b border-border sticky top-0 z-30">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            {settings?.logo_url ? (
+              <img src={settings.logo_url} alt="Logo" className="h-8" />
+            ) : (
+              <h1 className="font-heading text-xl text-lime tracking-tight">HYPD</h1>
+            )}
+            <span className="text-muted-foreground">PRO</span>
+          </div>
+          <ThemeToggle />
+        </div>
+      </div>
+
       {/* Hero Section */}
       <div className="relative">
         {/* Background Glow */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-violet/30 via-background to-background" />
         
         {/* Content */}
-        <div className="relative px-6 pt-12 pb-8 text-center">
-          {/* Logo */}
-          <div className="flex justify-center mb-6">
-            {settings?.logo_url ? (
-              <img src={settings.logo_url} alt="Logo" className="h-10" />
-            ) : (
-              <h1 className="font-heading text-2xl text-lime tracking-tight">HYPD</h1>
-            )}
-          </div>
-
+        <div className="relative px-6 pt-8 pb-8 text-center">
           {/* Crown Icon */}
           <motion.div
             initial={{ scale: 0 }}
@@ -82,7 +88,7 @@ export default function Pro() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="font-heading text-4xl md:text-5xl text-white mb-4"
+            className="font-heading text-4xl md:text-5xl text-foreground mb-4"
           >
             GO <span className="text-lime neon-text">PRO</span>
           </motion.h1>
@@ -100,7 +106,7 @@ export default function Pro() {
 
       {/* Features */}
       <div className="px-6 py-8">
-        <h2 className="text-lg font-bold text-white mb-6 text-center">What You Get</h2>
+        <h2 className="text-lg font-bold text-foreground mb-6 text-center">What You Get</h2>
         <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
           {features.map((feature, index) => {
             const Icon = feature.icon;
@@ -110,12 +116,12 @@ export default function Pro() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 + index * 0.1 }}
-                className="bg-card border border-white/5 rounded-2xl p-4 text-center"
+                className="bg-card border border-border rounded-2xl p-4 text-center"
               >
                 <div className="w-12 h-12 rounded-xl bg-lime/10 flex items-center justify-center mx-auto mb-3">
                   <Icon className="w-6 h-6 text-lime" />
                 </div>
-                <h3 className="font-bold text-white text-sm mb-1">{feature.title}</h3>
+                <h3 className="font-bold text-foreground text-sm mb-1">{feature.title}</h3>
                 <p className="text-xs text-muted-foreground">{feature.description}</p>
               </motion.div>
             );
@@ -125,7 +131,7 @@ export default function Pro() {
 
       {/* Pricing Plans */}
       <div className="px-6 py-8">
-        <h2 className="text-lg font-bold text-white mb-6 text-center">Choose Your Plan</h2>
+        <h2 className="text-lg font-bold text-foreground mb-6 text-center">Choose Your Plan</h2>
         <div className="flex flex-col md:flex-row gap-4 max-w-md mx-auto">
           {plans.map((plan, index) => (
             <motion.div
@@ -136,7 +142,7 @@ export default function Pro() {
               className={`flex-1 relative bg-card border rounded-2xl p-6 ${
                 plan.popular 
                   ? "border-lime ring-2 ring-lime/20" 
-                  : "border-white/10"
+                  : "border-border"
               }`}
               data-testid={`plan-${plan.name.toLowerCase()}`}
             >
@@ -149,9 +155,9 @@ export default function Pro() {
               )}
               
               <div className="text-center mb-6">
-                <h3 className="text-white font-bold mb-2">{plan.name}</h3>
+                <h3 className="text-foreground font-bold mb-2">{plan.name}</h3>
                 <div className="flex items-baseline justify-center gap-1">
-                  <span className="text-3xl font-heading text-white">{plan.price}</span>
+                  <span className="text-3xl font-heading text-foreground">{plan.price}</span>
                   <span className="text-muted-foreground text-sm">{plan.period}</span>
                 </div>
                 {plan.savings && (
@@ -161,7 +167,7 @@ export default function Pro() {
 
               <ul className="space-y-3 mb-6">
                 {features.map(f => (
-                  <li key={f.title} className="flex items-center gap-2 text-sm text-white/80">
+                  <li key={f.title} className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Check className="w-4 h-4 text-lime flex-shrink-0" />
                     {f.title}
                   </li>
@@ -173,7 +179,7 @@ export default function Pro() {
                 className={`w-full py-6 font-bold rounded-full transition-all ${
                   plan.popular
                     ? "bg-lime text-black hover:bg-lime/90 glow-lime"
-                    : "bg-white/10 text-white hover:bg-white/20"
+                    : "bg-muted text-foreground hover:bg-muted/80"
                 }`}
                 data-testid={`subscribe-${plan.name.toLowerCase()}`}
               >
