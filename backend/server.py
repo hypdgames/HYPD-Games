@@ -668,17 +668,17 @@ async def create_game_with_files(
     """Create a game with file uploads for game, thumbnail, and explore image"""
     game_id = str(uuid.uuid4())
     
-    # Process thumbnail image
+    # Process thumbnail image with compression
     thumbnail_url = None
     if thumbnail_file and thumbnail_file.filename:
         content = await thumbnail_file.read()
-        thumbnail_url = f"data:{thumbnail_file.content_type};base64,{base64.b64encode(content).decode()}"
+        thumbnail_url = compress_image(content, max_size=800, quality=75)
     
-    # Process explore image (can be same as thumbnail or different)
+    # Process explore image with compression (can be same as thumbnail or different)
     explore_image_url = None
     if explore_image_file and explore_image_file.filename:
         content = await explore_image_file.read()
-        explore_image_url = f"data:{explore_image_file.content_type};base64,{base64.b64encode(content).decode()}"
+        explore_image_url = compress_image(content, max_size=400, quality=70)
     else:
         explore_image_url = thumbnail_url  # Default to thumbnail if not provided
     
