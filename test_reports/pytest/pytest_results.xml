@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="11" skipped="1" tests="15" time="2.734" timestamp="2026-01-17T16:14:47.706455+00:00" hostname="agent-env-d0808303-d306-4937-b67b-c4045dc3ddbd"><testcase classname="tests.test_p1p2_features.TestAuthentication" name="test_login_success" time="0.338"><failure message="AssertionError: assert 'token' in {'access_token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhNGJhNThjNS1iMzdhLTQwOWItOGEyOC0zODBiNzkwMmZmZDUiLCJleHAiOjE3Njg3NTI4ODgsImlhdCI6MTc2ODY2NjQ4OH0.GfExoC_lQZ9FR_tMrprLKcT99Vg96k-HBtHrnjMDxmo', 'token_type': 'bearer', 'user': {'created_at': '2026-01-17T13:14:53.350643+00:00', 'email': 'admin@hypd.games', 'high_scores': {}, 'id': 'a4ba58c5-b37a-409b-8a28-380b7902ffd5', ...}}">tests/test_p1p2_features.py:30: in test_login_success
+    assert "token" in data
+E   AssertionError: assert 'token' in {'access_token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhNGJhNThjNS1iMzdhLTQwOWItOGEyOC0zODBiNzkwMmZmZDUiLCJleHAiOjE3Njg3NTI4ODgsImlhdCI6MTc2ODY2NjQ4OH0.GfExoC_lQZ9FR_tMrprLKcT99Vg96k-HBtHrnjMDxmo', 'token_type': 'bearer', 'user': {'created_at': '2026-01-17T13:14:53.350643+00:00', 'email': 'admin@hypd.games', 'high_scores': {}, 'id': 'a4ba58c5-b37a-409b-8a28-380b7902ffd5', ...}}</failure></testcase><testcase classname="tests.test_p1p2_features.TestAuthentication" name="test_login_invalid_credentials" time="0.036" /><testcase classname="tests.test_p1p2_features.TestGamesAPI" name="test_get_games" time="0.052" /><testcase classname="tests.test_p1p2_features.TestGamesAPI" name="test_get_categories" time="0.040" /><testcase classname="tests.test_p1p2_features.TestAnalyticsOverview" name="test_analytics_overview_requires_auth" time="0.038"><failure message="assert 403 == 401&#10; +  where 403 = &lt;Response [403]&gt;.status_code">tests/test_p1p2_features.py:79: in test_analytics_overview_requires_auth
+    assert response.status_code == 401
+E   assert 403 == 401
+E    +  where 403 = &lt;Response [403]&gt;.status_code</failure></testcase><testcase classname="tests.test_p1p2_features.TestAnalyticsOverview" name="test_analytics_overview_success" time="0.300"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">tests/test_p1p2_features.py:87: in test_analytics_overview_success
+    assert response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="tests.test_p1p2_features.TestAnalyticsRetention" name="test_retention_requires_auth" time="0.044"><failure message="assert 403 == 401&#10; +  where 403 = &lt;Response [403]&gt;.status_code">tests/test_p1p2_features.py:124: in test_retention_requires_auth
+    assert response.status_code == 401
+E   assert 403 == 401
+E    +  where 403 = &lt;Response [403]&gt;.status_code</failure></testcase><testcase classname="tests.test_p1p2_features.TestAnalyticsRetention" name="test_retention_success" time="0.297"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">tests/test_p1p2_features.py:132: in test_retention_success
+    assert response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="tests.test_p1p2_features.TestAnalyticsExport" name="test_csv_export_requires_auth" time="0.076"><failure message="assert 403 == 401&#10; +  where 403 = &lt;Response [403]&gt;.status_code">tests/test_p1p2_features.py:171: in test_csv_export_requires_auth
+    assert response.status_code == 401
+E   assert 403 == 401
+E    +  where 403 = &lt;Response [403]&gt;.status_code</failure></testcase><testcase classname="tests.test_p1p2_features.TestAnalyticsExport" name="test_json_export_requires_auth" time="0.036"><failure message="assert 403 == 401&#10; +  where 403 = &lt;Response [403]&gt;.status_code">tests/test_p1p2_features.py:176: in test_json_export_requires_auth
+    assert response.status_code == 401
+E   assert 403 == 401
+E    +  where 403 = &lt;Response [403]&gt;.status_code</failure></testcase><testcase classname="tests.test_p1p2_features.TestAnalyticsExport" name="test_csv_export_success" time="0.298"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">tests/test_p1p2_features.py:184: in test_csv_export_success
+    assert response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="tests.test_p1p2_features.TestAnalyticsExport" name="test_json_export_success" time="0.298"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">tests/test_p1p2_features.py:198: in test_json_export_success
+    assert response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="tests.test_p1p2_features.TestAdminGames" name="test_admin_games_list_requires_auth" time="0.033"><failure message="assert 403 == 401&#10; +  where 403 = &lt;Response [403]&gt;.status_code">tests/test_p1p2_features.py:226: in test_admin_games_list_requires_auth
+    assert response.status_code == 401
+E   assert 403 == 401
+E    +  where 403 = &lt;Response [403]&gt;.status_code</failure></testcase><testcase classname="tests.test_p1p2_features.TestAdminGames" name="test_admin_games_list_success" time="0.299"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">tests/test_p1p2_features.py:234: in test_admin_games_list_success
+    assert response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="tests.test_p1p2_features.TestGameAnalytics" name="test_game_analytics_success" time="0.294"><skipped type="pytest.skip" message="No games available for testing">/app/tests/test_p1p2_features.py:266: No games available for testing</skipped></testcase></testsuite></testsuites>
