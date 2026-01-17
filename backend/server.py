@@ -16,6 +16,8 @@ import jwt
 import bcrypt
 import io
 import base64
+import zipfile
+from PIL import Image
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
