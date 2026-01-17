@@ -996,7 +996,7 @@ async def delete_game(game_id: str, user: dict = Depends(get_admin_user)):
     if game.get("game_file_id"):
         try:
             await fs.delete(ObjectId(game["game_file_id"]))
-        except:
+        except Exception:
             pass
     
     await db.games.delete_one({"id": game_id})
@@ -1016,7 +1016,7 @@ async def upload_game_file(
     if game.get("game_file_id"):
         try:
             await fs.delete(ObjectId(game["game_file_id"]))
-        except:
+        except Exception:
             pass
     
     # Read and store new file
