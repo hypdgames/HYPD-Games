@@ -89,18 +89,18 @@ export default function AnalyticsDashboard() {
   return (
     <div className="min-h-screen bg-background pb-24" data-testid="analytics-dashboard">
       {/* Header */}
-      <div className="glass p-4 border-b border-white/5 sticky top-0 z-30">
+      <div className="glass p-4 border-b border-border sticky top-0 z-30">
         <div className="flex items-center gap-4">
           <button
             onClick={() => navigate("/admin")}
             className="w-10 h-10 rounded-full bg-card flex items-center justify-center"
             data-testid="analytics-back-button"
           >
-            <ArrowLeft className="w-5 h-5 text-white" />
+            <ArrowLeft className="w-5 h-5 text-foreground" />
           </button>
           <div className="flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-lime" />
-            <span className="font-heading text-lg text-white">Analytics</span>
+            <span className="font-heading text-lg text-foreground">Analytics</span>
           </div>
         </div>
       </div>
@@ -111,14 +111,14 @@ export default function AnalyticsDashboard() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-card border border-white/5 rounded-xl p-4"
+            className="bg-card border border-border rounded-xl p-4"
           >
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 rounded-lg bg-lime/20 flex items-center justify-center">
                 <Play className="w-5 h-5 text-lime" />
               </div>
             </div>
-            <p className="text-2xl font-heading text-white">{analytics.total_plays.toLocaleString()}</p>
+            <p className="text-2xl font-heading text-foreground">{analytics.total_plays.toLocaleString()}</p>
             <p className="text-xs text-muted-foreground">Total Plays</p>
           </motion.div>
 
@@ -126,14 +126,14 @@ export default function AnalyticsDashboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="bg-card border border-white/5 rounded-xl p-4"
+            className="bg-card border border-border rounded-xl p-4"
           >
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 rounded-lg bg-violet/20 flex items-center justify-center">
                 <Users className="w-5 h-5 text-violet" />
               </div>
             </div>
-            <p className="text-2xl font-heading text-white">{analytics.total_users}</p>
+            <p className="text-2xl font-heading text-foreground">{analytics.total_users}</p>
             <p className="text-xs text-muted-foreground">Total Users</p>
           </motion.div>
 
@@ -141,14 +141,14 @@ export default function AnalyticsDashboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="bg-card border border-white/5 rounded-xl p-4"
+            className="bg-card border border-border rounded-xl p-4"
           >
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 rounded-lg bg-cyan-500/20 flex items-center justify-center">
                 <Gamepad2 className="w-5 h-5 text-cyan-500" />
               </div>
             </div>
-            <p className="text-2xl font-heading text-white">{analytics.total_games}</p>
+            <p className="text-2xl font-heading text-foreground">{analytics.total_games}</p>
             <p className="text-xs text-muted-foreground">Total Games</p>
           </motion.div>
 
@@ -156,14 +156,14 @@ export default function AnalyticsDashboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="bg-card border border-white/5 rounded-xl p-4"
+            className="bg-card border border-border rounded-xl p-4"
           >
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center">
                 <Activity className="w-5 h-5 text-orange-500" />
               </div>
             </div>
-            <p className="text-2xl font-heading text-white">{analytics.plays_today}</p>
+            <p className="text-2xl font-heading text-foreground">{analytics.plays_today}</p>
             <p className="text-xs text-muted-foreground">Plays Today</p>
           </motion.div>
         </div>
@@ -173,9 +173,9 @@ export default function AnalyticsDashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="bg-card border border-white/5 rounded-xl p-4"
+          className="bg-card border border-border rounded-xl p-4"
         >
-          <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+          <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-lime" />
             Plays This Week
           </h3>
@@ -218,9 +218,9 @@ export default function AnalyticsDashboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            className="bg-card border border-white/5 rounded-xl p-4"
+            className="bg-card border border-border rounded-xl p-4"
           >
-            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
               <PieChart className="w-5 h-5 text-violet" />
               Plays by Category
             </h3>
@@ -272,9 +272,9 @@ export default function AnalyticsDashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
-          className="bg-card border border-white/5 rounded-xl p-4"
+          className="bg-card border border-border rounded-xl p-4"
         >
-          <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+          <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
             <Gamepad2 className="w-5 h-5 text-lime" />
             Top Games
           </h3>
@@ -295,7 +295,7 @@ export default function AnalyticsDashboard() {
                   className="w-12 h-12 rounded-lg object-cover"
                 />
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-bold text-white truncate">{game.title}</h4>
+                  <h4 className="font-bold text-foreground truncate">{game.title}</h4>
                   <p className="text-xs text-muted-foreground">{game.category}</p>
                 </div>
                 <div className="text-right">
@@ -317,14 +317,14 @@ export default function AnalyticsDashboard() {
             onClick={() => setSelectedGame(null)}
           >
             <div 
-              className="bg-card border border-white/10 rounded-2xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto"
+              className="bg-card border border-border rounded-2xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-6">
-                <h3 className="font-heading text-xl text-white">{gameAnalytics.title}</h3>
+                <h3 className="font-heading text-xl text-foreground">{gameAnalytics.title}</h3>
                 <button
                   onClick={() => setSelectedGame(null)}
-                  className="text-muted-foreground hover:text-white"
+                  className="text-muted-foreground hover:text-foreground"
                 >
                   ✕
                 </button>
@@ -350,7 +350,7 @@ export default function AnalyticsDashboard() {
               </div>
 
               {/* Daily Chart */}
-              <h4 className="text-sm font-bold text-white mb-3">Daily Plays</h4>
+              <h4 className="text-sm font-bold text-foreground mb-3">Daily Plays</h4>
               <div className="h-40 mb-4">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={gameAnalytics.daily_plays}>
@@ -374,11 +374,11 @@ export default function AnalyticsDashboard() {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Avg. Play Duration</span>
-                  <span className="text-white">{Math.round(gameAnalytics.avg_duration_seconds)}s</span>
+                  <span className="text-foreground">{Math.round(gameAnalytics.avg_duration_seconds)}s</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Total Play Time</span>
-                  <span className="text-white">{gameAnalytics.total_play_time_minutes} min</span>
+                  <span className="text-foreground">{gameAnalytics.total_play_time_minutes} min</span>
                 </div>
                 {gameAnalytics.score_stats?.high_score > 0 && (
                   <div className="flex justify-between">

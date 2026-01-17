@@ -359,7 +359,7 @@ export default function AdminDashboard() {
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     placeholder="Game title"
-                    className="bg-background border-white/10 text-white"
+                    className="bg-background border-border text-foreground"
                     required
                     data-testid="game-title-input"
                   />
@@ -372,7 +372,7 @@ export default function AdminDashboard() {
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     placeholder="Game description"
-                    className="bg-background border-white/10 text-white min-h-[80px]"
+                    className="bg-background border-border text-foreground min-h-[80px]"
                     required
                     data-testid="game-description-input"
                   />
@@ -385,12 +385,12 @@ export default function AdminDashboard() {
                     value={formData.category}
                     onValueChange={(value) => setFormData({ ...formData, category: value })}
                   >
-                    <SelectTrigger className="bg-background border-white/10 text-white" data-testid="game-category-select">
+                    <SelectTrigger className="bg-background border-border text-foreground" data-testid="game-category-select">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-card border-white/10">
+                    <SelectContent className="bg-card border-border">
                       {categories.map(cat => (
-                        <SelectItem key={cat} value={cat} className="text-white hover:bg-white/10">
+                        <SelectItem key={cat} value={cat} className="text-foreground hover:bg-white/10">
                           {cat}
                         </SelectItem>
                       ))}
@@ -477,7 +477,7 @@ export default function AdminDashboard() {
                           }}
                           className="absolute top-2 right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center"
                         >
-                          <X className="w-4 h-4 text-white" />
+                          <X className="w-4 h-4 text-foreground" />
                         </button>
                       </div>
                     ) : (
@@ -525,7 +525,7 @@ export default function AdminDashboard() {
                           }}
                           className="absolute top-2 right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center"
                         >
-                          <X className="w-4 h-4 text-white" />
+                          <X className="w-4 h-4 text-foreground" />
                         </button>
                       </div>
                     ) : (
@@ -558,7 +558,7 @@ export default function AdminDashboard() {
                       setEditingGame(null);
                       resetForm();
                     }}
-                    className="flex-1 border-white/10 text-white hover:bg-white/10"
+                    className="flex-1 border-border text-foreground hover:bg-white/10"
                   >
                     Cancel
                   </Button>
@@ -594,19 +594,19 @@ export default function AdminDashboard() {
               onChange={handleLogoUpload}
               className="hidden"
             />
-            <div className="bg-card border border-white/5 rounded-xl p-4 text-center hover:border-lime/30 transition-colors h-full">
+            <div className="bg-card border border-border rounded-xl p-4 text-center hover:border-lime/30 transition-colors h-full">
               <Image className="w-8 h-8 text-lime mx-auto mb-2" />
-              <p className="text-sm font-medium text-white">Upload Logo</p>
+              <p className="text-sm font-medium text-foreground">Upload Logo</p>
             </div>
           </label>
           
           <button
             onClick={handleSeedGames}
-            className="bg-card border border-white/5 rounded-xl p-4 text-center hover:border-lime/30 transition-colors"
+            className="bg-card border border-border rounded-xl p-4 text-center hover:border-lime/30 transition-colors"
             data-testid="seed-games-button"
           >
             <Database className="w-8 h-8 text-violet mx-auto mb-2" />
-            <p className="text-sm font-medium text-white">Seed Games</p>
+            <p className="text-sm font-medium text-foreground">Seed Games</p>
           </button>
 
           <button
@@ -615,19 +615,19 @@ export default function AdminDashboard() {
             data-testid="analytics-button"
           >
             <BarChart3 className="w-8 h-8 text-lime mx-auto mb-2" />
-            <p className="text-sm font-medium text-white">Analytics</p>
+            <p className="text-sm font-medium text-foreground">Analytics</p>
           </button>
         </div>
 
         {/* Games List */}
         <div>
-          <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+          <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
             <Gamepad2 className="w-5 h-5 text-lime" />
             Games ({games.length})
           </h2>
 
           {games.length === 0 ? (
-            <div className="text-center py-12 bg-card border border-white/5 rounded-xl">
+            <div className="text-center py-12 bg-card border border-border rounded-xl">
               <Gamepad2 className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
               <p className="text-muted-foreground mb-4">No games yet</p>
               <Button
@@ -646,7 +646,7 @@ export default function AdminDashboard() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  className="bg-card border border-white/5 rounded-xl p-4"
+                  className="bg-card border border-border rounded-xl p-4"
                   data-testid={`admin-game-${index}`}
                 >
                   <div className="flex gap-4">
@@ -663,7 +663,7 @@ export default function AdminDashboard() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          <h3 className="font-bold text-white truncate">{game.title}</h3>
+                          <h3 className="font-bold text-foreground truncate">{game.title}</h3>
                           <p className="text-xs text-muted-foreground">{game.category}</p>
                         </div>
                         <div className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -690,12 +690,12 @@ export default function AdminDashboard() {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-2 mt-4 pt-4 border-t border-white/5">
+                  <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border">
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => openEditDialog(game)}
-                      className="flex-1 border-white/10 text-white hover:bg-white/10"
+                      className="flex-1 border-border text-foreground hover:bg-white/10"
                       data-testid={`edit-game-${index}`}
                     >
                       Edit
@@ -705,7 +705,7 @@ export default function AdminDashboard() {
                       size="sm"
                       variant="outline"
                       onClick={() => handleToggleVisibility(game)}
-                      className="border-white/10 text-white hover:bg-white/10"
+                      className="border-border text-foreground hover:bg-white/10"
                       data-testid={`toggle-visibility-${index}`}
                     >
                       {game.is_visible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -718,7 +718,7 @@ export default function AdminDashboard() {
                         onChange={(e) => handleGameFileUpload(game.id, e)}
                         className="hidden"
                       />
-                      <div className="h-9 px-3 flex items-center justify-center border border-white/10 rounded-md text-white hover:bg-white/10 transition-colors">
+                      <div className="h-9 px-3 flex items-center justify-center border border-border rounded-md text-foreground hover:bg-white/10 transition-colors">
                         <Upload className="w-4 h-4" />
                       </div>
                     </label>
