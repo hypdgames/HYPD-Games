@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Shield, Plus, Trash2, Eye, EyeOff, Upload, Image, 
-  Gamepad2, Loader2, ArrowLeft, Save, X, Database
+  Gamepad2, Loader2, ArrowLeft, Save, X, Database, BarChart3
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
