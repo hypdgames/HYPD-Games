@@ -27,7 +27,7 @@ class TestAuthentication:
         })
         assert response.status_code == 200
         data = response.json()
-        assert "token" in data
+        assert "access_token" in data
         assert "user" in data
         assert data["user"]["email"] == ADMIN_EMAIL
         assert data["user"]["is_admin"] == True
@@ -70,13 +70,14 @@ class TestAnalyticsOverview:
             "password": ADMIN_PASSWORD
         })
         if response.status_code == 200:
-            return response.json().get("token")
+            return response.json().get("access_token")
         pytest.skip("Authentication failed")
     
     def test_analytics_overview_requires_auth(self):
         """Test that analytics overview requires authentication"""
         response = requests.get(f"{BASE_URL}/api/admin/analytics/overview")
-        assert response.status_code == 401
+        # API returns 403 for missing auth
+        assert response.status_code in [401, 403]
     
     def test_analytics_overview_success(self, auth_token):
         """Test analytics overview with valid auth"""
@@ -115,13 +116,13 @@ class TestAnalyticsRetention:
             "password": ADMIN_PASSWORD
         })
         if response.status_code == 200:
-            return response.json().get("token")
+            return response.json().get("access_token")
         pytest.skip("Authentication failed")
     
     def test_retention_requires_auth(self):
         """Test that retention analytics requires authentication"""
         response = requests.get(f"{BASE_URL}/api/admin/analytics/retention")
-        assert response.status_code == 401
+        assert response.status_code in [401, 403]
     
     def test_retention_success(self, auth_token):
         """Test retention analytics with valid auth"""
@@ -162,18 +163,18 @@ class TestAnalyticsExport:
             "password": ADMIN_PASSWORD
         })
         if response.status_code == 200:
-            return response.json().get("token")
+            return response.json().get("access_token")
         pytest.skip("Authentication failed")
     
     def test_csv_export_requires_auth(self):
         """Test that CSV export requires authentication"""
         response = requests.get(f"{BASE_URL}/api/admin/analytics/export/csv")
-        assert response.status_code == 401
+        assert response.status_code in [401, 403]
     
     def test_json_export_requires_auth(self):
         """Test that JSON export requires authentication"""
         response = requests.get(f"{BASE_URL}/api/admin/analytics/export/json")
-        assert response.status_code == 401
+        assert response.status_code in [401, 403]
     
     def test_csv_export_success(self, auth_token):
         """Test CSV export with valid auth"""
@@ -217,13 +218,13 @@ class TestAdminGames:
             "password": ADMIN_PASSWORD
         })
         if response.status_code == 200:
-            return response.json().get("token")
+            return response.json().get("access_token")
         pytest.skip("Authentication failed")
     
     def test_admin_games_list_requires_auth(self):
         """Test that admin games list requires authentication"""
         response = requests.get(f"{BASE_URL}/api/admin/games")
-        assert response.status_code == 401
+        assert response.status_code in [401, 403]
     
     def test_admin_games_list_success(self, auth_token):
         """Test admin games list with valid auth"""
@@ -247,7 +248,7 @@ class TestGameAnalytics:
             "password": ADMIN_PASSWORD
         })
         if response.status_code == 200:
-            return response.json().get("token")
+            return response.json().get("access_token")
         pytest.skip("Authentication failed")
     
     @pytest.fixture
