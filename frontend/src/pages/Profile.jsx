@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
-  User, Mail, Lock, LogOut, Settings, Heart, Trophy, 
+  User, Mail, Lock, LogOut, Heart, Trophy, 
   ChevronRight, Eye, EyeOff, Loader2, Shield
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -28,7 +28,6 @@ export default function Profile() {
 
   const fetchSavedGames = async () => {
     try {
-      // Get user's saved game IDs and fetch game details
       if (!user?.saved_games?.length) return;
       
       const gamesRes = await fetch(`${API}/games`);
@@ -119,7 +118,7 @@ export default function Profile() {
 
           {/* Auth Tabs */}
           <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 bg-card border border-white/10 rounded-xl p-1 h-auto">
+            <TabsList className="grid w-full grid-cols-2 bg-card border border-border rounded-xl p-1 h-auto">
               <TabsTrigger 
                 value="login" 
                 className="rounded-lg py-3 data-[state=active]:bg-lime data-[state=active]:text-black"
@@ -140,7 +139,7 @@ export default function Profile() {
             <TabsContent value="login" className="mt-6">
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
-                  <Label className="text-white">Email</Label>
+                  <Label className="text-foreground">Email</Label>
                   <div className="relative">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                     <Input
@@ -148,7 +147,7 @@ export default function Profile() {
                       placeholder="you@example.com"
                       value={loginForm.email}
                       onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
-                      className="pl-12 h-12 bg-card border-white/10 rounded-xl text-white"
+                      className="pl-12 h-12 bg-card border-border rounded-xl text-foreground"
                       required
                       data-testid="login-email"
                     />
@@ -156,7 +155,7 @@ export default function Profile() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-white">Password</Label>
+                  <Label className="text-foreground">Password</Label>
                   <div className="relative">
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                     <Input
@@ -164,14 +163,14 @@ export default function Profile() {
                       placeholder="••••••••"
                       value={loginForm.password}
                       onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
-                      className="pl-12 pr-12 h-12 bg-card border-white/10 rounded-xl text-white"
+                      className="pl-12 pr-12 h-12 bg-card border-border rounded-xl text-foreground"
                       required
                       data-testid="login-password"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                     >
                       {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </button>
@@ -193,7 +192,7 @@ export default function Profile() {
             <TabsContent value="register" className="mt-6">
               <form onSubmit={handleRegister} className="space-y-4">
                 <div className="space-y-2">
-                  <Label className="text-white">Username</Label>
+                  <Label className="text-foreground">Username</Label>
                   <div className="relative">
                     <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                     <Input
@@ -201,7 +200,7 @@ export default function Profile() {
                       placeholder="gamer123"
                       value={registerForm.username}
                       onChange={(e) => setRegisterForm({ ...registerForm, username: e.target.value })}
-                      className="pl-12 h-12 bg-card border-white/10 rounded-xl text-white"
+                      className="pl-12 h-12 bg-card border-border rounded-xl text-foreground"
                       required
                       data-testid="register-username"
                     />
@@ -209,7 +208,7 @@ export default function Profile() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-white">Email</Label>
+                  <Label className="text-foreground">Email</Label>
                   <div className="relative">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                     <Input
@@ -217,7 +216,7 @@ export default function Profile() {
                       placeholder="you@example.com"
                       value={registerForm.email}
                       onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })}
-                      className="pl-12 h-12 bg-card border-white/10 rounded-xl text-white"
+                      className="pl-12 h-12 bg-card border-border rounded-xl text-foreground"
                       required
                       data-testid="register-email"
                     />
@@ -225,7 +224,7 @@ export default function Profile() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-white">Password</Label>
+                  <Label className="text-foreground">Password</Label>
                   <div className="relative">
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                     <Input
@@ -233,14 +232,14 @@ export default function Profile() {
                       placeholder="••••••••"
                       value={registerForm.password}
                       onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })}
-                      className="pl-12 pr-12 h-12 bg-card border-white/10 rounded-xl text-white"
+                      className="pl-12 pr-12 h-12 bg-card border-border rounded-xl text-foreground"
                       required
                       data-testid="register-password"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                     >
                       {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </button>
@@ -248,7 +247,7 @@ export default function Profile() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-white">Confirm Password</Label>
+                  <Label className="text-foreground">Confirm Password</Label>
                   <div className="relative">
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                     <Input
@@ -256,7 +255,7 @@ export default function Profile() {
                       placeholder="••••••••"
                       value={registerForm.confirmPassword}
                       onChange={(e) => setRegisterForm({ ...registerForm, confirmPassword: e.target.value })}
-                      className="pl-12 h-12 bg-card border-white/10 rounded-xl text-white"
+                      className="pl-12 h-12 bg-card border-border rounded-xl text-foreground"
                       required
                       data-testid="register-confirm-password"
                     />
@@ -354,7 +353,7 @@ export default function Profile() {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   onClick={() => navigate(`/play/${game.id}`)}
-                  className="flex items-center gap-4 bg-card border border-white/5 rounded-xl p-3 cursor-pointer hover:border-lime/30 transition-colors"
+                  className="flex items-center gap-4 bg-card border border-border rounded-xl p-3 cursor-pointer hover:border-lime/30 transition-colors"
                   data-testid={`saved-game-${game.id}`}
                 >
                   <img
@@ -363,7 +362,7 @@ export default function Profile() {
                     className="w-16 h-16 rounded-lg object-cover"
                   />
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-white truncate">{game.title}</h4>
+                    <h4 className="font-bold text-foreground truncate">{game.title}</h4>
                     <p className="text-xs text-muted-foreground">{game.category}</p>
                   </div>
                   <ChevronRight className="w-5 h-5 text-muted-foreground" />
@@ -376,21 +375,21 @@ export default function Profile() {
         {/* High Scores */}
         {Object.keys(user.high_scores || {}).length > 0 && (
           <div className="mb-8">
-            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
               <Trophy className="w-5 h-5 text-yellow-500" />
               High Scores
             </h3>
-            <div className="bg-card border border-white/5 rounded-xl overflow-hidden">
+            <div className="bg-card border border-border rounded-xl overflow-hidden">
               {Object.entries(user.high_scores).map(([gameId, score], index) => (
                 <div
                   key={gameId}
                   className={`flex items-center justify-between p-4 ${
                     index !== Object.entries(user.high_scores).length - 1 
-                      ? "border-b border-white/5" 
+                      ? "border-b border-border" 
                       : ""
                   }`}
                 >
-                  <span className="text-white">Game #{gameId.slice(0, 8)}</span>
+                  <span className="text-foreground">Game #{gameId.slice(0, 8)}</span>
                   <span className="font-heading text-lime">{score.toLocaleString()}</span>
                 </div>
               ))}
@@ -409,7 +408,7 @@ export default function Profile() {
           >
             <div className="flex items-center gap-3">
               <Shield className="w-5 h-5 text-violet" />
-              <span className="font-bold text-white">Admin Dashboard</span>
+              <span className="font-bold text-foreground">Admin Dashboard</span>
             </div>
             <ChevronRight className="w-5 h-5 text-muted-foreground" />
           </motion.button>
