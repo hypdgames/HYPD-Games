@@ -300,11 +300,16 @@
 
 /* Ensure readable text in light mode overlays */
 .light .game-overlay {
-  background: linear-gradient(to top, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.6) 40%, transparent 100%);
+  background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 40%, transparent 100%);
 }
 
-/* Light mode specific for game feed text on images */
-.game-feed-text {
+/* Game feed specific - keep text white on game cards */
+.game-feed-content {
   color: white;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.game-feed-content h2,
+.game-feed-content p,
+.game-feed-content span {
+  color: white;
 }
