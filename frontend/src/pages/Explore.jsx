@@ -79,13 +79,16 @@ export default function Explore() {
     <div className="min-h-screen bg-background pb-24" data-testid="explore-page">
       {/* Header */}
       <div className="sticky top-0 z-30 glass p-4 border-b border-white/5">
-        <div className="flex items-center gap-4 mb-4">
-          {settings?.logo_url ? (
-            <img src={settings.logo_url} alt="Logo" className="h-8" />
-          ) : (
-            <h1 className="font-heading text-xl text-lime tracking-tight">HYPD</h1>
-          )}
-          <span className="text-white/50">Explore</span>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-4">
+            {settings?.logo_url ? (
+              <img src={settings.logo_url} alt="Logo" className="h-8" />
+            ) : (
+              <h1 className="font-heading text-xl text-lime tracking-tight">HYPD</h1>
+            )}
+            <span className="text-muted-foreground">Explore</span>
+          </div>
+          <ThemeToggle />
         </div>
         
         {/* Search */}
@@ -96,7 +99,7 @@ export default function Explore() {
             placeholder="Search games..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-12 h-12 bg-card border-white/10 rounded-xl text-white placeholder:text-muted-foreground"
+            className="pl-12 h-12 bg-card border-border rounded-xl text-foreground placeholder:text-muted-foreground"
             data-testid="search-input"
           />
         </div>
