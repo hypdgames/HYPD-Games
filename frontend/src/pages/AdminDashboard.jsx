@@ -589,6 +589,27 @@ export default function AdminDashboard() {
                   />
                 </div>
 
+                {/* Upload Progress */}
+                {uploading && (
+                  <div className="space-y-2 py-4 border-t border-border">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        {uploadStatus === "uploading" && "Uploading files..."}
+                        {uploadStatus === "processing" && "Processing game..."}
+                        {uploadStatus === "complete" && "Complete!"}
+                      </span>
+                      <span className="text-lime font-medium">{uploadProgress}%</span>
+                    </div>
+                    <Progress value={uploadProgress} className="h-2" />
+                    {uploadStatus === "complete" && (
+                      <div className="flex items-center gap-2 text-lime text-sm">
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>Game saved successfully!</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Submit Buttons */}
                 <div className="flex gap-3 pt-4">
                   <Button
@@ -599,6 +620,7 @@ export default function AdminDashboard() {
                       setEditingGame(null);
                       resetForm();
                     }}
+                    disabled={uploading}
                     className="flex-1 border-border text-foreground hover:bg-white/10"
                   >
                     Cancel
@@ -610,7 +632,10 @@ export default function AdminDashboard() {
                     data-testid="save-game-button"
                   >
                     {uploading ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        {uploadStatus === "uploading" ? "Uploading..." : "Processing..."}
+                      </>
                     ) : (
                       <>
                         <Save className="w-4 h-4 mr-2" />
