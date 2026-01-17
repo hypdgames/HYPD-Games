@@ -699,6 +699,260 @@ async def get_game_analytics(game_id: str, user: dict = Depends(get_admin_user))
         "score_stats": score_stats
     }
 
+@api_router.get("/admin/analytics/retention")
+async def get_retention_analytics(user: dict = Depends(get_admin_user)):
+    """Get user retention metrics and cohort analysis"""
+    now = datetime.now(timezone.utc)
+    
+    # Get all users with their creation dates
+    users = await db.users.find({}, {"_id": 0, "id": 1, "created_at": 1}).to_list(1000)
+    
+    # Get all play sessions
+    sessions = await db.play_sessions.find({}, {"_id": 0, "user_id": 1, "date": 1, "game_id": 1}).to_list(10000)
+    
+    # Build user activity map
+    user_activity = {}
+    for session in sessions:
+        user_id = session.get("user_id")
+        if user_id:
+            if user_id not in user_activity:
+                user_activity[user_id] = set()
+            user_activity[user_id].add(session.get("date", ""))
+    
+    # Calculate retention metrics
+    retention_data = {
+        "day_1": 0,
+        "day_7": 0,
+        "day_30": 0,
+        "total_users_with_activity": len(user_activity)
+    }
+    
+    for user in users:
+        user_id = user.get("id")
+        if user_id not in user_activity:
+            continue
+            
+        try:
+            created_date = datetime.fromisoformat(user["created_at"].replace("Z", "+00:00"))
+            activity_dates = user_activity.get(user_id, set())
+            
+            # Check if user returned on specific days
+            day_1 = (created_date + timedelta(days=1)).strftime("%Y-%m-%d")
+            day_7 = (created_date + timedelta(days=7)).strftime("%Y-%m-%d")
+            day_30 = (created_date + timedelta(days=30)).strftime("%Y-%m-%d")
+            
+            if day_1 in activity_dates:
+                retention_data["day_1"] += 1
+            if day_7 in activity_dates:
+                retention_data["day_7"] += 1
+            if day_30 in activity_dates:
+                retention_data["day_30"] += 1
+        except:
+            continue
+    
+    total_users = len(users) or 1
+    retention_data["day_1_rate"] = round(retention_data["day_1"] / total_users * 100, 1)
+    retention_data["day_7_rate"] = round(retention_data["day_7"] / total_users * 100, 1)
+    retention_data["day_30_rate"] = round(retention_data["day_30"] / total_users * 100, 1)
+    
+    # Cohort analysis - users grouped by signup week
+    cohorts = {}
+    for user in users:
+        try:
+            created_date = datetime.fromisoformat(user["created_at"].replace("Z", "+00:00"))
+            week_start = (created_date - timedelta(days=created_date.weekday())).strftime("%Y-%m-%d")
+            
+            if week_start not in cohorts:
+                cohorts[week_start] = {"total": 0, "active_week_1": 0, "active_week_2": 0, "active_week_3": 0, "active_week_4": 0}
+            
+            cohorts[week_start]["total"] += 1
+            
+            user_id = user.get("id")
+            if user_id in user_activity:
+                activity_dates = user_activity[user_id]
+                for week_num in range(1, 5):
+                    week_date = (created_date + timedelta(weeks=week_num)).strftime("%Y-%m-%d")
+                    # Check if user was active during that week
+                    for date_str in activity_dates:
+                        try:
+                            activity_date = datetime.strptime(date_str, "%Y-%m-%d")
+                            week_start_check = created_date + timedelta(weeks=week_num-1)
+                            week_end_check = created_date + timedelta(weeks=week_num)
+                            if week_start_check <= activity_date.replace(tzinfo=timezone.utc) < week_end_check:
+                                cohorts[week_start][f"active_week_{week_num}"] += 1
+                                break
+                        except:
+                            continue
+        except:
+            continue
+    
+    # Format cohorts for response
+    cohort_list = []
+    for week, data in sorted(cohorts.items(), reverse=True)[:8]:
+        total = data["total"] or 1
+        cohort_list.append({
+            "week": week,
+            "total_users": data["total"],
+            "week_1_retention": round(data["active_week_1"] / total * 100, 1),
+            "week_2_retention": round(data["active_week_2"] / total * 100, 1),
+            "week_3_retention": round(data["active_week_3"] / total * 100, 1),
+            "week_4_retention": round(data["active_week_4"] / total * 100, 1)
+        })
+    
+    # Daily active users trend (last 30 days)
+    dau_trend = []
+    for i in range(29, -1, -1):
+        day = (now - timedelta(days=i)).strftime("%Y-%m-%d")
+        day_label = (now - timedelta(days=i)).strftime("%b %d")
+        active_users = set()
+        for session in sessions:
+            if session.get("date") == day and session.get("user_id"):
+                active_users.add(session["user_id"])
+        dau_trend.append({
+            "date": day,
+            "label": day_label,
+            "dau": len(active_users)
+        })
+    
+    # Calculate average session duration and sessions per user
+    total_sessions = len(sessions)
+    avg_sessions_per_user = round(total_sessions / len(user_activity), 1) if user_activity else 0
+    
+    return {
+        "retention": retention_data,
+        "cohorts": cohort_list,
+        "dau_trend": dau_trend,
+        "metrics": {
+            "total_users": len(users),
+            "active_users": len(user_activity),
+            "avg_sessions_per_user": avg_sessions_per_user
+        }
+    }
+
+@api_router.get("/admin/analytics/export/csv")
+async def export_analytics_csv(user: dict = Depends(get_admin_user)):
+    """Export analytics data as CSV"""
+    import csv
+    
+    now = datetime.now(timezone.utc)
+    
+    # Get all data
+    games = await db.games.find({}, {"_id": 0}).to_list(100)
+    sessions = await db.play_sessions.find({}, {"_id": 0}).to_list(10000)
+    users = await db.users.find({}, {"_id": 0, "id": 1, "username": 1, "email": 1, "created_at": 1}).to_list(1000)
+    
+    # Build CSV content
+    output = io.StringIO()
+    
+    # Section 1: Overview
+    output.write("HYPD Games Analytics Report\n")
+    output.write(f"Generated: {now.strftime('%Y-%m-%d %H:%M:%S UTC')}\n\n")
+    
+    output.write("=== OVERVIEW ===\n")
+    output.write(f"Total Games,{len(games)}\n")
+    output.write(f"Total Users,{len(users)}\n")
+    output.write(f"Total Play Sessions,{len(sessions)}\n\n")
+    
+    # Section 2: Games Performance
+    output.write("=== GAMES PERFORMANCE ===\n")
+    output.write("Game Title,Category,Play Count,Has Game File,Created At\n")
+    for game in games:
+        output.write(f'"{game.get("title", "")}",{game.get("category", "")},{game.get("play_count", 0)},{game.get("has_game_file", False)},{game.get("created_at", "")}\n')
+    
+    output.write("\n")
+    
+    # Section 3: Daily Plays (last 30 days)
+    output.write("=== DAILY PLAYS (Last 30 Days) ===\n")
+    output.write("Date,Play Count\n")
+    for i in range(29, -1, -1):
+        day = (now - timedelta(days=i)).strftime("%Y-%m-%d")
+        count = sum(1 for s in sessions if s.get("date") == day)
+        output.write(f"{day},{count}\n")
+    
+    output.write("\n")
+    
+    # Section 4: Category Breakdown
+    output.write("=== PLAYS BY CATEGORY ===\n")
+    output.write("Category,Play Count\n")
+    category_counts = {}
+    for game in games:
+        cat = game.get("category", "Other")
+        category_counts[cat] = category_counts.get(cat, 0) + game.get("play_count", 0)
+    for cat, count in sorted(category_counts.items(), key=lambda x: -x[1]):
+        output.write(f"{cat},{count}\n")
+    
+    output.write("\n")
+    
+    # Section 5: User Registrations
+    output.write("=== USER REGISTRATIONS ===\n")
+    output.write("Date,New Users\n")
+    reg_by_date = {}
+    for user in users:
+        try:
+            created = user.get("created_at", "")[:10]
+            reg_by_date[created] = reg_by_date.get(created, 0) + 1
+        except:
+            continue
+    for date, count in sorted(reg_by_date.items(), reverse=True)[:30]:
+        output.write(f"{date},{count}\n")
+    
+    csv_content = output.getvalue()
+    output.close()
+    
+    return StreamingResponse(
+        io.BytesIO(csv_content.encode('utf-8')),
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": f'attachment; filename="hypd_analytics_{now.strftime("%Y%m%d")}.csv"'
+        }
+    )
+
+@api_router.get("/admin/analytics/export/json")
+async def export_analytics_json(user: dict = Depends(get_admin_user)):
+    """Export full analytics data as JSON"""
+    import json
+    
+    now = datetime.now(timezone.utc)
+    
+    # Get all data
+    games = await db.games.find({}, {"_id": 0}).to_list(100)
+    sessions = await db.play_sessions.find({}, {"_id": 0}).to_list(10000)
+    users_count = await db.users.count_documents({})
+    
+    # Build export data
+    export_data = {
+        "generated_at": now.isoformat(),
+        "overview": {
+            "total_games": len(games),
+            "total_users": users_count,
+            "total_sessions": len(sessions)
+        },
+        "games": [{
+            "id": g.get("id"),
+            "title": g.get("title"),
+            "category": g.get("category"),
+            "play_count": g.get("play_count", 0),
+            "created_at": g.get("created_at")
+        } for g in games],
+        "daily_plays": []
+    }
+    
+    # Daily plays
+    for i in range(29, -1, -1):
+        day = (now - timedelta(days=i)).strftime("%Y-%m-%d")
+        count = sum(1 for s in sessions if s.get("date") == day)
+        export_data["daily_plays"].append({"date": day, "plays": count})
+    
+    json_content = json.dumps(export_data, indent=2)
+    
+    return StreamingResponse(
+        io.BytesIO(json_content.encode('utf-8')),
+        media_type="application/json",
+        headers={
+            "Content-Disposition": f'attachment; filename="hypd_analytics_{now.strftime("%Y%m%d")}.json"'
+        }
+    )
+
 # ==================== ADMIN ROUTES ====================
 
 @api_router.post("/admin/games", response_model=GameResponse)
