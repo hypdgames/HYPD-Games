@@ -21,6 +21,9 @@ import AnalyticsDashboard from "@/pages/AnalyticsDashboard";
 // Components
 import BottomNav from "@/components/BottomNav";
 
+// Contexts
+import { ThemeProvider } from "@/contexts/ThemeContext";
+
 // Context
 const AuthContext = createContext(null);
 
@@ -134,7 +137,7 @@ function AppContent() {
 
   return (
     <AuthContext.Provider value={authValue}>
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background transition-colors duration-300">
         <AnimatePresence mode="wait">
           <Routes location={location} key={location.pathname}>
             <Route path="/" element={<GameFeed />} />
@@ -155,9 +158,11 @@ function AppContent() {
 
 function App() {
   return (
-    <BrowserRouter>
-      <AppContent />
-    </BrowserRouter>
+    <ThemeProvider>
+      <BrowserRouter>
+        <AppContent />
+      </BrowserRouter>
+    </ThemeProvider>
   );
 }
 
