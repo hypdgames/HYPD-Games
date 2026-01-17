@@ -890,7 +890,7 @@ async def export_analytics_csv(user: dict = Depends(get_admin_user)):
         try:
             created = user.get("created_at", "")[:10]
             reg_by_date[created] = reg_by_date.get(created, 0) + 1
-        except:
+        except (TypeError, IndexError):
             continue
     for date, count in sorted(reg_by_date.items(), reverse=True)[:30]:
         output.write(f"{date},{count}\n")
