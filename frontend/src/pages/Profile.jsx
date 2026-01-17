@@ -302,14 +302,6 @@ export default function Profile() {
               data-testid="logout-button"
             >
               <LogOut className="w-5 h-5" />
-            </Button>
-          </div>
-        </div>
-      </div>
-          >
-            <LogOut className="w-5 h-5" />
-          </Button>
-        </div>
       </div>
 
       <div className="p-6">
@@ -324,20 +316,20 @@ export default function Profile() {
               {user.username?.charAt(0).toUpperCase()}
             </span>
           </div>
-          <h2 className="font-heading text-2xl text-white mb-1">{user.username}</h2>
+          <h2 className="font-heading text-2xl text-foreground mb-1">{user.username}</h2>
           <p className="text-muted-foreground text-sm">{user.email}</p>
         </motion.div>
 
         {/* Stats */}
         <div className="grid grid-cols-2 gap-4 mb-8">
-          <div className="bg-card border border-white/5 rounded-2xl p-4 text-center">
+          <div className="bg-card border border-border rounded-2xl p-4 text-center">
             <Heart className="w-6 h-6 text-red-500 mx-auto mb-2" />
-            <p className="text-2xl font-heading text-white">{user.saved_games?.length || 0}</p>
+            <p className="text-2xl font-heading text-foreground">{user.saved_games?.length || 0}</p>
             <p className="text-xs text-muted-foreground">Saved Games</p>
           </div>
-          <div className="bg-card border border-white/5 rounded-2xl p-4 text-center">
+          <div className="bg-card border border-border rounded-2xl p-4 text-center">
             <Trophy className="w-6 h-6 text-yellow-500 mx-auto mb-2" />
-            <p className="text-2xl font-heading text-white">
+            <p className="text-2xl font-heading text-foreground">
               {Object.keys(user.high_scores || {}).length}
             </p>
             <p className="text-xs text-muted-foreground">High Scores</p>
@@ -347,7 +339,7 @@ export default function Profile() {
         {/* Saved Games */}
         {savedGames.length > 0 && (
           <div className="mb-8">
-            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
               <Heart className="w-5 h-5 text-red-500" />
               Saved Games
             </h3>
