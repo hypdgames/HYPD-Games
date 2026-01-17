@@ -90,24 +90,27 @@ export default function Profile() {
     return (
       <div className="min-h-screen bg-background pb-24" data-testid="profile-page">
         {/* Header */}
-        <div className="glass p-4 border-b border-white/5">
-          <div className="flex items-center gap-4">
-            {settings?.logo_url ? (
-              <img src={settings.logo_url} alt="Logo" className="h-8" />
-            ) : (
-              <h1 className="font-heading text-xl text-lime tracking-tight">HYPD</h1>
-            )}
-            <span className="text-white/50">Profile</span>
+        <div className="glass p-4 border-b border-border">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              {settings?.logo_url ? (
+                <img src={settings.logo_url} alt="Logo" className="h-8" />
+              ) : (
+                <h1 className="font-heading text-xl text-lime tracking-tight">HYPD</h1>
+              )}
+              <span className="text-muted-foreground">Profile</span>
+            </div>
+            <ThemeToggle />
           </div>
         </div>
 
         <div className="p-6 max-w-md mx-auto">
           {/* Welcome Message */}
           <div className="text-center mb-8">
-            <div className="w-20 h-20 rounded-full bg-card border border-white/10 flex items-center justify-center mx-auto mb-4">
+            <div className="w-20 h-20 rounded-full bg-card border border-border flex items-center justify-center mx-auto mb-4">
               <User className="w-10 h-10 text-muted-foreground" />
             </div>
-            <h2 className="font-heading text-2xl text-white mb-2">Join HYPD</h2>
+            <h2 className="font-heading text-2xl text-foreground mb-2">Join HYPD</h2>
             <p className="text-muted-foreground text-sm">
               Save your progress, track high scores, and more
             </p>
