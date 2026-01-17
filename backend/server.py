@@ -36,6 +36,33 @@ JWT_EXPIRATION_HOURS = 24
 # Security
 security = HTTPBearer()
 
+# Image compression helper
+def compress_image(image_data: bytes, max_size: int = 800, quality: int = 75) -> str:
+    """Compress and resize image, return as base64 data URL"""
+    try:
+        img = Image.open(io.BytesIO(image_data))
+        
+        # Convert to RGB if necessary (for PNG with transparency)
+        if img.mode in ('RGBA', 'P'):
+            img = img.convert('RGB')
+        
+        # Resize if too large
+        if max(img.size) > max_size:
+            ratio = max_size / max(img.size)
+            new_size = (int(img.size[0] * ratio), int(img.size[1] * ratio))
+            img = img.resize(new_size, Image.Resampling.LANCZOS)
+        
+        # Save as JPEG with compression
+        buffer = io.BytesIO()
+        img.save(buffer, format='JPEG', quality=quality, optimize=True)
+        compressed_data = buffer.getvalue()
+        
+        return f"data:image/jpeg;base64,{base64.b64encode(compressed_data).decode()}"
+    except Exception as e:
+        logging.error(f"Image compression error: {e}")
+        # Fallback to original if compression fails
+        return f"data:image/jpeg;base64,{base64.b64encode(image_data).decode()}"
+
 # Create the main app
 app = FastAPI(title="Hypd Games API")
 
