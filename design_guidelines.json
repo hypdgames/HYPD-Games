@@ -1,0 +1,161 @@
+{
+  "design_system": {
+    "identity": {
+      "name": "Hypd Games",
+      "aesthetic": "Dark Mode Gaming / Cyber-Social",
+      "core_values": ["Instant", "Immersive", "Electric", "Social"],
+      "emotional_tone": "High-Energy, Slick, Addictive"
+    },
+    "typography": {
+      "font_family": {
+        "headings": "Chivo, sans-serif",
+        "body": "Manrope, sans-serif",
+        "mono": "JetBrains Mono, monospace"
+      },
+      "weights": {
+        "headings": "900",
+        "body": "400, 500"
+      },
+      "scale": {
+        "h1": "text-5xl md:text-7xl tracking-tighter uppercase",
+        "h2": "text-3xl md:text-5xl tracking-tight",
+        "h3": "text-2xl font-bold",
+        "body": "text-base leading-relaxed",
+        "caption": "text-xs uppercase tracking-widest text-muted-foreground"
+      }
+    },
+    "colors": {
+      "palette": {
+        "background": "#050505",
+        "foreground": "#FFFFFF",
+        "card": "#121212",
+        "card_foreground": "#FFFFFF",
+        "primary": "#CCFF00",
+        "primary_foreground": "#000000",
+        "secondary": "#7000FF",
+        "secondary_foreground": "#FFFFFF",
+        "muted": "#27272A",
+        "muted_foreground": "#A1A1AA",
+        "accent": "#CCFF00",
+        "accent_foreground": "#000000",
+        "border": "#27272A",
+        "input": "#27272A",
+        "ring": "#CCFF00"
+      },
+      "gradients": {
+        "feed_overlay": "bg-gradient-to-t from-black/90 via-black/40 to-transparent",
+        "hero_glow": "bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/20 via-background to-background",
+        "glass": "bg-black/60 backdrop-blur-xl border-t border-white/10"
+      }
+    },
+    "layout": {
+      "spacing": {
+        "container_padding": "p-4 md:p-8",
+        "section_gap": "gap-8 md:gap-16"
+      },
+      "grid_systems": {
+        "feed": "snap-y snap-mandatory h-[100dvh] w-full overflow-y-scroll",
+        "explore": "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4",
+        "dashboard": "grid grid-cols-1 md:grid-cols-12 gap-6"
+      },
+      "border_radius": {
+        "default": "rounded-xl",
+        "button": "rounded-full",
+        "card": "rounded-2xl"
+      }
+    },
+    "components": {
+      "buttons": {
+        "primary": "bg-[#CCFF00] text-black hover:bg-[#b3e600] font-black uppercase tracking-widest rounded-full px-8 py-4 transition-transform active:scale-95 shadow-[0_0_20px_rgba(204,255,0,0.3)]",
+        "secondary": "bg-white/10 text-white hover:bg-white/20 backdrop-blur-md font-bold rounded-full px-6 py-3",
+        "ghost": "text-muted-foreground hover:text-white hover:bg-white/5"
+      },
+      "cards": {
+        "game_preview": "relative w-full h-full snap-start overflow-hidden bg-zinc-900",
+        "category_tile": "aspect-square relative overflow-hidden rounded-2xl group cursor-pointer border border-white/5 hover:border-[#CCFF00]/50 transition-colors",
+        "dashboard_widget": "bg-[#121212] border border-white/5 rounded-xl p-6"
+      },
+      "navigation": {
+        "bottom_bar": "fixed bottom-0 left-0 right-0 h-20 bg-black/80 backdrop-blur-xl border-t border-white/10 flex justify-around items-center z-50 pb-safe"
+      },
+      "inputs": {
+        "default": "bg-zinc-900/50 border-white/10 focus:border-[#CCFF00] focus:ring-[#CCFF00] rounded-xl h-12 px-4 text-white placeholder:text-zinc-600"
+      }
+    },
+    "motion": {
+      "transitions": "transition-all duration-300 ease-out",
+      "micro_interactions": {
+        "hover_lift": "hover:-translate-y-1 hover:shadow-lg",
+        "active_press": "active:scale-95",
+        "page_transition": "animate-in fade-in slide-in-from-bottom-4 duration-500"
+      }
+    },
+    "assets": {
+      "images": {
+        "game_thumbnails": [
+          {
+            "url": "https://images.unsplash.com/photo-1721987203048-24725e93047e?crop=entropy&cs=srgb&fm=jpg&q=85",
+            "alt": "Action Game - Fire Core",
+            "category": "action"
+          },
+          {
+            "url": "https://images.unsplash.com/photo-1637734373619-af1e76434bec?crop=entropy&cs=srgb&fm=jpg&q=85",
+            "alt": "Puzzle Game - Bubble Float",
+            "category": "puzzle"
+          },
+          {
+            "url": "https://images.unsplash.com/photo-1590034295051-004f272713a4?crop=entropy&cs=srgb&fm=jpg&q=85",
+            "alt": "Sci-Fi Game - Blue Void",
+            "category": "scifi"
+          },
+          {
+            "url": "https://images.unsplash.com/photo-1765408217631-77f2469f7626?crop=entropy&cs=srgb&fm=jpg&q=85",
+            "alt": "Retro Game - Glitch Runner",
+            "category": "arcade"
+          },
+          {
+            "url": "https://images.unsplash.com/photo-1684536689765-c4ebf55da2ae?crop=entropy&cs=srgb&fm=jpg&q=85",
+            "alt": "Cyberpunk City",
+            "category": "background"
+          },
+          {
+            "url": "https://images.unsplash.com/photo-1683304290611-b7fc0ddb7af9?crop=entropy&cs=srgb&fm=jpg&q=85",
+            "alt": "Neon Signs",
+            "category": "background"
+          }
+        ],
+        "placeholders": {
+          "user_avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix",
+          "game_logo": "https://placehold.co/200x200/121212/CCFF00?text=GAME"
+        }
+      },
+      "icons": {
+        "library": "lucide-react",
+        "style": "stroke-width={1.5}"
+      }
+    }
+  },
+  "instructions_to_main_agent": {
+    "setup": [
+      "Install fonts: 'npm install @fontsource/chivo @fontsource/manrope'",
+      "Update tailwind.config.js with the color palette provided in design_system.colors",
+      "Update index.css with the CSS variables for the dark theme",
+      "Ensure 'lucide-react' is installed"
+    ],
+    "implementation_rules": [
+      "MOBILE FIRST: Always design for mobile viewport first, then scale up.",
+      "SNAP SCROLL: The Home/Feed page MUST use CSS Scroll Snap (snap-y snap-mandatory) for the TikTok feel.",
+      "FULLSCREEN: Game player must occupy 100% of the screen (z-50) with a floating 'Back' button.",
+      "GLASSMORPHISM: Use the 'glass' utility class for the bottom navigation bar.",
+      "NO SCROLLBARS: Hide scrollbars on the feed for a cleaner look (scrollbar-width: none).",
+      "TOUCH TARGETS: Ensure all interactive elements are at least 44x44px.",
+      "DATA-TESTID: Add data-testid attributes to all buttons, inputs, and game cards."
+    ],
+    "universal_guidelines": [
+      "Avoid generic 'Bootstrap' layouts. Use asymmetry and layering.",
+      "Do not use gradients for text unless it's a very large headline.",
+      "Use 'sonner' for all toast notifications.",
+      "Use 'framer-motion' for page transitions if possible."
+    ]
+  }
+}
