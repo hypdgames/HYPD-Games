@@ -142,6 +142,7 @@ function AppContent() {
             <Route path="/pro" element={<Pro />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/analytics" element={<AnalyticsDashboard />} />
             <Route path="/play/:gameId" element={<GamePlayer />} />
           </Routes>
         </AnimatePresence>
