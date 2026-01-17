@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useMemo } from "react";
 
 const ThemeContext = createContext(null);
 
@@ -18,45 +18,46 @@ const getSystemTheme = () => {
   return "dark";
 };
 
+// Get initial theme from localStorage or system
+const getInitialTheme = () => {
+  const saved = localStorage.getItem("hypd-theme");
+  if (saved && ["light", "dark", "auto"].includes(saved)) return saved;
+  return "auto";
+};
+
+// Get initial resolved theme
+const getInitialResolvedTheme = () => {
+  const saved = localStorage.getItem("hypd-theme");
+  if (saved === "light" || saved === "dark") return saved;
+  return getSystemTheme();
+};
+
 export function ThemeProvider({ children }) {
   // Theme can be "light", "dark", or "auto"
-  const [theme, setTheme] = useState(() => {
-    const saved = localStorage.getItem("hypd-theme");
-    if (saved && ["light", "dark", "auto"].includes(saved)) return saved;
-    return "auto"; // Default to auto (system preference)
-  });
+  const [theme, setTheme] = useState(getInitialTheme);
 
   // Actual resolved theme (light or dark)
-  const [resolvedTheme, setResolvedTheme] = useState(() => {
-    const saved = localStorage.getItem("hypd-theme");
-    if (saved === "light" || saved === "dark") return saved;
-    return getSystemTheme();
-  });
+  const [resolvedTheme, setResolvedTheme] = useState(getInitialResolvedTheme);
 
   // Listen for system theme changes when in auto mode
   useEffect(() => {
-    if (theme !== "auto") return;
+    if (theme !== "auto") {
+      setResolvedTheme(theme);
+      return;
+    }
 
     const mediaQuery = window.matchMedia("(prefers-color-scheme: light)");
+    
+    // Set initial value for auto mode
+    const systemTheme = mediaQuery.matches ? "light" : "dark";
+    setResolvedTheme(systemTheme);
+    
     const handleChange = (e) => {
       setResolvedTheme(e.matches ? "light" : "dark");
     };
 
-    // Set initial value
-    setResolvedTheme(mediaQuery.matches ? "light" : "dark");
-
-    // Listen for changes
     mediaQuery.addEventListener("change", handleChange);
     return () => mediaQuery.removeEventListener("change", handleChange);
-  }, [theme]);
-
-  // Update resolved theme when theme changes
-  useEffect(() => {
-    if (theme === "auto") {
-      setResolvedTheme(getSystemTheme());
-    } else {
-      setResolvedTheme(theme);
-    }
   }, [theme]);
 
   // Apply theme to document
@@ -83,8 +84,10 @@ export function ThemeProvider({ children }) {
     });
   };
 
+  const value = useMemo(() => ({ theme, resolvedTheme, setTheme, toggleTheme }), [theme, resolvedTheme]);
+
   return (
-    <ThemeContext.Provider value={{ theme, resolvedTheme, setTheme, toggleTheme }}>
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   );
