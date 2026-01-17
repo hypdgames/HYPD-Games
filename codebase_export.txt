@@ -1,0 +1,2109 @@
+================================================================================
+HYPD GAMES - FULL CODEBASE EXPORT
+================================================================================
+A mobile-first instant gaming website with TikTok-style vertical scroll feed
+Tech Stack: React + FastAPI + MongoDB
+================================================================================
+
+
+
+========== BACKEND ==========
+
+
+--- /app/backend/server.py ---
+
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, UploadFile, File, Form, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.responses import StreamingResponse
+from dotenv import load_dotenv
+from starlette.middleware.cors import CORSMiddleware
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorGridFSBucket
+from bson import ObjectId
+import os
+import logging
+from pathlib import Path
+from pydantic import BaseModel, Field, EmailStr
+from typing import List, Optional
+import uuid
+from datetime import datetime, timezone, timedelta
+import jwt
+import bcrypt
+import io
+import base64
+import zipfile
+from PIL import Image
+
+ROOT_DIR = Path(__file__).parent
+load_dotenv(ROOT_DIR / '.env')
+
+# MongoDB connection
+mongo_url = os.environ['MONGO_URL']
+client = AsyncIOMotorClient(mongo_url)
+db = client[os.environ['DB_NAME']]
+fs = AsyncIOMotorGridFSBucket(db)
+
+# JWT Configuration
+JWT_SECRET = os.environ.get('JWT_SECRET', 'hypd-games-secret-key-2024')
+JWT_ALGORITHM = "HS256"
+JWT_EXPIRATION_HOURS = 24
+
+# Security
+security = HTTPBearer()
+
+# Image compression helper
+def compress_image(image_data: bytes, max_size: int = 800, quality: int = 75) -> str:
+    """Compress and resize image, return as base64 data URL"""
+    try:
+        img = Image.open(io.BytesIO(image_data))
+        
+        # Convert to RGB if necessary (for PNG with transparency)
+        if img.mode in ('RGBA', 'P'):
+            img = img.convert('RGB')
+        
+        # Resize if too large
+        if max(img.size) > max_size:
+            ratio = max_size / max(img.size)
+            new_size = (int(img.size[0] * ratio), int(img.size[1] * ratio))
+            img = img.resize(new_size, Image.Resampling.LANCZOS)
+        
+        # Save as JPEG with compression
+        buffer = io.BytesIO()
+        img.save(buffer, format='JPEG', quality=quality, optimize=True)
+        compressed_data = buffer.getvalue()
+        
+        return f"data:image/jpeg;base64,{base64.b64encode(compressed_data).decode()}"
+    except Exception as e:
+        logging.error(f"Image compression error: {e}")
+        # Fallback to original if compression fails
+        return f"data:image/jpeg;base64,{base64.b64encode(image_data).decode()}"
+
+# Create the main app
+app = FastAPI(title="Hypd Games API")
+
+# Create a router with the /api prefix
+api_router = APIRouter(prefix="/api")
+
+# ==================== MODELS ====================
+
+class UserCreate(BaseModel):
+    username: str
+    email: EmailStr
+    password: str
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+class UserResponse(BaseModel):
+    id: str
+    username: str
+    email: str
+    is_admin: bool = False
+    created_at: str
+    saved_games: List[str] = []
+    high_scores: dict = {}
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserResponse
+
+class GameCreate(BaseModel):
+    title: str
+    description: str
+    category: str
+    thumbnail_url: Optional[str] = None
+    video_url: Optional[str] = None
+    is_visible: bool = True
+
+class GameResponse(BaseModel):
+    id: str
+    title: str
+    description: str
+    category: str
+    thumbnail_url: Optional[str] = None
+    video_url: Optional[str] = None
+    is_visible: bool
+    play_count: int = 0
+    created_at: str
+    has_game_file: bool = False
+
+class GameUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    category: Optional[str] = None
+    thumbnail_url: Optional[str] = None
+    video_url: Optional[str] = None
+    is_visible: Optional[bool] = None
+
+class HighScoreUpdate(BaseModel):
+    game_id: str
+    score: int
+
+class SettingsResponse(BaseModel):
+    logo_url: Optional[str] = None
+
+class PlaySessionCreate(BaseModel):
+    game_id: str
+    duration_seconds: int = 0
+    score: Optional[int] = None
+
+class GameAnalytics(BaseModel):
+    game_id: str
+    title: str
+    total_plays: int
+    unique_players: int
+    avg_duration: float
+    total_play_time: int
+    plays_today: int
+    plays_this_week: int
+
+class OverallAnalytics(BaseModel):
+    total_games: int
+    total_plays: int
+    total_users: int
+    active_users_today: int
+    top_games: List[dict]
+    plays_by_category: dict
+    plays_by_day: List[dict]
+
+# ==================== AUTH HELPERS ====================
+
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+def verify_password(password: str, hashed: str) -> bool:
+    return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
+
+def create_token(user_id: str) -> str:
+    payload = {
+        "sub": user_id,
+        "exp": datetime.now(timezone.utc) + timedelta(hours=JWT_EXPIRATION_HOURS),
+        "iat": datetime.now(timezone.utc)
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    try:
+        payload = jwt.decode(credentials.credentials, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        user_id = payload.get("sub")
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        
+        user = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
+        return user
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+async def get_admin_user(user: dict = Depends(get_current_user)):
+    if not user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return user
+
+# ==================== AUTH ROUTES ====================
+
+@api_router.post("/auth/register", response_model=TokenResponse)
+async def register(data: UserCreate):
+    # Check if email exists
+    existing = await db.users.find_one({"email": data.email})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    # Check if username exists
+    existing_username = await db.users.find_one({"username": data.username})
+    if existing_username:
+        raise HTTPException(status_code=400, detail="Username already taken")
+    
+    user_id = str(uuid.uuid4())
+    user_doc = {
+        "id": user_id,
+        "username": data.username,
+        "email": data.email,
+        "password": hash_password(data.password),
+        "is_admin": False,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "saved_games": [],
+        "high_scores": {}
+    }
+    
+    await db.users.insert_one(user_doc)
+    
+    token = create_token(user_id)
+    user_response = UserResponse(
+        id=user_id,
+        username=data.username,
+        email=data.email,
+        is_admin=False,
+        created_at=user_doc["created_at"],
+        saved_games=[],
+        high_scores={}
+    )
+    
+    return TokenResponse(access_token=token, user=user_response)
+
+@api_router.post("/auth/login", response_model=TokenResponse)
+async def login(data: UserLogin):
+    user = await db.users.find_one({"email": data.email})
+    if not user or not verify_password(data.password, user["password"]):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    token = create_token(user["id"])
+    user_response = UserResponse(
+        id=user["id"],
+        username=user["username"],
+        email=user["email"],
+        is_admin=user.get("is_admin", False),
+        created_at=user["created_at"],
+        saved_games=user.get("saved_games", []),
+        high_scores=user.get("high_scores", {})
+    )
+    
+    return TokenResponse(access_token=token, user=user_response)
+
+@api_router.get("/auth/me", response_model=UserResponse)
+async def get_me(user: dict = Depends(get_current_user)):
+    return UserResponse(**user)
+
+@api_router.post("/auth/save-game/{game_id}")
+async def save_game(game_id: str, user: dict = Depends(get_current_user)):
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$addToSet": {"saved_games": game_id}}
+    )
+    return {"message": "Game saved"}
+
+@api_router.delete("/auth/save-game/{game_id}")
+async def unsave_game(game_id: str, user: dict = Depends(get_current_user)):
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$pull": {"saved_games": game_id}}
+    )
+    return {"message": "Game removed from saved"}
+
+@api_router.post("/auth/high-score")
+async def update_high_score(data: HighScoreUpdate, user: dict = Depends(get_current_user)):
+    current_scores = user.get("high_scores", {})
+    current_best = current_scores.get(data.game_id, 0)
+    
+    if data.score > current_best:
+        await db.users.update_one(
+            {"id": user["id"]},
+            {"$set": {f"high_scores.{data.game_id}": data.score}}
+        )
+        return {"message": "New high score!", "score": data.score}
+    return {"message": "Score recorded", "score": current_best}
+
+# ==================== GAME ROUTES ====================
+
+@api_router.get("/games", response_model=List[GameResponse])
+async def get_games(category: Optional[str] = None, visible_only: bool = True):
+    query = {}
+    if category and category != "all":
+        query["category"] = category
+    if visible_only:
+        query["is_visible"] = True
+    
+    games = await db.games.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return [GameResponse(**g) for g in games]
+
+@api_router.get("/games/{game_id}", response_model=GameResponse)
+async def get_game(game_id: str):
+    game = await db.games.find_one({"id": game_id}, {"_id": 0})
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+    return GameResponse(**game)
+
+@api_router.get("/games/{game_id}/play")
+async def get_game_file(game_id: str):
+    game = await db.games.find_one({"id": game_id})
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    # Increment play count
+    await db.games.update_one({"id": game_id}, {"$inc": {"play_count": 1}})
+    
+    # Get game HTML content from GridFS or embedded
+    if game.get("game_file_id"):
+        try:
+            grid_out = await fs.open_download_stream(ObjectId(game["game_file_id"]))
+            content = await grid_out.read()
+            
+            # Check if content is a ZIP file
+            if content[:2] == b'PK':
+                try:
+                    with zipfile.ZipFile(io.BytesIO(content)) as zf:
+                        # Look for index.html or main HTML file
+                        html_files = [f for f in zf.namelist() if f.endswith('.html') and not f.startswith('__MACOSX')]
+                        
+                        if not html_files:
+                            raise HTTPException(status_code=404, detail="No HTML file found in ZIP")
+                        
+                        # Prefer index.html, otherwise use first HTML file
+                        html_file = None
+                        for f in html_files:
+                            if f.endswith('index.html'):
+                                html_file = f
+                                break
+                        if not html_file:
+                            html_file = html_files[0]
+                        
+                        # Get the base path for assets
+                        base_path = '/'.join(html_file.split('/')[:-1])
+                        if base_path:
+                            base_path += '/'
+                        
+                        html_content = zf.read(html_file).decode('utf-8', errors='ignore')
+                        
+                        # Inject base tag and inline critical assets
+                        base_tag = f'<base href="/api/games/{game_id}/assets/{base_path}">'
+                        if '<head>' in html_content:
+                            html_content = html_content.replace('<head>', f'<head>\n{base_tag}', 1)
+                        elif '<HEAD>' in html_content:
+                            html_content = html_content.replace('<HEAD>', f'<HEAD>\n{base_tag}', 1)
+                        else:
+                            html_content = base_tag + html_content
+                        
+                        return StreamingResponse(
+                            io.BytesIO(html_content.encode()),
+                            media_type="text/html",
+                            headers={"Content-Disposition": f"inline; filename={game['title']}.html"}
+                        )
+                except zipfile.BadZipFile:
+                    logging.error(f"Invalid ZIP file for game {game_id}")
+            else:
+                # Regular HTML file
+                return StreamingResponse(
+                    io.BytesIO(content),
+                    media_type="text/html",
+                    headers={"Content-Disposition": f"inline; filename={game['title']}.html"}
+                )
+        except Exception as e:
+            logging.error(f"Error reading game file: {e}")
+    
+    # Return embedded game content if available
+    if game.get("game_content"):
+        return StreamingResponse(
+            io.BytesIO(game["game_content"].encode()),
+            media_type="text/html"
+        )
+    
+    raise HTTPException(status_code=404, detail="Game file not found")
+
+@api_router.get("/games/{game_id}/assets/{path:path}")
+async def get_game_asset(game_id: str, path: str):
+    """Serve assets from ZIP game files"""
+    game = await db.games.find_one({"id": game_id})
+    if not game or not game.get("game_file_id"):
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    try:
+        grid_out = await fs.open_download_stream(ObjectId(game["game_file_id"]))
+        content = await grid_out.read()
+        
+        if content[:2] != b'PK':
+            raise HTTPException(status_code=404, detail="Game is not a ZIP file")
+        
+        with zipfile.ZipFile(io.BytesIO(content)) as zf:
+            # Try to find the file in the ZIP
+            try:
+                asset_content = zf.read(path)
+            except KeyError:
+                raise HTTPException(status_code=404, detail=f"Asset not found: {path}")
+            
+            # Determine content type
+            content_type = "application/octet-stream"
+            if path.endswith('.js'):
+                content_type = "application/javascript"
+            elif path.endswith('.css'):
+                content_type = "text/css"
+            elif path.endswith('.html'):
+                content_type = "text/html"
+            elif path.endswith('.json'):
+                content_type = "application/json"
+            elif path.endswith('.png'):
+                content_type = "image/png"
+            elif path.endswith('.jpg') or path.endswith('.jpeg'):
+                content_type = "image/jpeg"
+            elif path.endswith('.gif'):
+                content_type = "image/gif"
+            elif path.endswith('.svg'):
+                content_type = "image/svg+xml"
+            elif path.endswith('.webp'):
+                content_type = "image/webp"
+            elif path.endswith('.mp3'):
+                content_type = "audio/mpeg"
+            elif path.endswith('.wav'):
+                content_type = "audio/wav"
+            elif path.endswith('.ogg'):
+                content_type = "audio/ogg"
+            elif path.endswith('.woff') or path.endswith('.woff2'):
+                content_type = "font/woff2"
+            
+            return StreamingResponse(
+                io.BytesIO(asset_content),
+                media_type=content_type
+            )
+    except Exception as e:
+        logging.error(f"Error reading game asset: {e}")
+        raise HTTPException(status_code=500, detail="Error reading game asset")
+
+@api_router.get("/categories")
+async def get_categories():
+    categories = await db.games.distinct("category")
+    return {"categories": categories}
+
+# ==================== ANALYTICS ROUTES ====================
+
+@api_router.post("/analytics/play-session")
+async def record_play_session(data: PlaySessionCreate):
+    """Record a play session for analytics"""
+    session_doc = {
+        "id": str(uuid.uuid4()),
+        "game_id": data.game_id,
+        "duration_seconds": data.duration_seconds,
+        "score": data.score,
+        "played_at": datetime.now(timezone.utc).isoformat(),
+        "date": datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    }
+    await db.play_sessions.insert_one(session_doc)
+    return {"message": "Session recorded"}
+
+@api_router.get("/admin/analytics/overview")
+async def get_analytics_overview(user: dict = Depends(get_admin_user)):
+    """Get overall platform analytics"""
+    now = datetime.now(timezone.utc)
+    today = now.strftime("%Y-%m-%d")
+    week_ago = (now - timedelta(days=7)).strftime("%Y-%m-%d")
+    
+    # Total counts
+    total_games = await db.games.count_documents({})
+    total_users = await db.users.count_documents({})
+    total_plays = await db.play_sessions.count_documents({})
+    
+    # Today's stats
+    plays_today = await db.play_sessions.count_documents({"date": today})
+    
+    # Get unique users who played today
+    active_users_pipeline = [
+        {"$match": {"date": today}},
+        {"$group": {"_id": "$user_id"}},
+        {"$count": "count"}
+    ]
+    active_result = await db.play_sessions.aggregate(active_users_pipeline).to_list(1)
+    active_users_today = active_result[0]["count"] if active_result else 0
+    
+    # Top games by play count
+    top_games_pipeline = [
+        {"$group": {"_id": "$game_id", "plays": {"$sum": 1}, "total_time": {"$sum": "$duration_seconds"}}},
+        {"$sort": {"plays": -1}},
+        {"$limit": 5}
+    ]
+    top_games_raw = await db.play_sessions.aggregate(top_games_pipeline).to_list(5)
+    
+    # Enrich with game titles
+    top_games = []
+    for tg in top_games_raw:
+        game = await db.games.find_one({"id": tg["_id"]}, {"_id": 0, "title": 1, "category": 1, "thumbnail_url": 1})
+        if game:
+            top_games.append({
+                "game_id": tg["_id"],
+                "title": game.get("title", "Unknown"),
+                "category": game.get("category", "Unknown"),
+                "thumbnail_url": game.get("thumbnail_url"),
+                "plays": tg["plays"],
+                "total_time_minutes": round(tg["total_time"] / 60, 1)
+            })
+    
+    # If no play sessions yet, use play_count from games
+    if not top_games:
+        games = await db.games.find({}, {"_id": 0}).sort("play_count", -1).limit(5).to_list(5)
+        top_games = [{
+            "game_id": g["id"],
+            "title": g["title"],
+            "category": g["category"],
+            "thumbnail_url": g.get("thumbnail_url"),
+            "plays": g.get("play_count", 0),
+            "total_time_minutes": 0
+        } for g in games]
+    
+    # Plays by category
+    category_pipeline = [
+        {"$group": {"_id": "$game_id", "plays": {"$sum": 1}}},
+    ]
+    category_raw = await db.play_sessions.aggregate(category_pipeline).to_list(100)
+    
+    plays_by_category = {}
+    for cr in category_raw:
+        game = await db.games.find_one({"id": cr["_id"]}, {"_id": 0, "category": 1})
+        if game:
+            cat = game.get("category", "Other")
+            plays_by_category[cat] = plays_by_category.get(cat, 0) + cr["plays"]
+    
+    # If no sessions, use game play_count
+    if not plays_by_category:
+        games = await db.games.find({}, {"_id": 0, "category": 1, "play_count": 1}).to_list(100)
+        for g in games:
+            cat = g.get("category", "Other")
+            plays_by_category[cat] = plays_by_category.get(cat, 0) + g.get("play_count", 0)
+    
+    # Plays by day (last 7 days)
+    plays_by_day = []
+    for i in range(6, -1, -1):
+        day = (now - timedelta(days=i)).strftime("%Y-%m-%d")
+        day_label = (now - timedelta(days=i)).strftime("%a")
+        count = await db.play_sessions.count_documents({"date": day})
+        plays_by_day.append({"date": day, "day": day_label, "plays": count})
+    
+    return {
+        "total_games": total_games,
+        "total_plays": total_plays or sum(g.get("play_count", 0) for g in await db.games.find({}, {"_id": 0, "play_count": 1}).to_list(100)),
+        "total_users": total_users,
+        "active_users_today": active_users_today,
+        "plays_today": plays_today,
+        "top_games": top_games,
+        "plays_by_category": plays_by_category,
+        "plays_by_day": plays_by_day
+    }
+
+@api_router.get("/admin/analytics/game/{game_id}")
+async def get_game_analytics(game_id: str, user: dict = Depends(get_admin_user)):
+    """Get detailed analytics for a specific game"""
+    game = await db.games.find_one({"id": game_id}, {"_id": 0})
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    now = datetime.now(timezone.utc)
+    today = now.strftime("%Y-%m-%d")
+    week_ago = (now - timedelta(days=7)).strftime("%Y-%m-%d")
+    
+    # Session stats
+    sessions = await db.play_sessions.find({"game_id": game_id}, {"_id": 0}).to_list(1000)
+    
+    total_plays = len(sessions)
+    total_duration = sum(s.get("duration_seconds", 0) for s in sessions)
+    avg_duration = total_duration / total_plays if total_plays > 0 else 0
+    
+    # Unique players
+    unique_players = len(set(s.get("user_id", s.get("id")) for s in sessions))
+    
+    # Today and week stats
+    plays_today = sum(1 for s in sessions if s.get("date") == today)
+    plays_this_week = sum(1 for s in sessions if s.get("date", "") >= week_ago)
+    
+    # Daily breakdown
+    daily_plays = []
+    for i in range(6, -1, -1):
+        day = (now - timedelta(days=i)).strftime("%Y-%m-%d")
+        day_label = (now - timedelta(days=i)).strftime("%a")
+        count = sum(1 for s in sessions if s.get("date") == day)
+        daily_plays.append({"date": day, "day": day_label, "plays": count})
+    
+    # Score distribution (if scores tracked)
+    scores = [s.get("score") for s in sessions if s.get("score") is not None]
+    score_stats = {
+        "avg_score": round(sum(scores) / len(scores), 1) if scores else 0,
+        "high_score": max(scores) if scores else 0,
+        "total_scored_sessions": len(scores)
+    }
+    
+    return {
+        "game_id": game_id,
+        "title": game["title"],
+        "category": game["category"],
+        "total_plays": total_plays or game.get("play_count", 0),
+        "unique_players": unique_players,
+        "avg_duration_seconds": round(avg_duration, 1),
+        "total_play_time_minutes": round(total_duration / 60, 1),
+        "plays_today": plays_today,
+        "plays_this_week": plays_this_week,
+        "daily_plays": daily_plays,
+        "score_stats": score_stats
+    }
+
+# ==================== ADMIN ROUTES ====================
+
+@api_router.post("/admin/games", response_model=GameResponse)
+async def create_game(data: GameCreate, user: dict = Depends(get_admin_user)):
+    game_id = str(uuid.uuid4())
+    game_doc = {
+        "id": game_id,
+        "title": data.title,
+        "description": data.description,
+        "category": data.category,
+        "thumbnail_url": data.thumbnail_url,
+        "video_url": data.video_url,
+        "is_visible": data.is_visible,
+        "play_count": 0,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "has_game_file": False
+    }
+    
+    await db.games.insert_one(game_doc)
+    return GameResponse(**game_doc)
+
+@api_router.put("/admin/games/{game_id}", response_model=GameResponse)
+async def update_game(game_id: str, data: GameUpdate, user: dict = Depends(get_admin_user)):
+    update_data = {k: v for k, v in data.model_dump().items() if v is not None}
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No update data provided")
+    
+    result = await db.games.update_one({"id": game_id}, {"$set": update_data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    game = await db.games.find_one({"id": game_id}, {"_id": 0})
+    return GameResponse(**game)
+
+@api_router.delete("/admin/games/{game_id}")
+async def delete_game(game_id: str, user: dict = Depends(get_admin_user)):
+    game = await db.games.find_one({"id": game_id})
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    # Delete game file from GridFS if exists
+    if game.get("game_file_id"):
+        try:
+            await fs.delete(ObjectId(game["game_file_id"]))
+        except:
+            pass
+    
+    await db.games.delete_one({"id": game_id})
+    return {"message": "Game deleted"}
+
+@api_router.post("/admin/games/{game_id}/upload")
+async def upload_game_file(
+    game_id: str,
+    file: UploadFile = File(...),
+    user: dict = Depends(get_admin_user)
+):
+    game = await db.games.find_one({"id": game_id})
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    # Delete old file if exists
+    if game.get("game_file_id"):
+        try:
+            await fs.delete(ObjectId(game["game_file_id"]))
+        except:
+            pass
+    
+    # Read and store new file
+    content = await file.read()
+    file_id = await fs.upload_from_stream(
+        f"{game_id}_{file.filename}",
+        io.BytesIO(content),
+        metadata={"game_id": game_id, "filename": file.filename}
+    )
+    
+    await db.games.update_one(
+        {"id": game_id},
+        {"$set": {"game_file_id": str(file_id), "has_game_file": True}}
+    )
+    
+    return {"message": "Game file uploaded", "file_id": str(file_id)}
+
+@api_router.post("/admin/games/{game_id}/content")
+async def set_game_content(
+    game_id: str,
+    content: str = Form(...),
+    user: dict = Depends(get_admin_user)
+):
+    """Set embedded HTML content for a game (for sample games)"""
+    game = await db.games.find_one({"id": game_id})
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    await db.games.update_one(
+        {"id": game_id},
+        {"$set": {"game_content": content, "has_game_file": True}}
+    )
+    
+    return {"message": "Game content set"}
+
+@api_router.get("/admin/games", response_model=List[GameResponse])
+async def get_all_games_admin(user: dict = Depends(get_admin_user)):
+    games = await db.games.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return [GameResponse(**g) for g in games]
+
+@api_router.post("/admin/toggle-visibility/{game_id}")
+async def toggle_game_visibility(game_id: str, user: dict = Depends(get_admin_user)):
+    game = await db.games.find_one({"id": game_id})
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    new_visibility = not game.get("is_visible", True)
+    await db.games.update_one({"id": game_id}, {"$set": {"is_visible": new_visibility}})
+    
+    return {"message": f"Game {'shown' if new_visibility else 'hidden'}", "is_visible": new_visibility}
+
+@api_router.post("/admin/games/create-with-files")
+async def create_game_with_files(
+    title: str = Form(...),
+    description: str = Form(...),
+    category: str = Form(...),
+    is_visible: bool = Form(True),
+    game_file: Optional[UploadFile] = File(None),
+    thumbnail_file: Optional[UploadFile] = File(None),
+    explore_image_file: Optional[UploadFile] = File(None),
+    user: dict = Depends(get_admin_user)
+):
+    """Create a game with file uploads for game, thumbnail, and explore image"""
+    game_id = str(uuid.uuid4())
+    
+    # Process thumbnail image with compression
+    thumbnail_url = None
+    if thumbnail_file and thumbnail_file.filename:
+        content = await thumbnail_file.read()
+        thumbnail_url = compress_image(content, max_size=800, quality=75)
+    
+    # Process explore image with compression (can be same as thumbnail or different)
+    explore_image_url = None
+    if explore_image_file and explore_image_file.filename:
+        content = await explore_image_file.read()
+        explore_image_url = compress_image(content, max_size=400, quality=70)
+    else:
+        explore_image_url = thumbnail_url  # Default to thumbnail if not provided
+    
+    game_doc = {
+        "id": game_id,
+        "title": title,
+        "description": description,
+        "category": category,
+        "thumbnail_url": thumbnail_url,
+        "explore_image_url": explore_image_url,
+        "video_url": None,
+        "is_visible": is_visible,
+        "play_count": 0,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "has_game_file": False
+    }
+    
+    # Process game file
+    if game_file and game_file.filename:
+        content = await game_file.read()
+        file_id = await fs.upload_from_stream(
+            f"{game_id}_{game_file.filename}",
+            io.BytesIO(content),
+            metadata={"game_id": game_id, "filename": game_file.filename}
+        )
+        game_doc["game_file_id"] = str(file_id)
+        game_doc["has_game_file"] = True
+    
+    await db.games.insert_one(game_doc)
+    
+    return {
+        "id": game_id,
+        "title": title,
+        "description": description,
+        "category": category,
+        "thumbnail_url": thumbnail_url,
+        "explore_image_url": explore_image_url,
+        "video_url": None,
+        "is_visible": is_visible,
+        "play_count": 0,
+        "created_at": game_doc["created_at"],
+        "has_game_file": game_doc["has_game_file"]
+    }
+
+@api_router.put("/admin/games/{game_id}/update-with-files")
+async def update_game_with_files(
+    game_id: str,
+    title: Optional[str] = Form(None),
+    description: Optional[str] = Form(None),
+    category: Optional[str] = Form(None),
+    is_visible: Optional[bool] = Form(None),
+    game_file: Optional[UploadFile] = File(None),
+    thumbnail_file: Optional[UploadFile] = File(None),
+    explore_image_file: Optional[UploadFile] = File(None),
+    user: dict = Depends(get_admin_user)
+):
+    """Update a game with optional file uploads"""
+    game = await db.games.find_one({"id": game_id})
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    update_data = {}
+    
+    if title is not None:
+        update_data["title"] = title
+    if description is not None:
+        update_data["description"] = description
+    if category is not None:
+        update_data["category"] = category
+    if is_visible is not None:
+        update_data["is_visible"] = is_visible
+    
+    # Process thumbnail image with compression
+    if thumbnail_file and thumbnail_file.filename:
+        content = await thumbnail_file.read()
+        update_data["thumbnail_url"] = compress_image(content, max_size=800, quality=75)
+    
+    # Process explore image with compression
+    if explore_image_file and explore_image_file.filename:
+        content = await explore_image_file.read()
+        update_data["explore_image_url"] = compress_image(content, max_size=400, quality=70)
+    
+    # Process game file
+    if game_file and game_file.filename:
+        # Delete old file if exists
+        if game.get("game_file_id"):
+            try:
+                await fs.delete(ObjectId(game["game_file_id"]))
+            except:
+                pass
+        
+        content = await game_file.read()
+        file_id = await fs.upload_from_stream(
+            f"{game_id}_{game_file.filename}",
+            io.BytesIO(content),
+            metadata={"game_id": game_id, "filename": game_file.filename}
+        )
+        update_data["game_file_id"] = str(file_id)
+        update_data["has_game_file"] = True
+    
+    if update_data:
+        await db.games.update_one({"id": game_id}, {"$set": update_data})
+    
+    updated_game = await db.games.find_one({"id": game_id}, {"_id": 0})
+    return GameResponse(**updated_game)
+
+# ==================== SETTINGS ROUTES ====================
+
+@api_router.get("/settings", response_model=SettingsResponse)
+async def get_settings():
+    settings = await db.settings.find_one({"key": "site_settings"}, {"_id": 0})
+    if not settings:
+        return SettingsResponse()
+    return SettingsResponse(logo_url=settings.get("logo_url"))
+
+@api_router.post("/admin/settings/logo")
+async def upload_logo(file: UploadFile = File(...), user: dict = Depends(get_admin_user)):
+    content = await file.read()
+    # Store as base64 for simplicity
+    logo_data = f"data:{file.content_type};base64,{base64.b64encode(content).decode()}"
+    
+    await db.settings.update_one(
+        {"key": "site_settings"},
+        {"$set": {"logo_url": logo_data}},
+        upsert=True
+    )
+    
+    return {"message": "Logo uploaded", "logo_url": logo_data}
+
+# ==================== SEED DATA ====================
+
+@api_router.post("/admin/seed")
+async def seed_sample_games(user: dict = Depends(get_admin_user)):
+    """Seed sample games for demo"""
+    sample_games = [
+        {
+            "id": str(uuid.uuid4()),
+            "title": "Neon Blocks",
+            "description": "Classic block stacking puzzle with a neon twist. Stack the falling blocks to clear lines!",
+            "category": "Puzzle",
+            "thumbnail_url": "https://images.unsplash.com/photo-1637734373619-af1e76434bec?w=800&q=80",
+            "is_visible": True,
+            "play_count": 0,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "has_game_file": True,
+            "game_content": NEON_BLOCKS_GAME
+        },
+        {
+            "id": str(uuid.uuid4()),
+            "title": "Space Dodge",
+            "description": "Pilot your ship through an asteroid field. How long can you survive?",
+            "category": "Action",
+            "thumbnail_url": "https://images.unsplash.com/photo-1590034295051-004f272713a4?w=800&q=80",
+            "is_visible": True,
+            "play_count": 0,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "has_game_file": True,
+            "game_content": SPACE_DODGE_GAME
+        },
+        {
+            "id": str(uuid.uuid4()),
+            "title": "Color Match",
+            "description": "Match colors as fast as you can! Test your reflexes in this addictive tapper.",
+            "category": "Arcade",
+            "thumbnail_url": "https://images.unsplash.com/photo-1721987203048-24725e93047e?w=800&q=80",
+            "is_visible": True,
+            "play_count": 0,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "has_game_file": True,
+            "game_content": COLOR_MATCH_GAME
+        },
+        {
+            "id": str(uuid.uuid4()),
+            "title": "Cyber Runner",
+            "description": "Run through the neon city, dodge obstacles and collect power-ups!",
+            "category": "Action",
+            "thumbnail_url": "https://images.unsplash.com/photo-1684536689765-c4ebf55da2ae?w=800&q=80",
+            "is_visible": True,
+            "play_count": 0,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "has_game_file": True,
+            "game_content": CYBER_RUNNER_GAME
+        }
+    ]
+    
+    # Clear existing games
+    await db.games.delete_many({})
+    
+    # Insert sample games
+    await db.games.insert_many(sample_games)
+    
+    return {"message": f"Seeded {len(sample_games)} sample games"}
+
+# ==================== SAMPLE GAME HTML ====================
+
+NEON_BLOCKS_GAME = '''<!DOCTYPE html>
+<html><head><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#0a0a0a;display:flex;justify-content:center;align-items:center;min-height:100vh;font-family:system-ui;touch-action:none}
+#game{position:relative}canvas{border:2px solid #CCFF00;border-radius:8px}#score{position:absolute;top:-40px;left:0;color:#CCFF00;font-size:20px;font-weight:bold}
+#controls{position:absolute;bottom:-80px;left:50%;transform:translateX(-50%);display:flex;gap:15px}
+.btn{width:60px;height:60px;background:rgba(204,255,0,0.2);border:2px solid #CCFF00;border-radius:50%;color:#CCFF00;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.btn:active{background:rgba(204,255,0,0.5)}</style></head>
+<body><div id="game"><div id="score">Score: 0</div><canvas id="c" width="240" height="400"></canvas>
+<div id="controls"><button class="btn" ontouchstart="moveLeft()" onclick="moveLeft()">←</button>
+<button class="btn" ontouchstart="rotate()" onclick="rotate()">↻</button>
+<button class="btn" ontouchstart="moveRight()" onclick="moveRight()">→</button>
+<button class="btn" ontouchstart="drop()" onclick="drop()">↓</button></div></div>
+<script>const c=document.getElementById("c").getContext("2d"),W=10,H=20,B=24;let board=Array(H).fill().map(()=>Array(W).fill(0)),score=0,piece,px,py;
+const shapes=[[[[1,1,1,1]],[[1],[1],[1],[1]]],[[[1,1],[1,1]]],[[[0,1,1],[1,1,0]],[[1,0],[1,1],[0,1]]],[[[1,1,0],[0,1,1]],[[0,1],[1,1],[1,0]]],[[[1,0,0],[1,1,1]],[[1,1],[1,0],[1,0]],[[1,1,1],[0,0,1]],[[0,1],[0,1],[1,1]]],[[[0,0,1],[1,1,1]],[[1,0],[1,0],[1,1]],[[1,1,1],[1,0,0]],[[1,1],[0,1],[0,1]]],[[[0,1,0],[1,1,1]],[[1,0],[1,1],[1,0]],[[1,1,1],[0,1,0]],[[0,1],[1,1],[0,1]]]];
+const colors=["#00FFFF","#FFFF00","#00FF00","#FF0000","#0000FF","#FF7F00","#8B00FF"];let rot=0,si=0;
+function newPiece(){si=Math.floor(Math.random()*shapes.length);rot=0;piece=shapes[si][rot];px=Math.floor((W-piece[0].length)/2);py=0;if(collision())gameOver()}
+function collision(){for(let y=0;y<piece.length;y++)for(let x=0;x<piece[y].length;x++)if(piece[y][x]&&(board[py+y]===undefined||board[py+y][px+x]===undefined||board[py+y][px+x]))return true;return false}
+function merge(){for(let y=0;y<piece.length;y++)for(let x=0;x<piece[y].length;x++)if(piece[y][x])board[py+y][px+x]=si+1}
+function clearLines(){let lines=0;for(let y=H-1;y>=0;y--){if(board[y].every(c=>c)){board.splice(y,1);board.unshift(Array(W).fill(0));lines++;y++}}score+=lines*100;document.getElementById("score").textContent="Score: "+score}
+function draw(){c.fillStyle="#0a0a0a";c.fillRect(0,0,W*B,H*B);for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(board[y][x]){c.fillStyle=colors[board[y][x]-1];c.fillRect(x*B+1,y*B+1,B-2,B-2)}
+for(let y=0;y<piece.length;y++)for(let x=0;x<piece[y].length;x++)if(piece[y][x]){c.fillStyle=colors[si];c.fillRect((px+x)*B+1,(py+y)*B+1,B-2,B-2)}}
+function moveLeft(){px--;if(collision())px++}function moveRight(){px++;if(collision())px--}
+function rotate(){const oldRot=rot;rot=(rot+1)%shapes[si].length;piece=shapes[si][rot];if(collision()){rot=oldRot;piece=shapes[si][rot]}}
+function drop(){py++;if(collision()){py--;merge();clearLines();newPiece()}}
+function gameOver(){alert("Game Over! Score: "+score);board=Array(H).fill().map(()=>Array(W).fill(0));score=0;document.getElementById("score").textContent="Score: 0";newPiece()}
+function update(){drop();draw();setTimeout(update,500)}
+document.addEventListener("keydown",e=>{if(e.key==="ArrowLeft")moveLeft();if(e.key==="ArrowRight")moveRight();if(e.key==="ArrowUp")rotate();if(e.key==="ArrowDown")drop();draw()});
+newPiece();draw();setTimeout(update,500);</script></body></html>'''
+
+SPACE_DODGE_GAME = '''<!DOCTYPE html>
+<html><head><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#050510;display:flex;justify-content:center;align-items:center;min-height:100vh;overflow:hidden;touch-action:none}
+canvas{border-radius:8px;max-width:100vw;max-height:100vh}</style></head>
+<body><canvas id="c"></canvas>
+<script>const c=document.getElementById("c"),x=c.getContext("2d");c.width=400;c.height=600;
+let ship={x:200,y:500,w:30,h:40},asteroids=[],score=0,gameOver=false,touch={x:200};
+function spawnAsteroid(){asteroids.push({x:Math.random()*(c.width-40)+20,y:-40,r:Math.random()*20+15,s:Math.random()*3+2})}
+function draw(){x.fillStyle="#050510";x.fillRect(0,0,c.width,c.height);
+for(let i=0;i<50;i++){x.fillStyle="rgba(255,255,255,"+(Math.random()*0.5+0.2)+")";x.fillRect(Math.random()*c.width,Math.random()*c.height,1,1)}
+x.fillStyle="#CCFF00";x.beginPath();x.moveTo(ship.x,ship.y-ship.h/2);x.lineTo(ship.x-ship.w/2,ship.y+ship.h/2);x.lineTo(ship.x+ship.w/2,ship.y+ship.h/2);x.closePath();x.fill();
+x.shadowBlur=20;x.shadowColor="#CCFF00";x.fillStyle="#7000FF";
+asteroids.forEach(a=>{x.beginPath();x.arc(a.x,a.y,a.r,0,Math.PI*2);x.fill()});x.shadowBlur=0;
+x.fillStyle="#fff";x.font="bold 24px system-ui";x.fillText("Score: "+score,20,40);
+if(gameOver){x.fillStyle="rgba(0,0,0,0.8)";x.fillRect(0,0,c.width,c.height);x.fillStyle="#CCFF00";x.font="bold 40px system-ui";x.textAlign="center";x.fillText("GAME OVER",c.width/2,c.height/2-20);x.font="24px system-ui";x.fillText("Score: "+score,c.width/2,c.height/2+20);x.fillText("Tap to restart",c.width/2,c.height/2+60)}}
+function update(){if(gameOver)return;ship.x+=(touch.x-ship.x)*0.1;ship.x=Math.max(ship.w/2,Math.min(c.width-ship.w/2,ship.x));
+asteroids.forEach(a=>{a.y+=a.s;const dx=ship.x-a.x,dy=ship.y-a.y;if(Math.sqrt(dx*dx+dy*dy)<a.r+15)gameOver=true});
+asteroids=asteroids.filter(a=>a.y<c.height+50);if(Math.random()<0.03)spawnAsteroid();score++}
+function loop(){update();draw();requestAnimationFrame(loop)}
+c.addEventListener("touchmove",e=>{e.preventDefault();touch.x=e.touches[0].clientX-c.getBoundingClientRect().left});
+c.addEventListener("mousemove",e=>{touch.x=e.clientX-c.getBoundingClientRect().left});
+c.addEventListener("click",()=>{if(gameOver){asteroids=[];score=0;ship.x=200;gameOver=false}});
+loop();</script></body></html>'''
+
+COLOR_MATCH_GAME = '''<!DOCTYPE html>
+<html><head><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#0a0a0a;display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:100vh;font-family:system-ui}
+#score{color:#CCFF00;font-size:32px;font-weight:bold;margin-bottom:20px}#word{font-size:48px;font-weight:bold;margin-bottom:40px;text-transform:uppercase}
+#buttons{display:grid;grid-template-columns:1fr 1fr;gap:15px;width:300px}
+.btn{padding:25px;font-size:20px;font-weight:bold;border:none;border-radius:12px;cursor:pointer;text-transform:uppercase;transition:transform 0.1s}
+.btn:active{transform:scale(0.95)}#timer{width:300px;height:8px;background:#222;border-radius:4px;margin-top:30px;overflow:hidden}
+#bar{height:100%;background:#CCFF00;transition:width 0.1s linear}#msg{color:#fff;font-size:24px;margin-top:20px;min-height:30px}</style></head>
+<body><div id="score">Score: 0</div><div id="word">RED</div><div id="buttons">
+<button class="btn" style="background:#FF4444" onclick="check('red')">Red</button>
+<button class="btn" style="background:#4444FF" onclick="check('blue')">Blue</button>
+<button class="btn" style="background:#44FF44;color:#000" onclick="check('green')">Green</button>
+<button class="btn" style="background:#FFFF44;color:#000" onclick="check('yellow')">Yellow</button></div>
+<div id="timer"><div id="bar" style="width:100%"></div></div><div id="msg"></div>
+<script>const colors=["red","blue","green","yellow"],names=["RED","BLUE","GREEN","YELLOW"],css=["#FF4444","#4444FF","#44FF44","#FFFF44"];
+let score=0,timeLeft=100,correct,gameOver=false;
+function newRound(){const wordIdx=Math.floor(Math.random()*4),colorIdx=Math.floor(Math.random()*4);
+document.getElementById("word").textContent=names[wordIdx];document.getElementById("word").style.color=css[colorIdx];correct=colors[colorIdx]}
+function check(c){if(gameOver)return;if(c===correct){score+=10;timeLeft=Math.min(100,timeLeft+10);document.getElementById("msg").textContent="✓ Correct!";document.getElementById("msg").style.color="#CCFF00"}
+else{score=Math.max(0,score-5);timeLeft-=20;document.getElementById("msg").textContent="✗ Wrong!";document.getElementById("msg").style.color="#FF4444"}
+document.getElementById("score").textContent="Score: "+score;if(timeLeft<=0){endGame()}else{newRound()}}
+function endGame(){gameOver=true;document.getElementById("word").textContent="GAME OVER";document.getElementById("word").style.color="#fff";
+document.getElementById("msg").textContent="Tap any button to restart"}
+function tick(){if(gameOver)return;timeLeft-=1;document.getElementById("bar").style.width=timeLeft+"%";if(timeLeft<=0)endGame()}
+function restart(){score=0;timeLeft=100;gameOver=false;document.getElementById("score").textContent="Score: 0";newRound()}
+document.querySelectorAll(".btn").forEach(b=>b.addEventListener("click",()=>{if(gameOver)restart()}));
+newRound();setInterval(tick,100);</script></body></html>'''
+
+CYBER_RUNNER_GAME = '''<!DOCTYPE html>
+<html><head><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#050510;display:flex;justify-content:center;align-items:center;min-height:100vh;overflow:hidden;touch-action:none}
+canvas{border-radius:8px}</style></head>
+<body><canvas id="c"></canvas>
+<script>const c=document.getElementById("c"),x=c.getContext("2d");c.width=400;c.height=600;
+let player={x:200,y:450,w:40,h:60,vy:0,grounded:true},obstacles=[],coins=[],score=0,speed=5,gameOver=false,jumping=false;
+const ground=500,gravity=0.8,jumpForce=-15;
+function spawnObstacle(){obstacles.push({x:c.width,y:ground-40,w:30,h:40})}
+function spawnCoin(){coins.push({x:c.width,y:ground-100-Math.random()*100,r:15})}
+function draw(){x.fillStyle="#050510";x.fillRect(0,0,c.width,c.height);
+x.strokeStyle="#7000FF33";for(let i=0;i<20;i++){x.beginPath();x.moveTo(0,i*30+((Date.now()/20)%30));x.lineTo(c.width,i*30+((Date.now()/20)%30));x.stroke()}
+for(let i=0;i<10;i++){x.beginPath();x.moveTo(i*40+((Date.now()/10)%40),0);x.lineTo(i*40+((Date.now()/10)%40),c.height);x.stroke()}
+x.fillStyle="#7000FF";x.fillRect(0,ground,c.width,100);x.fillStyle="#CCFF00";
+x.fillRect(player.x-player.w/2,player.y-player.h,player.w,player.h);x.fillStyle="#050510";
+x.fillRect(player.x-10,player.y-player.h+15,8,8);x.fillRect(player.x+2,player.y-player.h+15,8,8);
+x.fillStyle="#FF4444";obstacles.forEach(o=>{x.fillRect(o.x,o.y,o.w,o.h)});
+x.fillStyle="#CCFF00";x.shadowBlur=15;x.shadowColor="#CCFF00";
+coins.forEach(co=>{x.beginPath();x.arc(co.x,co.y,co.r,0,Math.PI*2);x.fill()});x.shadowBlur=0;
+x.fillStyle="#fff";x.font="bold 24px system-ui";x.fillText("Score: "+score,20,40);
+if(gameOver){x.fillStyle="rgba(0,0,0,0.8)";x.fillRect(0,0,c.width,c.height);x.fillStyle="#CCFF00";x.font="bold 40px system-ui";x.textAlign="center";
+x.fillText("GAME OVER",c.width/2,c.height/2-20);x.font="24px system-ui";x.fillText("Score: "+score,c.width/2,c.height/2+20);x.fillText("Tap to restart",c.width/2,c.height/2+60)}}
+function update(){if(gameOver)return;player.vy+=gravity;player.y+=player.vy;if(player.y>=ground){player.y=ground;player.vy=0;player.grounded=true}
+obstacles.forEach(o=>{o.x-=speed;if(player.x+player.w/2>o.x&&player.x-player.w/2<o.x+o.w&&player.y>o.y&&player.y-player.h<o.y+o.h)gameOver=true});
+coins.forEach((co,i)=>{co.x-=speed;const dx=player.x-co.x,dy=(player.y-player.h/2)-co.y;if(Math.sqrt(dx*dx+dy*dy)<co.r+20){coins.splice(i,1);score+=100}});
+obstacles=obstacles.filter(o=>o.x>-50);coins=coins.filter(co=>co.x>-20);
+if(Math.random()<0.02)spawnObstacle();if(Math.random()<0.03)spawnCoin();score++;speed=5+Math.floor(score/500)*0.5}
+function jump(){if(player.grounded&&!gameOver){player.vy=jumpForce;player.grounded=false}}
+function loop(){update();draw();requestAnimationFrame(loop)}
+c.addEventListener("touchstart",e=>{e.preventDefault();if(gameOver){obstacles=[];coins=[];score=0;speed=5;player.y=ground;gameOver=false}else jump()});
+c.addEventListener("click",()=>{if(gameOver){obstacles=[];coins=[];score=0;speed=5;player.y=ground;gameOver=false}else jump()});
+document.addEventListener("keydown",e=>{if(e.code==="Space")jump()});
+loop();</script></body></html>'''
+
+# Include the router in the main app
+app.include_router(api_router)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_credentials=True,
+    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+@app.on_event("shutdown")
+async def shutdown_db_client():
+    client.close()
+
+
+--- /app/backend/requirements.txt ---
+
+aiofiles==25.1.0
+aiohappyeyeballs==2.6.1
+aiohttp==3.13.3
+aiosignal==1.4.0
+annotated-types==0.7.0
+anyio==4.12.0
+attrs==25.4.0
+bcrypt==4.1.3
+black==25.12.0
+boto3==1.42.21
+botocore==1.42.21
+certifi==2026.1.4
+cffi==2.0.0
+charset-normalizer==3.4.4
+click==8.3.1
+cryptography==46.0.3
+distro==1.9.0
+dnspython==2.8.0
+ecdsa==0.19.1
+email-validator==2.3.0
+emergentintegrations==0.1.0
+fastapi==0.110.1
+fastuuid==0.14.0
+filelock==3.20.2
+flake8==7.3.0
+frozenlist==1.8.0
+fsspec==2025.12.0
+google-ai-generativelanguage==0.6.15
+google-api-core==2.29.0
+google-api-python-client==2.187.0
+google-auth==2.47.0
+google-auth-httplib2==0.3.0
+google-genai==1.57.0
+google-generativeai==0.8.6
+googleapis-common-protos==1.72.0
+grpcio==1.76.0
+grpcio-status==1.71.2
+h11==0.16.0
+hf-xet==1.2.0
+httpcore==1.0.9
+httplib2==0.31.0
+httpx==0.28.1
+huggingface_hub==1.2.4
+idna==3.11
+importlib_metadata==8.7.1
+iniconfig==2.3.0
+isort==7.0.0
+Jinja2==3.1.6
+jiter==0.12.0
+jmespath==1.0.1
+jq==1.10.0
+jsonschema==4.26.0
+jsonschema-specifications==2025.9.1
+librt==0.7.7
+litellm==1.80.0
+markdown-it-py==4.0.0
+MarkupSafe==3.0.3
+mccabe==0.7.0
+mdurl==0.1.2
+motor==3.3.1
+multidict==6.7.0
+mypy==1.19.1
+mypy_extensions==1.1.0
+numpy==2.4.0
+oauthlib==3.3.1
+openai==1.99.9
+packaging==25.0
+pandas==2.3.3
+passlib==1.7.4
+pathspec==0.12.1
+pillow==12.1.0
+platformdirs==4.5.1
+pluggy==1.6.0
+propcache==0.4.1
+proto-plus==1.27.0
+protobuf==5.29.5
+pyasn1==0.6.1
+pyasn1_modules==0.4.2
+pycodestyle==2.14.0
+pycparser==2.23
+pydantic==2.12.5
+pydantic_core==2.41.5
+pyflakes==3.4.0
+Pygments==2.19.2
+PyJWT==2.10.1
+pymongo==4.5.0
+pyparsing==3.3.1
+pytest==9.0.2
+python-dateutil==2.9.0.post0
+python-dotenv==1.2.1
+python-jose==3.5.0
+python-multipart==0.0.21
+pytokens==0.3.0
+pytz==2025.2
+PyYAML==6.0.3
+referencing==0.37.0
+regex==2025.11.3
+requests==2.32.5
+requests-oauthlib==2.0.0
+rich==14.2.0
+rpds-py==0.30.0
+rsa==4.9.1
+s3transfer==0.16.0
+s5cmd==0.2.0
+shellingham==1.5.4
+six==1.17.0
+sniffio==1.3.1
+starlette==0.37.2
+stripe==14.1.0
+tenacity==9.1.2
+tiktoken==0.12.0
+tokenizers==0.22.2
+tqdm==4.67.1
+typer==0.21.0
+typer-slim==0.21.1
+typing-inspection==0.4.2
+typing_extensions==4.15.0
+tzdata==2025.3
+uritemplate==4.2.0
+urllib3==2.6.2
+uvicorn==0.25.0
+watchfiles==1.1.1
+websockets==15.0.1
+yarl==1.22.0
+zipp==3.23.0
+
+
+--- /app/backend/.env (template) ---
+
+MONGO_URL=mongodb://localhost:27017
+DB_NAME=hypd_games
+JWT_SECRET=your-secret-key-here
+
+
+========== FRONTEND CONFIG ==========
+
+
+--- /app/frontend/package.json ---
+
+{
+  "name": "frontend",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@fontsource/chivo": "^5.2.8",
+    "@fontsource/manrope": "^5.2.8",
+    "@hookform/resolvers": "^5.0.1",
+    "@radix-ui/react-accordion": "^1.2.8",
+    "@radix-ui/react-alert-dialog": "^1.1.11",
+    "@radix-ui/react-aspect-ratio": "^1.1.4",
+    "@radix-ui/react-avatar": "^1.1.7",
+    "@radix-ui/react-checkbox": "^1.2.3",
+    "@radix-ui/react-collapsible": "^1.1.8",
+    "@radix-ui/react-context-menu": "^2.2.12",
+    "@radix-ui/react-dialog": "^1.1.11",
+    "@radix-ui/react-dropdown-menu": "^2.1.12",
+    "@radix-ui/react-hover-card": "^1.1.11",
+    "@radix-ui/react-label": "^2.1.4",
+    "@radix-ui/react-menubar": "^1.1.12",
+    "@radix-ui/react-navigation-menu": "^1.2.10",
+    "@radix-ui/react-popover": "^1.1.11",
+    "@radix-ui/react-progress": "^1.1.4",
+    "@radix-ui/react-radio-group": "^1.3.4",
+    "@radix-ui/react-scroll-area": "^1.2.6",
+    "@radix-ui/react-select": "^2.2.2",
+    "@radix-ui/react-separator": "^1.1.4",
+    "@radix-ui/react-slider": "^1.3.2",
+    "@radix-ui/react-slot": "^1.2.0",
+    "@radix-ui/react-switch": "^1.2.2",
+    "@radix-ui/react-tabs": "^1.1.9",
+    "@radix-ui/react-toast": "^1.2.11",
+    "@radix-ui/react-toggle": "^1.1.6",
+    "@radix-ui/react-toggle-group": "^1.1.7",
+    "@radix-ui/react-tooltip": "^1.2.4",
+    "axios": "^1.8.4",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "cmdk": "^1.1.1",
+    "cra-template": "1.2.0",
+    "date-fns": "^4.1.0",
+    "embla-carousel-react": "^8.6.0",
+    "framer-motion": "^12.26.2",
+    "input-otp": "^1.4.2",
+    "lucide-react": "^0.507.0",
+    "next-themes": "^0.4.6",
+    "react": "^19.0.0",
+    "react-day-picker": "8.10.1",
+    "react-dom": "^19.0.0",
+    "react-hook-form": "^7.56.2",
+    "react-resizable-panels": "^3.0.1",
+    "react-router-dom": "^7.5.1",
+    "react-scripts": "5.0.1",
+    "recharts": "^3.6.0",
+    "sonner": "^2.0.3",
+    "tailwind-merge": "^3.2.0",
+    "tailwindcss-animate": "^1.0.7",
+    "vaul": "^1.1.2",
+    "zod": "^3.24.4"
+  },
+  "scripts": {
+    "start": "craco start",
+    "build": "craco build",
+    "test": "craco test"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
+    "@craco/craco": "^7.1.0",
+    "@eslint/js": "9.23.0",
+    "autoprefixer": "^10.4.20",
+    "eslint": "9.23.0",
+    "eslint-plugin-import": "2.31.0",
+    "eslint-plugin-jsx-a11y": "6.10.2",
+    "eslint-plugin-react": "7.37.4",
+    "eslint-plugin-react-hooks": "5.2.0",
+    "globals": "15.15.0",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17"
+  },
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+}
+
+
+--- /app/frontend/tailwind.config.js ---
+
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  darkMode: ["class"],
+  content: [
+    './pages/**/*.{js,jsx}',
+    './components/**/*.{js,jsx}',
+    './app/**/*.{js,jsx}',
+    './src/**/*.{js,jsx}',
+  ],
+  prefix: "",
+  theme: {
+    container: {
+      center: true,
+      padding: "2rem",
+      screens: {
+        "2xl": "1400px",
+      },
+    },
+    extend: {
+      fontFamily: {
+        sans: ['Manrope', 'sans-serif'],
+        heading: ['Chivo', 'sans-serif'],
+        mono: ['JetBrains Mono', 'monospace'],
+      },
+      colors: {
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
+        primary: {
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "hsl(var(--primary-foreground))",
+        },
+        secondary: {
+          DEFAULT: "hsl(var(--secondary))",
+          foreground: "hsl(var(--secondary-foreground))",
+        },
+        destructive: {
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
+        },
+        muted: {
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
+        },
+        accent: {
+          DEFAULT: "hsl(var(--accent))",
+          foreground: "hsl(var(--accent-foreground))",
+        },
+        popover: {
+          DEFAULT: "hsl(var(--popover))",
+          foreground: "hsl(var(--popover-foreground))",
+        },
+        card: {
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
+        },
+        lime: {
+          DEFAULT: "#CCFF00",
+          dark: "#b3e600",
+        },
+        violet: {
+          DEFAULT: "#7000FF",
+        },
+      },
+      borderRadius: {
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
+      },
+      keyframes: {
+        "accordion-down": {
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
+        },
+        "accordion-up": {
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
+        },
+        "pulse-glow": {
+          "0%, 100%": { boxShadow: "0 0 20px rgba(204, 255, 0, 0.3)" },
+          "50%": { boxShadow: "0 0 40px rgba(204, 255, 0, 0.5)" },
+        },
+        "slide-up": {
+          from: { transform: "translateY(100%)", opacity: "0" },
+          to: { transform: "translateY(0)", opacity: "1" },
+        },
+      },
+      animation: {
+        "accordion-down": "accordion-down 0.2s ease-out",
+        "accordion-up": "accordion-up 0.2s ease-out",
+        "pulse-glow": "pulse-glow 2s ease-in-out infinite",
+        "slide-up": "slide-up 0.5s ease-out",
+      },
+    },
+  },
+  plugins: [require("tailwindcss-animate")],
+}
+
+
+--- /app/frontend/.env (template) ---
+
+REACT_APP_BACKEND_URL=http://localhost:8001
+
+
+========== FRONTEND SOURCE ==========
+
+
+--- /app/frontend/src/index.js ---
+
+import React from "react";
+import ReactDOM from "react-dom/client";
+import "@/index.css";
+import App from "@/App";
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+);
+
+
+--- /app/frontend/src/index.css ---
+
+@import url('https://fonts.googleapis.com/css2?family=Chivo:wght@400;700;900&family=Manrope:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Dark theme (default) */
+  :root {
+    --background: 0 0% 2%;
+    --foreground: 0 0% 100%;
+    --card: 0 0% 7%;
+    --card-foreground: 0 0% 100%;
+    --popover: 0 0% 7%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 75 100% 50%;
+    --primary-foreground: 0 0% 0%;
+    --secondary: 270 100% 50%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 240 4% 16%;
+    --muted-foreground: 240 5% 65%;
+    --accent: 75 100% 50%;
+    --accent-foreground: 0 0% 0%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 4% 16%;
+    --input: 240 4% 16%;
+    --ring: 75 100% 50%;
+    --radius: 0.75rem;
+  }
+
+  /* Light theme */
+  .light {
+    --background: 0 0% 98%;
+    --foreground: 0 0% 9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 9%;
+    --primary: 75 100% 40%;
+    --primary-foreground: 0 0% 0%;
+    --secondary: 270 100% 50%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 240 5% 92%;
+    --muted-foreground: 240 4% 46%;
+    --accent: 75 100% 40%;
+    --accent-foreground: 0 0% 0%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 6% 85%;
+    --input: 240 6% 85%;
+    --ring: 75 100% 40%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Hide scrollbars for feed */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Snap scroll container */
+.snap-container {
+  scroll-snap-type: y mandatory;
+  overflow-y: scroll;
+  height: 100dvh;
+}
+
+.snap-item {
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+/* Glass effect - adapts to theme */
+.glass {
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.light .glass {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* Gradient overlay for game cards */
+.game-overlay {
+  background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 40%, transparent 100%);
+}
+
+/* Primary button glow - adapts to theme */
+.btn-glow {
+  box-shadow: 0 0 20px rgba(204, 255, 0, 0.3);
+}
+.btn-glow:hover {
+  box-shadow: 0 0 30px rgba(204, 255, 0, 0.5);
+}
+
+.light .btn-glow {
+  box-shadow: 0 0 20px rgba(128, 204, 0, 0.4);
+}
+.light .btn-glow:hover {
+  box-shadow: 0 0 30px rgba(128, 204, 0, 0.6);
+}
+
+/* Safe area padding for mobile */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 20px);
+}
+
+/* Touch optimization */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Loading shimmer - adapts to theme */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.shimmer {
+  background: linear-gradient(90deg, #121212 25%, #1a1a1a 50%, #121212 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.light .shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+}
+
+/* Game card hover effect */
+.game-card-hover {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.game-card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 40px rgba(204, 255, 0, 0.15);
+}
+
+.light .game-card-hover:hover {
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+}
+
+/* Category tile effect */
+.category-tile {
+  position: relative;
+  overflow: hidden;
+}
+
+.category-tile::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(204, 255, 0, 0.1) 0%,
+    transparent 50%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.category-tile:hover::before {
+  opacity: 1;
+}
+
+/* Neon text effect */
+.neon-text {
+  text-shadow: 
+    0 0 10px rgba(204, 255, 0, 0.5),
+    0 0 20px rgba(204, 255, 0, 0.3),
+    0 0 30px rgba(204, 255, 0, 0.2);
+}
+
+.light .neon-text {
+  text-shadow: none;
+}
+
+/* Pulse animation for play button */
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+.pulse-ring::before {
+  content: "";
+  position: absolute;
+  inset: -10px;
+  border: 2px solid #CCFF00;
+  border-radius: 50%;
+  animation: pulse-ring 1.5s ease-out infinite;
+}
+
+/* Font classes */
+.font-heading {
+  font-family: "Chivo", sans-serif;
+  font-weight: 900;
+}
+
+.font-body {
+  font-family: "Manrope", sans-serif;
+}
+
+/* Light theme specific text colors */
+.light .text-white {
+  color: hsl(var(--foreground));
+}
+
+/* Glow lime adapts to theme */
+.glow-lime {
+  box-shadow: 0 0 20px rgba(204, 255, 0, 0.3);
+}
+
+.glow-lime:hover {
+  box-shadow: 0 0 30px rgba(204, 255, 0, 0.5);
+}
+
+.light .glow-lime {
+  box-shadow: 0 0 15px rgba(128, 204, 0, 0.3);
+}
+
+.light .glow-lime:hover {
+  box-shadow: 0 0 25px rgba(128, 204, 0, 0.5);
+}
+
+/* Debug wrapper fix */
+@layer base {
+  [data-debug-wrapper="true"] {
+    display: contents !important;
+  }
+}
+
+/* Light theme card borders */
+.light .border-white\/5 {
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+.light .border-white\/10 {
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Light theme backgrounds */
+.light .bg-black\/40 {
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+.light .bg-black\/60 {
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+/* Lime color adjustments for light theme */
+.light .text-lime {
+  color: hsl(75, 100%, 35%);
+}
+
+.light .bg-lime {
+  background-color: hsl(75, 100%, 45%);
+}
+
+.light .bg-lime\/20 {
+  background-color: hsla(75, 100%, 45%, 0.2);
+}
+
+.light .border-lime {
+  border-color: hsl(75, 100%, 35%);
+}
+
+.light .border-lime\/30 {
+  border-color: hsla(75, 100%, 35%, 0.3);
+}
+
+/* Ensure readable text in light mode overlays */
+.light .game-overlay {
+  background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 40%, transparent 100%);
+}
+
+/* Game feed specific - keep text white on game cards */
+.game-feed-content {
+  color: white;
+}
+
+.game-feed-content h2,
+.game-feed-content p,
+.game-feed-content span {
+  color: white;
+}
+
+
+--- /app/frontend/src/App.js ---
+
+import { useState, useEffect, createContext, useContext } from "react";
+import "@/App.css";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { Toaster } from "@/components/ui/sonner";
+import { AnimatePresence } from "framer-motion";
+import "@fontsource/chivo/900.css";
+import "@fontsource/manrope/400.css";
+import "@fontsource/manrope/500.css";
+import "@fontsource/manrope/600.css";
+import "@fontsource/manrope/700.css";
+
+// Pages
+import GameFeed from "@/pages/GameFeed";
+import Explore from "@/pages/Explore";
+import Pro from "@/pages/Pro";
+import Profile from "@/pages/Profile";
+import AdminDashboard from "@/pages/AdminDashboard";
+import GamePlayer from "@/pages/GamePlayer";
+import AnalyticsDashboard from "@/pages/AnalyticsDashboard";
+
+// Components
+import BottomNav from "@/components/BottomNav";
+
+// Contexts
+import { ThemeProvider } from "@/contexts/ThemeContext";
+
+// Context
+const AuthContext = createContext(null);
+
+export const useAuth = () => useContext(AuthContext);
+
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+
+function AppContent() {
+  const location = useLocation();
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(localStorage.getItem("token"));
+  const [loading, setLoading] = useState(true);
+  const [settings, setSettings] = useState({ logo_url: null });
+
+  // Hide bottom nav on game player
+  const hideNav = location.pathname.startsWith("/play/");
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+      try {
+        const res = await fetch(`${API}/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const userData = await res.json();
+          setUser(userData);
+        } else {
+          localStorage.removeItem("token");
+          setToken(null);
+        }
+      } catch (e) {
+        console.error("Auth error:", e);
+      }
+      setLoading(false);
+    };
+    fetchUser();
+  }, [token]);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch(`${API}/settings`);
+        if (res.ok) {
+          const data = await res.json();
+          setSettings(data);
+        }
+      } catch (e) {
+        console.error("Settings error:", e);
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  const login = async (email, password) => {
+    const res = await fetch(`${API}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Login failed");
+    localStorage.setItem("token", data.access_token);
+    setToken(data.access_token);
+    setUser(data.user);
+    return data.user;
+  };
+
+  const register = async (username, email, password) => {
+    const res = await fetch(`${API}/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, email, password })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Registration failed");
+    localStorage.setItem("token", data.access_token);
+    setToken(data.access_token);
+    setUser(data.user);
+    return data.user;
+  };
+
+  const logout = () => {
+    localStorage.removeItem("token");
+    setToken(null);
+    setUser(null);
+  };
+
+  const authValue = {
+    user,
+    token,
+    loading,
+    settings,
+    login,
+    register,
+    logout,
+    setSettings,
+    API
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-lime border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <AuthContext.Provider value={authValue}>
+      <div className="min-h-screen bg-background transition-colors duration-300">
+        <AnimatePresence mode="wait">
+          <Routes location={location} key={location.pathname}>
+            <Route path="/" element={<GameFeed />} />
+            <Route path="/explore" element={<Explore />} />
+            <Route path="/pro" element={<Pro />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/analytics" element={<AnalyticsDashboard />} />
+            <Route path="/play/:gameId" element={<GamePlayer />} />
+          </Routes>
+        </AnimatePresence>
+        {!hideNav && <BottomNav />}
+        <Toaster position="top-center" richColors />
+      </div>
+    </AuthContext.Provider>
+  );
+}
+
+function App() {
+  return (
+    <ThemeProvider>
+      <BrowserRouter>
+        <AppContent />
+      </BrowserRouter>
+    </ThemeProvider>
+  );
+}
+
+export default App;
+
+
+--- /app/frontend/src/App.css ---
+
+/* Hypd Games - Main Styles */
+
+/* Custom scrollbar hide */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Snap scroll container */
+.snap-container {
+  scroll-snap-type: y mandatory;
+  overflow-y: scroll;
+  height: 100dvh;
+}
+
+.snap-item {
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+/* Game overlay gradient */
+.game-overlay {
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.95) 0%,
+    rgba(0, 0, 0, 0.6) 30%,
+    rgba(0, 0, 0, 0.2) 60%,
+    transparent 100%
+  );
+}
+
+/* Glassmorphism */
+.glass {
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* Primary glow effect */
+.glow-lime {
+  box-shadow: 0 0 20px rgba(204, 255, 0, 0.3);
+}
+
+.glow-lime:hover {
+  box-shadow: 0 0 30px rgba(204, 255, 0, 0.5);
+}
+
+/* Safe area padding */
+.pb-safe {
+  padding-bottom: max(env(safe-area-inset-bottom), 20px);
+}
+
+/* Touch targets */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Loading shimmer */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    #121212 25%,
+    #1a1a1a 50%,
+    #121212 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Game card hover effect */
+.game-card-hover {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.game-card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 40px rgba(204, 255, 0, 0.15);
+}
+
+/* Category tile effect */
+.category-tile {
+  position: relative;
+  overflow: hidden;
+}
+
+.category-tile::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(204, 255, 0, 0.1) 0%,
+    transparent 50%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.category-tile:hover::before {
+  opacity: 1;
+}
+
+/* Neon text effect */
+.neon-text {
+  text-shadow: 
+    0 0 10px rgba(204, 255, 0, 0.5),
+    0 0 20px rgba(204, 255, 0, 0.3),
+    0 0 30px rgba(204, 255, 0, 0.2);
+}
+
+/* Pulse animation for play button */
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+.pulse-ring::before {
+  content: "";
+  position: absolute;
+  inset: -10px;
+  border: 2px solid #CCFF00;
+  border-radius: 50%;
+  animation: pulse-ring 1.5s ease-out infinite;
+}
+
+/* Font classes */
+.font-heading {
+  font-family: "Chivo", sans-serif;
+  font-weight: 900;
+}
+
+.font-body {
+  font-family: "Manrope", sans-serif;
+}
