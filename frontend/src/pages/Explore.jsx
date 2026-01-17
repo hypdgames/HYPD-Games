@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Search, Gamepad2, Zap, Brain, Rocket, Target, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/App";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const categoryIcons = {
   "Action": Zap,
