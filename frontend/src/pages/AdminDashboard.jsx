@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import {
   Shield, Plus, Trash2, Eye, EyeOff, Upload, Image, 
   Gamepad2, Loader2, ArrowLeft, Save, X, Database, BarChart3,
-  FileUp, ImagePlus
+  FileUp, ImagePlus, CheckCircle2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/App";
 import { toast } from "sonner";
 
