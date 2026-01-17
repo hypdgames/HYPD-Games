@@ -27,6 +27,8 @@ export default function AdminDashboard() {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingGame, setEditingGame] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStatus, setUploadStatus] = useState(""); // "uploading", "processing", "complete"
   
   // Form state
   const [formData, setFormData] = useState({
