@@ -108,6 +108,9 @@ export default function AdminDashboard() {
     }
     
     setUploading(true);
+    setUploadProgress(0);
+    setUploadStatus("uploading");
+    
     try {
       const formDataToSend = new FormData();
       formDataToSend.append("title", formData.title);
@@ -129,29 +132,64 @@ export default function AdminDashboard() {
         ? `${API}/admin/games/${editingGame.id}/update-with-files` 
         : `${API}/admin/games/create-with-files`;
       
-      const res = await fetch(url, {
-        method: editingGame ? "PUT" : "POST",
-        headers: {
-          Authorization: `Bearer ${token}`
-        },
-        body: formDataToSend
+      // Use XMLHttpRequest for progress tracking
+      const xhr = new XMLHttpRequest();
+      
+      xhr.upload.addEventListener("progress", (event) => {
+        if (event.lengthComputable) {
+          const percentComplete = Math.round((event.loaded / event.total) * 100);
+          setUploadProgress(percentComplete);
+          if (percentComplete === 100) {
+            setUploadStatus("processing");
+          }
+        }
       });
       
-      if (res.ok) {
-        toast.success(editingGame ? "Game updated!" : "Game created!");
-        setShowAddDialog(false);
-        setEditingGame(null);
-        resetForm();
-        fetchGames();
-      } else {
-        const error = await res.json();
-        toast.error(error.detail || "Failed to save game");
-      }
+      xhr.addEventListener("load", () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          setUploadStatus("complete");
+          setUploadProgress(100);
+          toast.success(editingGame ? "Game updated!" : "Game created!");
+          setTimeout(() => {
+            setShowAddDialog(false);
+            setEditingGame(null);
+            resetForm();
+            fetchGames();
+            setUploading(false);
+            setUploadProgress(0);
+            setUploadStatus("");
+          }, 500);
+        } else {
+          try {
+            const error = JSON.parse(xhr.responseText);
+            toast.error(error.detail || "Failed to save game");
+          } catch {
+            toast.error("Failed to save game");
+          }
+          setUploading(false);
+          setUploadProgress(0);
+          setUploadStatus("");
+        }
+      });
+      
+      xhr.addEventListener("error", () => {
+        toast.error("Network error occurred");
+        setUploading(false);
+        setUploadProgress(0);
+        setUploadStatus("");
+      });
+      
+      xhr.open(editingGame ? "PUT" : "POST", url);
+      xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+      xhr.send(formDataToSend);
+      
     } catch (e) {
       console.error("Error saving game:", e);
       toast.error("Error saving game");
+      setUploading(false);
+      setUploadProgress(0);
+      setUploadStatus("");
     }
-    setUploading(false);
   };
 
   const handleDelete = async (gameId) => {
