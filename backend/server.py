@@ -747,7 +747,7 @@ async def get_retention_analytics(user: dict = Depends(get_admin_user)):
                 retention_data["day_7"] += 1
             if day_30 in activity_dates:
                 retention_data["day_30"] += 1
-        except:
+        except (ValueError, KeyError, TypeError):
             continue
     
     total_users = len(users) or 1
@@ -771,7 +771,6 @@ async def get_retention_analytics(user: dict = Depends(get_admin_user)):
             if user_id in user_activity:
                 activity_dates = user_activity[user_id]
                 for week_num in range(1, 5):
-                    week_date = (created_date + timedelta(weeks=week_num)).strftime("%Y-%m-%d")
                     # Check if user was active during that week
                     for date_str in activity_dates:
                         try:
@@ -781,9 +780,9 @@ async def get_retention_analytics(user: dict = Depends(get_admin_user)):
                             if week_start_check <= activity_date.replace(tzinfo=timezone.utc) < week_end_check:
                                 cohorts[week_start][f"active_week_{week_num}"] += 1
                                 break
-                        except:
+                        except (ValueError, TypeError):
                             continue
-        except:
+        except (ValueError, KeyError, TypeError):
             continue
     
     # Format cohorts for response
