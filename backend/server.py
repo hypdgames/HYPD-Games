@@ -310,6 +310,174 @@ async def get_categories():
     categories = await db.games.distinct("category")
     return {"categories": categories}
 
+# ==================== ANALYTICS ROUTES ====================
+
+@api_router.post("/analytics/play-session")
+async def record_play_session(data: PlaySessionCreate):
+    """Record a play session for analytics"""
+    session_doc = {
+        "id": str(uuid.uuid4()),
+        "game_id": data.game_id,
+        "duration_seconds": data.duration_seconds,
+        "score": data.score,
+        "played_at": datetime.now(timezone.utc).isoformat(),
+        "date": datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    }
+    await db.play_sessions.insert_one(session_doc)
+    return {"message": "Session recorded"}
+
+@api_router.get("/admin/analytics/overview")
+async def get_analytics_overview(user: dict = Depends(get_admin_user)):
+    """Get overall platform analytics"""
+    now = datetime.now(timezone.utc)
+    today = now.strftime("%Y-%m-%d")
+    week_ago = (now - timedelta(days=7)).strftime("%Y-%m-%d")
+    
+    # Total counts
+    total_games = await db.games.count_documents({})
+    total_users = await db.users.count_documents({})
+    total_plays = await db.play_sessions.count_documents({})
+    
+    # Today's stats
+    plays_today = await db.play_sessions.count_documents({"date": today})
+    
+    # Get unique users who played today
+    active_users_pipeline = [
+        {"$match": {"date": today}},
+        {"$group": {"_id": "$user_id"}},
+        {"$count": "count"}
+    ]
+    active_result = await db.play_sessions.aggregate(active_users_pipeline).to_list(1)
+    active_users_today = active_result[0]["count"] if active_result else 0
+    
+    # Top games by play count
+    top_games_pipeline = [
+        {"$group": {"_id": "$game_id", "plays": {"$sum": 1}, "total_time": {"$sum": "$duration_seconds"}}},
+        {"$sort": {"plays": -1}},
+        {"$limit": 5}
+    ]
+    top_games_raw = await db.play_sessions.aggregate(top_games_pipeline).to_list(5)
+    
+    # Enrich with game titles
+    top_games = []
+    for tg in top_games_raw:
+        game = await db.games.find_one({"id": tg["_id"]}, {"_id": 0, "title": 1, "category": 1, "thumbnail_url": 1})
+        if game:
+            top_games.append({
+                "game_id": tg["_id"],
+                "title": game.get("title", "Unknown"),
+                "category": game.get("category", "Unknown"),
+                "thumbnail_url": game.get("thumbnail_url"),
+                "plays": tg["plays"],
+                "total_time_minutes": round(tg["total_time"] / 60, 1)
+            })
+    
+    # If no play sessions yet, use play_count from games
+    if not top_games:
+        games = await db.games.find({}, {"_id": 0}).sort("play_count", -1).limit(5).to_list(5)
+        top_games = [{
+            "game_id": g["id"],
+            "title": g["title"],
+            "category": g["category"],
+            "thumbnail_url": g.get("thumbnail_url"),
+            "plays": g.get("play_count", 0),
+            "total_time_minutes": 0
+        } for g in games]
+    
+    # Plays by category
+    category_pipeline = [
+        {"$group": {"_id": "$game_id", "plays": {"$sum": 1}}},
+    ]
+    category_raw = await db.play_sessions.aggregate(category_pipeline).to_list(100)
+    
+    plays_by_category = {}
+    for cr in category_raw:
+        game = await db.games.find_one({"id": cr["_id"]}, {"_id": 0, "category": 1})
+        if game:
+            cat = game.get("category", "Other")
+            plays_by_category[cat] = plays_by_category.get(cat, 0) + cr["plays"]
+    
+    # If no sessions, use game play_count
+    if not plays_by_category:
+        games = await db.games.find({}, {"_id": 0, "category": 1, "play_count": 1}).to_list(100)
+        for g in games:
+            cat = g.get("category", "Other")
+            plays_by_category[cat] = plays_by_category.get(cat, 0) + g.get("play_count", 0)
+    
+    # Plays by day (last 7 days)
+    plays_by_day = []
+    for i in range(6, -1, -1):
+        day = (now - timedelta(days=i)).strftime("%Y-%m-%d")
+        day_label = (now - timedelta(days=i)).strftime("%a")
+        count = await db.play_sessions.count_documents({"date": day})
+        plays_by_day.append({"date": day, "day": day_label, "plays": count})
+    
+    return {
+        "total_games": total_games,
+        "total_plays": total_plays or sum(g.get("play_count", 0) for g in await db.games.find({}, {"_id": 0, "play_count": 1}).to_list(100)),
+        "total_users": total_users,
+        "active_users_today": active_users_today,
+        "plays_today": plays_today,
+        "top_games": top_games,
+        "plays_by_category": plays_by_category,
+        "plays_by_day": plays_by_day
+    }
+
+@api_router.get("/admin/analytics/game/{game_id}")
+async def get_game_analytics(game_id: str, user: dict = Depends(get_admin_user)):
+    """Get detailed analytics for a specific game"""
+    game = await db.games.find_one({"id": game_id}, {"_id": 0})
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    now = datetime.now(timezone.utc)
+    today = now.strftime("%Y-%m-%d")
+    week_ago = (now - timedelta(days=7)).strftime("%Y-%m-%d")
+    
+    # Session stats
+    sessions = await db.play_sessions.find({"game_id": game_id}, {"_id": 0}).to_list(1000)
+    
+    total_plays = len(sessions)
+    total_duration = sum(s.get("duration_seconds", 0) for s in sessions)
+    avg_duration = total_duration / total_plays if total_plays > 0 else 0
+    
+    # Unique players
+    unique_players = len(set(s.get("user_id", s.get("id")) for s in sessions))
+    
+    # Today and week stats
+    plays_today = sum(1 for s in sessions if s.get("date") == today)
+    plays_this_week = sum(1 for s in sessions if s.get("date", "") >= week_ago)
+    
+    # Daily breakdown
+    daily_plays = []
+    for i in range(6, -1, -1):
+        day = (now - timedelta(days=i)).strftime("%Y-%m-%d")
+        day_label = (now - timedelta(days=i)).strftime("%a")
+        count = sum(1 for s in sessions if s.get("date") == day)
+        daily_plays.append({"date": day, "day": day_label, "plays": count})
+    
+    # Score distribution (if scores tracked)
+    scores = [s.get("score") for s in sessions if s.get("score") is not None]
+    score_stats = {
+        "avg_score": round(sum(scores) / len(scores), 1) if scores else 0,
+        "high_score": max(scores) if scores else 0,
+        "total_scored_sessions": len(scores)
+    }
+    
+    return {
+        "game_id": game_id,
+        "title": game["title"],
+        "category": game["category"],
+        "total_plays": total_plays or game.get("play_count", 0),
+        "unique_players": unique_players,
+        "avg_duration_seconds": round(avg_duration, 1),
+        "total_play_time_minutes": round(total_duration / 60, 1),
+        "plays_today": plays_today,
+        "plays_this_week": plays_this_week,
+        "daily_plays": daily_plays,
+        "score_stats": score_stats
+    }
+
 # ==================== ADMIN ROUTES ====================
 
 @api_router.post("/admin/games", response_model=GameResponse)
