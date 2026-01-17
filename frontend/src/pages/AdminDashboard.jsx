@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Shield, Plus, Trash2, Eye, EyeOff, Upload, Image, 
-  Gamepad2, Loader2, ArrowLeft, Save, X, Database, BarChart3
+  Gamepad2, Loader2, ArrowLeft, Save, X, Database, BarChart3,
+  FileUp, ImagePlus
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,14 +32,25 @@ export default function AdminDashboard() {
     title: "",
     description: "",
     category: "Action",
-    thumbnail_url: "",
-    video_url: "",
     is_visible: true
   });
+  
+  // File states
+  const [gameFile, setGameFile] = useState(null);
+  const [thumbnailFile, setThumbnailFile] = useState(null);
+  const [exploreImageFile, setExploreImageFile] = useState(null);
+  
+  // Preview states
+  const [thumbnailPreview, setThumbnailPreview] = useState(null);
+  const [explorePreview, setExplorePreview] = useState(null);
+  
+  // Refs for file inputs
+  const gameFileRef = useRef(null);
+  const thumbnailRef = useRef(null);
+  const exploreImageRef = useRef(null);
 
   useEffect(() => {
     if (!user?.is_admin) {
-      // For demo purposes, allow access but show warning
       toast.warning("Admin features require admin privileges");
     }
     fetchGames();
@@ -53,7 +65,6 @@ export default function AdminDashboard() {
         const data = await res.json();
         setGames(data);
       } else if (res.status === 401 || res.status === 403) {
-        // Fallback to public games list for demo
         const publicRes = await fetch(`${API}/games?visible_only=false`);
         if (publicRes.ok) {
           setGames(await publicRes.json());
@@ -65,6 +76,27 @@ export default function AdminDashboard() {
     setLoading(false);
   };
 
+  const handleFileChange = (e, type) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    if (type === 'game') {
+      setGameFile(file);
+    } else if (type === 'thumbnail') {
+      setThumbnailFile(file);
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => setThumbnailPreview(reader.result);
+      reader.readAsDataURL(file);
+    } else if (type === 'explore') {
+      setExploreImageFile(file);
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => setExplorePreview(reader.result);
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!token) {
@@ -74,17 +106,32 @@ export default function AdminDashboard() {
     
     setUploading(true);
     try {
+      const formDataToSend = new FormData();
+      formDataToSend.append("title", formData.title);
+      formDataToSend.append("description", formData.description);
+      formDataToSend.append("category", formData.category);
+      formDataToSend.append("is_visible", formData.is_visible);
+      
+      if (gameFile) {
+        formDataToSend.append("game_file", gameFile);
+      }
+      if (thumbnailFile) {
+        formDataToSend.append("thumbnail_file", thumbnailFile);
+      }
+      if (exploreImageFile) {
+        formDataToSend.append("explore_image_file", exploreImageFile);
+      }
+      
       const url = editingGame 
-        ? `${API}/admin/games/${editingGame.id}` 
-        : `${API}/admin/games`;
+        ? `${API}/admin/games/${editingGame.id}/update-with-files` 
+        : `${API}/admin/games/create-with-files`;
       
       const res = await fetch(url, {
         method: editingGame ? "PUT" : "POST",
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify(formData)
+        body: formDataToSend
       });
       
       if (res.ok) {
@@ -98,6 +145,7 @@ export default function AdminDashboard() {
         toast.error(error.detail || "Failed to save game");
       }
     } catch (e) {
+      console.error("Error saving game:", e);
       toast.error("Error saving game");
     }
     setUploading(false);
@@ -228,10 +276,16 @@ export default function AdminDashboard() {
       title: "",
       description: "",
       category: "Action",
-      thumbnail_url: "",
-      video_url: "",
       is_visible: true
     });
+    setGameFile(null);
+    setThumbnailFile(null);
+    setExploreImageFile(null);
+    setThumbnailPreview(null);
+    setExplorePreview(null);
+    if (gameFileRef.current) gameFileRef.current.value = "";
+    if (thumbnailRef.current) thumbnailRef.current.value = "";
+    if (exploreImageRef.current) exploreImageRef.current.value = "";
   };
 
   const openEditDialog = (game) => {
@@ -240,10 +294,10 @@ export default function AdminDashboard() {
       title: game.title,
       description: game.description,
       category: game.category,
-      thumbnail_url: game.thumbnail_url || "",
-      video_url: game.video_url || "",
       is_visible: game.is_visible
     });
+    setThumbnailPreview(game.thumbnail_url);
+    setExplorePreview(game.explore_image_url || game.thumbnail_url);
     setShowAddDialog(true);
   };
 
@@ -290,7 +344,7 @@ export default function AdminDashboard() {
                 Add Game
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-card border-white/10 text-white max-w-md max-h-[90vh] overflow-y-auto">
+            <DialogContent className="bg-card border-white/10 text-white max-w-lg max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="font-heading text-xl">
                   {editingGame ? "Edit Game" : "Add New Game"}
@@ -298,8 +352,9 @@ export default function AdminDashboard() {
               </DialogHeader>
               
               <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+                {/* Title */}
                 <div className="space-y-2">
-                  <Label>Title</Label>
+                  <Label>Title *</Label>
                   <Input
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
@@ -310,8 +365,9 @@ export default function AdminDashboard() {
                   />
                 </div>
 
+                {/* Description */}
                 <div className="space-y-2">
-                  <Label>Description</Label>
+                  <Label>Description *</Label>
                   <Textarea
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -322,8 +378,9 @@ export default function AdminDashboard() {
                   />
                 </div>
 
+                {/* Category */}
                 <div className="space-y-2">
-                  <Label>Category</Label>
+                  <Label>Category *</Label>
                   <Select
                     value={formData.category}
                     onValueChange={(value) => setFormData({ ...formData, category: value })}
@@ -341,29 +398,148 @@ export default function AdminDashboard() {
                   </Select>
                 </div>
 
+                {/* Game File Upload */}
                 <div className="space-y-2">
-                  <Label>Thumbnail URL</Label>
-                  <Input
-                    value={formData.thumbnail_url}
-                    onChange={(e) => setFormData({ ...formData, thumbnail_url: e.target.value })}
-                    placeholder="https://..."
-                    className="bg-background border-white/10 text-white"
-                    data-testid="game-thumbnail-input"
-                  />
+                  <Label className="flex items-center gap-2">
+                    <FileUp className="w-4 h-4" />
+                    Game File (.html, .zip)
+                  </Label>
+                  <div 
+                    onClick={() => gameFileRef.current?.click()}
+                    className="border-2 border-dashed border-white/20 rounded-xl p-4 text-center cursor-pointer hover:border-lime/50 transition-colors"
+                  >
+                    <input
+                      ref={gameFileRef}
+                      type="file"
+                      accept=".html,.zip"
+                      onChange={(e) => handleFileChange(e, 'game')}
+                      className="hidden"
+                      data-testid="game-file-input"
+                    />
+                    {gameFile ? (
+                      <div className="flex items-center justify-center gap-2 text-lime">
+                        <Gamepad2 className="w-5 h-5" />
+                        <span className="text-sm font-medium">{gameFile.name}</span>
+                        <button 
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setGameFile(null);
+                            if (gameFileRef.current) gameFileRef.current.value = "";
+                          }}
+                          className="ml-2 text-red-400 hover:text-red-300"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="text-muted-foreground">
+                        <Upload className="w-8 h-8 mx-auto mb-2" />
+                        <p className="text-sm">Click to upload game file</p>
+                        <p className="text-xs mt-1">Supports HTML5 games (.html) or ZIP archives</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
+                {/* Thumbnail Image Upload */}
                 <div className="space-y-2">
-                  <Label>Video URL (optional)</Label>
-                  <Input
-                    value={formData.video_url}
-                    onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
-                    placeholder="https://..."
-                    className="bg-background border-white/10 text-white"
-                    data-testid="game-video-input"
-                  />
+                  <Label className="flex items-center gap-2">
+                    <ImagePlus className="w-4 h-4" />
+                    Feed Thumbnail Image
+                  </Label>
+                  <div 
+                    onClick={() => thumbnailRef.current?.click()}
+                    className="border-2 border-dashed border-white/20 rounded-xl p-4 text-center cursor-pointer hover:border-lime/50 transition-colors"
+                  >
+                    <input
+                      ref={thumbnailRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleFileChange(e, 'thumbnail')}
+                      className="hidden"
+                      data-testid="thumbnail-file-input"
+                    />
+                    {thumbnailPreview ? (
+                      <div className="relative">
+                        <img 
+                          src={thumbnailPreview} 
+                          alt="Thumbnail preview" 
+                          className="w-full h-32 object-cover rounded-lg"
+                        />
+                        <button 
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setThumbnailFile(null);
+                            setThumbnailPreview(null);
+                            if (thumbnailRef.current) thumbnailRef.current.value = "";
+                          }}
+                          className="absolute top-2 right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center"
+                        >
+                          <X className="w-4 h-4 text-white" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="text-muted-foreground">
+                        <Image className="w-8 h-8 mx-auto mb-2" />
+                        <p className="text-sm">Click to upload feed thumbnail</p>
+                        <p className="text-xs mt-1">Displayed in the main game feed</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                <div className="flex items-center justify-between">
+                {/* Explore Image Upload */}
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <ImagePlus className="w-4 h-4" />
+                    Explore Tile Image (optional)
+                  </Label>
+                  <div 
+                    onClick={() => exploreImageRef.current?.click()}
+                    className="border-2 border-dashed border-white/20 rounded-xl p-4 text-center cursor-pointer hover:border-lime/50 transition-colors"
+                  >
+                    <input
+                      ref={exploreImageRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleFileChange(e, 'explore')}
+                      className="hidden"
+                      data-testid="explore-image-input"
+                    />
+                    {explorePreview ? (
+                      <div className="relative">
+                        <img 
+                          src={explorePreview} 
+                          alt="Explore preview" 
+                          className="w-full h-32 object-cover rounded-lg"
+                        />
+                        <button 
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setExploreImageFile(null);
+                            setExplorePreview(null);
+                            if (exploreImageRef.current) exploreImageRef.current.value = "";
+                          }}
+                          className="absolute top-2 right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center"
+                        >
+                          <X className="w-4 h-4 text-white" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="text-muted-foreground">
+                        <Image className="w-8 h-8 mx-auto mb-2" />
+                        <p className="text-sm">Click to upload explore tile image</p>
+                        <p className="text-xs mt-1">Uses thumbnail if not provided</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Visibility Toggle */}
+                <div className="flex items-center justify-between py-2">
                   <Label>Visible in Feed</Label>
                   <Switch
                     checked={formData.is_visible}
@@ -372,6 +548,7 @@ export default function AdminDashboard() {
                   />
                 </div>
 
+                {/* Submit Buttons */}
                 <div className="flex gap-3 pt-4">
                   <Button
                     type="button"
@@ -391,8 +568,14 @@ export default function AdminDashboard() {
                     className="flex-1 bg-lime text-black font-bold hover:bg-lime/90"
                     data-testid="save-game-button"
                   >
-                    {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-                    Save
+                    {uploading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4 mr-2" />
+                        {editingGame ? "Update" : "Create"} Game
+                      </>
+                    )}
                   </Button>
                 </div>
               </form>
@@ -499,7 +682,9 @@ export default function AdminDashboard() {
                       <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
                         <span>{game.play_count || 0} plays</span>
                         <span>•</span>
-                        <span>{game.has_game_file ? "Has game file" : "No game file"}</span>
+                        <span className={game.has_game_file ? "text-lime" : "text-orange-400"}>
+                          {game.has_game_file ? "✓ Has game file" : "⚠ No game file"}
+                        </span>
                       </div>
                     </div>
                   </div>
