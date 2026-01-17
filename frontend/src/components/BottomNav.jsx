@@ -11,7 +11,7 @@ const navItems = [
 export default function BottomNav() {
   return (
     <nav 
-      className="fixed bottom-0 left-0 right-0 glass border-t border-white/10 z-50 pb-safe"
+      className="fixed bottom-0 left-0 right-0 glass border-t border-border z-50 pb-safe"
       data-testid="bottom-navigation"
     >
       <div className="flex justify-around items-center h-16 max-w-md mx-auto">
@@ -23,7 +23,7 @@ export default function BottomNav() {
               `flex flex-col items-center justify-center w-16 h-full touch-target transition-all duration-200 ${
                 isActive 
                   ? "text-lime" 
-                  : "text-muted-foreground hover:text-white"
+                  : "text-muted-foreground hover:text-foreground"
               }`
             }
             data-testid={`nav-${label.toLowerCase()}`}
