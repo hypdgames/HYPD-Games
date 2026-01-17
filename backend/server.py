@@ -594,6 +594,137 @@ async def toggle_game_visibility(game_id: str, user: dict = Depends(get_admin_us
     
     return {"message": f"Game {'shown' if new_visibility else 'hidden'}", "is_visible": new_visibility}
 
+@api_router.post("/admin/games/create-with-files")
+async def create_game_with_files(
+    title: str = Form(...),
+    description: str = Form(...),
+    category: str = Form(...),
+    is_visible: bool = Form(True),
+    game_file: Optional[UploadFile] = File(None),
+    thumbnail_file: Optional[UploadFile] = File(None),
+    explore_image_file: Optional[UploadFile] = File(None),
+    user: dict = Depends(get_admin_user)
+):
+    """Create a game with file uploads for game, thumbnail, and explore image"""
+    game_id = str(uuid.uuid4())
+    
+    # Process thumbnail image
+    thumbnail_url = None
+    if thumbnail_file and thumbnail_file.filename:
+        content = await thumbnail_file.read()
+        thumbnail_url = f"data:{thumbnail_file.content_type};base64,{base64.b64encode(content).decode()}"
+    
+    # Process explore image (can be same as thumbnail or different)
+    explore_image_url = None
+    if explore_image_file and explore_image_file.filename:
+        content = await explore_image_file.read()
+        explore_image_url = f"data:{explore_image_file.content_type};base64,{base64.b64encode(content).decode()}"
+    else:
+        explore_image_url = thumbnail_url  # Default to thumbnail if not provided
+    
+    game_doc = {
+        "id": game_id,
+        "title": title,
+        "description": description,
+        "category": category,
+        "thumbnail_url": thumbnail_url,
+        "explore_image_url": explore_image_url,
+        "video_url": None,
+        "is_visible": is_visible,
+        "play_count": 0,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "has_game_file": False
+    }
+    
+    # Process game file
+    if game_file and game_file.filename:
+        content = await game_file.read()
+        file_id = await fs.upload_from_stream(
+            f"{game_id}_{game_file.filename}",
+            io.BytesIO(content),
+            metadata={"game_id": game_id, "filename": game_file.filename}
+        )
+        game_doc["game_file_id"] = str(file_id)
+        game_doc["has_game_file"] = True
+    
+    await db.games.insert_one(game_doc)
+    
+    return {
+        "id": game_id,
+        "title": title,
+        "description": description,
+        "category": category,
+        "thumbnail_url": thumbnail_url,
+        "explore_image_url": explore_image_url,
+        "video_url": None,
+        "is_visible": is_visible,
+        "play_count": 0,
+        "created_at": game_doc["created_at"],
+        "has_game_file": game_doc["has_game_file"]
+    }
+
+@api_router.put("/admin/games/{game_id}/update-with-files")
+async def update_game_with_files(
+    game_id: str,
+    title: Optional[str] = Form(None),
+    description: Optional[str] = Form(None),
+    category: Optional[str] = Form(None),
+    is_visible: Optional[bool] = Form(None),
+    game_file: Optional[UploadFile] = File(None),
+    thumbnail_file: Optional[UploadFile] = File(None),
+    explore_image_file: Optional[UploadFile] = File(None),
+    user: dict = Depends(get_admin_user)
+):
+    """Update a game with optional file uploads"""
+    game = await db.games.find_one({"id": game_id})
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    update_data = {}
+    
+    if title is not None:
+        update_data["title"] = title
+    if description is not None:
+        update_data["description"] = description
+    if category is not None:
+        update_data["category"] = category
+    if is_visible is not None:
+        update_data["is_visible"] = is_visible
+    
+    # Process thumbnail image
+    if thumbnail_file and thumbnail_file.filename:
+        content = await thumbnail_file.read()
+        update_data["thumbnail_url"] = f"data:{thumbnail_file.content_type};base64,{base64.b64encode(content).decode()}"
+    
+    # Process explore image
+    if explore_image_file and explore_image_file.filename:
+        content = await explore_image_file.read()
+        update_data["explore_image_url"] = f"data:{explore_image_file.content_type};base64,{base64.b64encode(content).decode()}"
+    
+    # Process game file
+    if game_file and game_file.filename:
+        # Delete old file if exists
+        if game.get("game_file_id"):
+            try:
+                await fs.delete(ObjectId(game["game_file_id"]))
+            except:
+                pass
+        
+        content = await game_file.read()
+        file_id = await fs.upload_from_stream(
+            f"{game_id}_{game_file.filename}",
+            io.BytesIO(content),
+            metadata={"game_id": game_id, "filename": game_file.filename}
+        )
+        update_data["game_file_id"] = str(file_id)
+        update_data["has_game_file"] = True
+    
+    if update_data:
+        await db.games.update_one({"id": game_id}, {"$set": update_data})
+    
+    updated_game = await db.games.find_one({"id": game_id}, {"_id": 0})
+    return GameResponse(**updated_game)
+
 # ==================== SETTINGS ROUTES ====================
 
 @api_router.get("/settings", response_model=SettingsResponse)
