@@ -14,14 +14,6 @@ const categoryIcons = {
   "Sports": Target
 };
 
-const categoryColors = {
-  "Action": "from-red-500/20 to-orange-500/20",
-  "Puzzle": "from-blue-500/20 to-purple-500/20",
-  "Arcade": "from-lime/20 to-green-500/20",
-  "Racing": "from-cyan-500/20 to-blue-500/20",
-  "Sports": "from-yellow-500/20 to-orange-500/20"
-};
-
 export default function Explore() {
   const { API, settings } = useAuth();
   const navigate = useNavigate();
@@ -78,7 +70,7 @@ export default function Explore() {
   return (
     <div className="min-h-screen bg-background pb-24" data-testid="explore-page">
       {/* Header */}
-      <div className="sticky top-0 z-30 glass p-4 border-b border-white/5">
+      <div className="sticky top-0 z-30 glass p-4 border-b border-border">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
             {settings?.logo_url ? (
@@ -168,7 +160,7 @@ export default function Explore() {
                   className="group cursor-pointer game-card-hover"
                   data-testid={`explore-game-${index}`}
                 >
-                  <div className="aspect-square relative overflow-hidden rounded-2xl bg-card border border-white/5 group-hover:border-lime/50 transition-colors">
+                  <div className="aspect-square relative overflow-hidden rounded-2xl bg-card border border-border group-hover:border-lime/50 transition-colors">
                     {/* Background Image */}
                     <img
                       src={game.thumbnail_url || "https://images.unsplash.com/photo-1637734373619-af1e76434bec?w=400&q=80"}
@@ -177,7 +169,7 @@ export default function Explore() {
                       loading="lazy"
                     />
                     
-                    {/* Overlay */}
+                    {/* Overlay - always dark for readability */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                     
                     {/* Category Badge */}
@@ -187,7 +179,7 @@ export default function Explore() {
                       </span>
                     </div>
                     
-                    {/* Title */}
+                    {/* Title - white on dark overlay */}
                     <div className="absolute bottom-0 left-0 right-0 p-3">
                       <h3 className="font-heading text-sm text-white truncate">
                         {game.title}

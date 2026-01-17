@@ -112,7 +112,7 @@ export default function GameFeed() {
         <div className="w-20 h-20 rounded-full bg-card flex items-center justify-center mb-6">
           <Play className="w-10 h-10 text-lime" />
         </div>
-        <h2 className="text-2xl font-heading text-white mb-2">No Games Yet</h2>
+        <h2 className="text-2xl font-heading text-foreground mb-2">No Games Yet</h2>
         <p className="text-muted-foreground mb-6">
           Games will appear here once added by admin
         </p>
@@ -144,9 +144,9 @@ export default function GameFeed() {
             data-testid="mute-button"
           >
             {muted ? (
-              <VolumeX className="w-5 h-5 text-white" />
+              <VolumeX className="w-5 h-5 text-foreground" />
             ) : (
-              <Volume2 className="w-5 h-5 text-white" />
+              <Volume2 className="w-5 h-5 text-foreground" />
             )}
           </button>
         </div>
@@ -172,7 +172,7 @@ export default function GameFeed() {
           {/* Overlay Gradient */}
           <div className="absolute inset-0 game-overlay" />
 
-          {/* Content */}
+          {/* Content - Text stays white on game cards since they have dark overlay */}
           <div className="absolute inset-0 flex flex-col justify-end p-6 pb-24">
             {/* Game Info */}
             <div className="flex items-end justify-between gap-4">
@@ -195,7 +195,7 @@ export default function GameFeed() {
               <div className="flex flex-col items-center gap-4">
                 <button
                   onClick={(e) => toggleSave(game.id, e)}
-                  className="w-12 h-12 rounded-full glass flex items-center justify-center touch-target transition-transform active:scale-90"
+                  className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center touch-target transition-transform active:scale-90"
                   data-testid={`save-game-${index}`}
                 >
                   <Heart 
@@ -208,7 +208,7 @@ export default function GameFeed() {
                 </button>
                 <button
                   onClick={(e) => shareGame(game, e)}
-                  className="w-12 h-12 rounded-full glass flex items-center justify-center touch-target transition-transform active:scale-90"
+                  className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center touch-target transition-transform active:scale-90"
                   data-testid={`share-game-${index}`}
                 >
                   <Share2 className="w-6 h-6 text-white" />
