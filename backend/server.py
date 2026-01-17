@@ -400,38 +400,127 @@ async def get_game_asset(game_id: str, path: str):
             except KeyError:
                 raise HTTPException(status_code=404, detail=f"Asset not found: {path}")
             
-            # Determine content type
+            # Determine content type with WebGL support
             content_type = "application/octet-stream"
-            if path.endswith('.js'):
+            path_lower = path.lower()
+            
+            # JavaScript/WASM
+            if path_lower.endswith('.js'):
                 content_type = "application/javascript"
-            elif path.endswith('.css'):
+            elif path_lower.endswith('.mjs'):
+                content_type = "application/javascript"
+            elif path_lower.endswith('.wasm'):
+                content_type = "application/wasm"
+            # CSS/HTML
+            elif path_lower.endswith('.css'):
                 content_type = "text/css"
-            elif path.endswith('.html'):
+            elif path_lower.endswith('.html'):
                 content_type = "text/html"
-            elif path.endswith('.json'):
+            # Data formats
+            elif path_lower.endswith('.json'):
                 content_type = "application/json"
-            elif path.endswith('.png'):
+            elif path_lower.endswith('.xml'):
+                content_type = "application/xml"
+            elif path_lower.endswith('.bin'):
+                content_type = "application/octet-stream"
+            elif path_lower.endswith('.data'):
+                content_type = "application/octet-stream"
+            # Images
+            elif path_lower.endswith('.png'):
                 content_type = "image/png"
-            elif path.endswith('.jpg') or path.endswith('.jpeg'):
+            elif path_lower.endswith(('.jpg', '.jpeg')):
                 content_type = "image/jpeg"
-            elif path.endswith('.gif'):
+            elif path_lower.endswith('.gif'):
                 content_type = "image/gif"
-            elif path.endswith('.svg'):
+            elif path_lower.endswith('.svg'):
                 content_type = "image/svg+xml"
-            elif path.endswith('.webp'):
+            elif path_lower.endswith('.webp'):
                 content_type = "image/webp"
-            elif path.endswith('.mp3'):
+            elif path_lower.endswith('.ico'):
+                content_type = "image/x-icon"
+            elif path_lower.endswith('.bmp'):
+                content_type = "image/bmp"
+            elif path_lower.endswith('.tga'):
+                content_type = "image/x-tga"
+            elif path_lower.endswith('.dds'):
+                content_type = "image/vnd-ms.dds"
+            elif path_lower.endswith('.ktx'):
+                content_type = "image/ktx"
+            elif path_lower.endswith('.ktx2'):
+                content_type = "image/ktx2"
+            # Audio
+            elif path_lower.endswith('.mp3'):
                 content_type = "audio/mpeg"
-            elif path.endswith('.wav'):
+            elif path_lower.endswith('.wav'):
                 content_type = "audio/wav"
-            elif path.endswith('.ogg'):
+            elif path_lower.endswith('.ogg'):
                 content_type = "audio/ogg"
-            elif path.endswith('.woff') or path.endswith('.woff2'):
+            elif path_lower.endswith('.m4a'):
+                content_type = "audio/mp4"
+            elif path_lower.endswith('.aac'):
+                content_type = "audio/aac"
+            elif path_lower.endswith('.flac'):
+                content_type = "audio/flac"
+            # Video
+            elif path_lower.endswith('.mp4'):
+                content_type = "video/mp4"
+            elif path_lower.endswith('.webm'):
+                content_type = "video/webm"
+            elif path_lower.endswith('.ogv'):
+                content_type = "video/ogg"
+            # Fonts
+            elif path_lower.endswith('.woff'):
+                content_type = "font/woff"
+            elif path_lower.endswith('.woff2'):
                 content_type = "font/woff2"
+            elif path_lower.endswith('.ttf'):
+                content_type = "font/ttf"
+            elif path_lower.endswith('.otf'):
+                content_type = "font/otf"
+            elif path_lower.endswith('.eot'):
+                content_type = "application/vnd.ms-fontobject"
+            # 3D/WebGL specific
+            elif path_lower.endswith('.glb'):
+                content_type = "model/gltf-binary"
+            elif path_lower.endswith('.gltf'):
+                content_type = "model/gltf+json"
+            elif path_lower.endswith('.obj'):
+                content_type = "text/plain"
+            elif path_lower.endswith('.mtl'):
+                content_type = "text/plain"
+            elif path_lower.endswith('.fbx'):
+                content_type = "application/octet-stream"
+            # Unity WebGL specific
+            elif path_lower.endswith('.unityweb'):
+                content_type = "application/octet-stream"
+            elif path_lower.endswith('.mem'):
+                content_type = "application/octet-stream"
+            elif path_lower.endswith('.symbols.json'):
+                content_type = "application/json"
+            # Compressed files (for Unity WebGL)
+            elif path_lower.endswith('.gz'):
+                content_type = "application/gzip"
+            elif path_lower.endswith('.br'):
+                content_type = "application/x-br"
+            # Text files
+            elif path_lower.endswith('.txt'):
+                content_type = "text/plain"
+            elif path_lower.endswith('.md'):
+                content_type = "text/markdown"
+            elif path_lower.endswith('.csv'):
+                content_type = "text/csv"
+            
+            # Set CORS headers for cross-origin requests
+            headers = {
+                "Access-Control-Allow-Origin": "*",
+                "Cross-Origin-Opener-Policy": "same-origin",
+                "Cross-Origin-Embedder-Policy": "require-corp"
+            }
             
             return StreamingResponse(
                 io.BytesIO(asset_content),
-                media_type=content_type
+                media_type=content_type,
+                headers=headers
             )
     except Exception as e:
         logging.error(f"Error reading game asset: {e}")
