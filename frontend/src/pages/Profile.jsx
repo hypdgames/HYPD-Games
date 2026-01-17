@@ -282,7 +282,7 @@ export default function Profile() {
   return (
     <div className="min-h-screen bg-background pb-24" data-testid="profile-page-logged-in">
       {/* Header */}
-      <div className="glass p-4 border-b border-white/5">
+      <div className="glass p-4 border-b border-border">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             {settings?.logo_url ? (
@@ -290,14 +290,22 @@ export default function Profile() {
             ) : (
               <h1 className="font-heading text-xl text-lime tracking-tight">HYPD</h1>
             )}
-            <span className="text-white/50">Profile</span>
+            <span className="text-muted-foreground">Profile</span>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleLogout}
-            className="text-muted-foreground hover:text-white"
-            data-testid="logout-button"
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleLogout}
+              className="text-muted-foreground hover:text-foreground"
+              data-testid="logout-button"
+            >
+              <LogOut className="w-5 h-5" />
+            </Button>
+          </div>
+        </div>
+      </div>
           >
             <LogOut className="w-5 h-5" />
           </Button>
