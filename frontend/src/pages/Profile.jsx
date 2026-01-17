@@ -26,12 +26,6 @@ export default function Profile() {
     username: "", email: "", password: "", confirmPassword: "" 
   });
 
-  useEffect(() => {
-    if (user && token) {
-      fetchSavedGames();
-    }
-  }, [user, token]);
-
   const fetchSavedGames = async () => {
     try {
       // Get user's saved game IDs and fetch game details
@@ -47,6 +41,13 @@ export default function Profile() {
       console.error("Error fetching saved games:", e);
     }
   };
+
+  useEffect(() => {
+    if (user && token) {
+      fetchSavedGames();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, token]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
