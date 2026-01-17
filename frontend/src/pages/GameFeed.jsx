@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Play, Volume2, VolumeX, Heart, Share2, Loader2 } from "lucide-react";
 import { useAuth } from "@/App";
 import { toast } from "sonner";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export default function GameFeed() {
   const { API, user, token, settings } = useAuth();
