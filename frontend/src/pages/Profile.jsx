@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/App";
 import { toast } from "sonner";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export default function Profile() {
   const { user, login, register, logout, API, token, settings } = useAuth();
