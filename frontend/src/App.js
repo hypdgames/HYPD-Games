@@ -16,6 +16,7 @@ import Pro from "@/pages/Pro";
 import Profile from "@/pages/Profile";
 import AdminDashboard from "@/pages/AdminDashboard";
 import GamePlayer from "@/pages/GamePlayer";
+import AnalyticsDashboard from "@/pages/AnalyticsDashboard";
 
 // Components
 import BottomNav from "@/components/BottomNav";
