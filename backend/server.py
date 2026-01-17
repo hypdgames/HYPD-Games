@@ -290,11 +290,42 @@ async def get_game_file(game_id: str):
         try:
             grid_out = await fs.open_download_stream(ObjectId(game["game_file_id"]))
             content = await grid_out.read()
-            return StreamingResponse(
-                io.BytesIO(content),
-                media_type="text/html",
-                headers={"Content-Disposition": f"inline; filename={game['title']}.html"}
-            )
+            
+            # Check if content is a ZIP file
+            if content[:2] == b'PK':
+                try:
+                    with zipfile.ZipFile(io.BytesIO(content)) as zf:
+                        # Look for index.html or main HTML file
+                        html_files = [f for f in zf.namelist() if f.endswith('.html') and not f.startswith('__MACOSX')]
+                        
+                        if not html_files:
+                            raise HTTPException(status_code=404, detail="No HTML file found in ZIP")
+                        
+                        # Prefer index.html, otherwise use first HTML file
+                        html_file = 'index.html' if 'index.html' in html_files else html_files[0]
+                        
+                        # Also check in subdirectories
+                        for f in html_files:
+                            if f.endswith('index.html'):
+                                html_file = f
+                                break
+                        
+                        html_content = zf.read(html_file)
+                        
+                        return StreamingResponse(
+                            io.BytesIO(html_content),
+                            media_type="text/html",
+                            headers={"Content-Disposition": f"inline; filename={game['title']}.html"}
+                        )
+                except zipfile.BadZipFile:
+                    logging.error(f"Invalid ZIP file for game {game_id}")
+            else:
+                # Regular HTML file
+                return StreamingResponse(
+                    io.BytesIO(content),
+                    media_type="text/html",
+                    headers={"Content-Disposition": f"inline; filename={game['title']}.html"}
+                )
         except Exception as e:
             logging.error(f"Error reading game file: {e}")
     
