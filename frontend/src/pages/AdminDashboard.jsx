@@ -312,7 +312,7 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-background pb-24" data-testid="admin-dashboard">
       {/* Header */}
-      <div className="glass p-4 border-b border-white/5 sticky top-0 z-30">
+      <div className="glass p-4 border-b border-border sticky top-0 z-30">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
@@ -320,11 +320,11 @@ export default function AdminDashboard() {
               className="w-10 h-10 rounded-full bg-card flex items-center justify-center"
               data-testid="admin-back-button"
             >
-              <ArrowLeft className="w-5 h-5 text-white" />
+              <ArrowLeft className="w-5 h-5 text-foreground" />
             </button>
             <div className="flex items-center gap-2">
               <Shield className="w-5 h-5 text-violet" />
-              <span className="font-heading text-lg text-white">Admin</span>
+              <span className="font-heading text-lg text-foreground">Admin</span>
             </div>
           </div>
           
@@ -344,7 +344,7 @@ export default function AdminDashboard() {
                 Add Game
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-card border-white/10 text-white max-w-lg max-h-[90vh] overflow-y-auto">
+            <DialogContent className="bg-card border-border text-foreground max-w-lg max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="font-heading text-xl">
                   {editingGame ? "Edit Game" : "Add New Game"}
