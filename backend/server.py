@@ -329,18 +329,32 @@ async def get_game_file(game_id: str):
                             raise HTTPException(status_code=404, detail="No HTML file found in ZIP")
                         
                         # Prefer index.html, otherwise use first HTML file
-                        html_file = 'index.html' if 'index.html' in html_files else html_files[0]
-                        
-                        # Also check in subdirectories
+                        html_file = None
                         for f in html_files:
                             if f.endswith('index.html'):
                                 html_file = f
                                 break
+                        if not html_file:
+                            html_file = html_files[0]
                         
-                        html_content = zf.read(html_file)
+                        # Get the base path for assets
+                        base_path = '/'.join(html_file.split('/')[:-1])
+                        if base_path:
+                            base_path += '/'
+                        
+                        html_content = zf.read(html_file).decode('utf-8', errors='ignore')
+                        
+                        # Inject base tag and inline critical assets
+                        base_tag = f'<base href="/api/games/{game_id}/assets/{base_path}">'
+                        if '<head>' in html_content:
+                            html_content = html_content.replace('<head>', f'<head>\n{base_tag}', 1)
+                        elif '<HEAD>' in html_content:
+                            html_content = html_content.replace('<HEAD>', f'<HEAD>\n{base_tag}', 1)
+                        else:
+                            html_content = base_tag + html_content
                         
                         return StreamingResponse(
-                            io.BytesIO(html_content),
+                            io.BytesIO(html_content.encode()),
                             media_type="text/html",
                             headers={"Content-Disposition": f"inline; filename={game['title']}.html"}
                         )
@@ -364,6 +378,64 @@ async def get_game_file(game_id: str):
         )
     
     raise HTTPException(status_code=404, detail="Game file not found")
+
+@api_router.get("/games/{game_id}/assets/{path:path}")
+async def get_game_asset(game_id: str, path: str):
+    """Serve assets from ZIP game files"""
+    game = await db.games.find_one({"id": game_id})
+    if not game or not game.get("game_file_id"):
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    try:
+        grid_out = await fs.open_download_stream(ObjectId(game["game_file_id"]))
+        content = await grid_out.read()
+        
+        if content[:2] != b'PK':
+            raise HTTPException(status_code=404, detail="Game is not a ZIP file")
+        
+        with zipfile.ZipFile(io.BytesIO(content)) as zf:
+            # Try to find the file in the ZIP
+            try:
+                asset_content = zf.read(path)
+            except KeyError:
+                raise HTTPException(status_code=404, detail=f"Asset not found: {path}")
+            
+            # Determine content type
+            content_type = "application/octet-stream"
+            if path.endswith('.js'):
+                content_type = "application/javascript"
+            elif path.endswith('.css'):
+                content_type = "text/css"
+            elif path.endswith('.html'):
+                content_type = "text/html"
+            elif path.endswith('.json'):
+                content_type = "application/json"
+            elif path.endswith('.png'):
+                content_type = "image/png"
+            elif path.endswith('.jpg') or path.endswith('.jpeg'):
+                content_type = "image/jpeg"
+            elif path.endswith('.gif'):
+                content_type = "image/gif"
+            elif path.endswith('.svg'):
+                content_type = "image/svg+xml"
+            elif path.endswith('.webp'):
+                content_type = "image/webp"
+            elif path.endswith('.mp3'):
+                content_type = "audio/mpeg"
+            elif path.endswith('.wav'):
+                content_type = "audio/wav"
+            elif path.endswith('.ogg'):
+                content_type = "audio/ogg"
+            elif path.endswith('.woff') or path.endswith('.woff2'):
+                content_type = "font/woff2"
+            
+            return StreamingResponse(
+                io.BytesIO(asset_content),
+                media_type=content_type
+            )
+    except Exception as e:
+        logging.error(f"Error reading game asset: {e}")
+        raise HTTPException(status_code=500, detail="Error reading game asset")
 
 @api_router.get("/categories")
 async def get_categories():
