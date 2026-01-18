@@ -182,7 +182,7 @@ export default function AdminDashboard() {
         toast.success("Game deleted");
         fetchGames();
       }
-    } catch (e) {
+    } catch {
       toast.error("Failed to delete game");
     }
   };

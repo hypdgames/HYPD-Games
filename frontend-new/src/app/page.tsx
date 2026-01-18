@@ -149,7 +149,7 @@ export default function GameFeed() {
         });
         toast.success(isSaved ? "Removed from saved" : "Game saved!");
       }
-    } catch (e) {
+    } catch {
       toast.error("Failed to save game");
     }
   };
