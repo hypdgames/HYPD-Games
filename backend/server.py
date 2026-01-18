@@ -226,16 +226,24 @@ class GameResponse(BaseModel):
     video_preview_url: Optional[str] = None
     gif_preview_url: Optional[str] = None
     preview_type: str = "image"
-    game_file_url: Optional[str] = None  # Supabase Storage URL
+    game_file_url: Optional[str] = None  # Supabase Storage URL or GD embed URL
     has_game_file: bool = False
     is_visible: bool = True
     play_count: int = 0
     created_at: Optional[str] = None
+    # GameDistribution fields
+    gd_game_id: Optional[str] = None
+    source: str = "custom"
+    embed_url: Optional[str] = None
+    instructions: Optional[str] = None
 
 class PlaySessionCreate(BaseModel):
     game_id: str
     duration_seconds: int
     score: Optional[int] = None
+
+# GameDistribution API Configuration
+GD_API_BASE = "https://catalog.api.gamedistribution.com/api/v3.0"
 
 # ==================== AUTH HELPERS ====================
 
