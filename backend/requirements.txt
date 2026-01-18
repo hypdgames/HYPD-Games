@@ -9,6 +9,9 @@ asyncpg==0.31.0
 alembic==1.18.1
 greenlet==3.3.0
 
+# Redis Caching
+redis>=5.0.0
+
 # Supabase
 supabase>=2.0.0
 
