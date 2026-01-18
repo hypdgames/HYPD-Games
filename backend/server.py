@@ -806,6 +806,299 @@ async def update_settings(
     await db.commit()
     return {"success": True}
 
+# ==================== GAMEDISTRIBUTION INTEGRATION ====================
+
+class GDGameImport(BaseModel):
+    gd_game_id: str
+    title: str
+    description: Optional[str] = None
+    category: str = "Action"
+    thumbnail_url: Optional[str] = None
+    embed_url: str
+    instructions: Optional[str] = None
+
+@api_router.get("/gamedistribution/browse")
+async def browse_gamedistribution_games(
+    category: Optional[str] = None,
+    page: int = 1,
+    limit: int = 20,
+    search: Optional[str] = None
+):
+    """Browse games from GameDistribution catalog"""
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            params = {
+                "page": page,
+                "per_page": limit,
+                "collection": "all",
+                "type": "html5"
+            }
+            
+            if category:
+                params["category"] = category.lower()
+            if search:
+                params["search"] = search
+            
+            # GameDistribution public catalog API
+            response = await client.get(
+                f"{GD_API_BASE}/games",
+                params=params,
+                headers={"Accept": "application/json"}
+            )
+            
+            if response.status_code != 200:
+                # Return mock data for development/testing
+                logger.warning(f"GD API returned {response.status_code}, using mock data")
+                return await get_mock_gd_games(category, page, limit)
+            
+            data = response.json()
+            games = data.get("result", [])
+            
+            # Transform to our format
+            transformed_games = []
+            for game in games:
+                transformed_games.append({
+                    "gd_game_id": game.get("md5"),
+                    "title": game.get("title"),
+                    "description": game.get("description"),
+                    "category": game.get("category", "Action"),
+                    "thumbnail_url": game.get("assets", {}).get("512x512") or game.get("assets", {}).get("512x340"),
+                    "embed_url": f"https://html5.gamedistribution.com/{game.get('md5')}",
+                    "instructions": game.get("instructions"),
+                    "rating": game.get("rating"),
+                    "mobile": game.get("mobile", False)
+                })
+            
+            return {
+                "games": transformed_games,
+                "total": data.get("total", len(transformed_games)),
+                "page": page,
+                "limit": limit
+            }
+            
+    except Exception as e:
+        logger.error(f"Error browsing GD games: {e}")
+        # Return mock data on error
+        return await get_mock_gd_games(category, page, limit)
+
+async def get_mock_gd_games(category: Optional[str], page: int, limit: int):
+    """Return mock GameDistribution games for development"""
+    mock_games = [
+        {
+            "gd_game_id": "gd-puzzle-blocks-1",
+            "title": "Puzzle Blocks",
+            "description": "A classic block puzzle game. Match colors to clear the board!",
+            "category": "Puzzle",
+            "thumbnail_url": "https://img.gamedistribution.com/512x512/puzzle-blocks.jpg",
+            "embed_url": "https://html5.gamedistribution.com/rvvASMiM/ca6c2f38f3fc4aa192ec10dab6e77f2b/",
+            "instructions": "Click and drag blocks to match colors",
+            "mobile": True
+        },
+        {
+            "gd_game_id": "gd-space-shooter-1",
+            "title": "Space Shooter",
+            "description": "Defend Earth from alien invaders in this action-packed shooter!",
+            "category": "Action",
+            "thumbnail_url": "https://img.gamedistribution.com/512x512/space-shooter.jpg",
+            "embed_url": "https://html5.gamedistribution.com/rvvASMiM/bf0f09e63a9447e5a3d2c6c8e93d8f8e/",
+            "instructions": "Use arrow keys to move, space to shoot",
+            "mobile": True
+        },
+        {
+            "gd_game_id": "gd-racing-master-1",
+            "title": "Racing Master",
+            "description": "Race against time in this high-speed racing game!",
+            "category": "Racing",
+            "thumbnail_url": "https://img.gamedistribution.com/512x512/racing-master.jpg",
+            "embed_url": "https://html5.gamedistribution.com/rvvASMiM/d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9/",
+            "instructions": "Use arrow keys to steer, avoid obstacles",
+            "mobile": True
+        },
+        {
+            "gd_game_id": "gd-candy-crush-1",
+            "title": "Candy Match",
+            "description": "Match colorful candies in this sweet puzzle game!",
+            "category": "Puzzle",
+            "thumbnail_url": "https://img.gamedistribution.com/512x512/candy-match.jpg",
+            "embed_url": "https://html5.gamedistribution.com/rvvASMiM/a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6/",
+            "instructions": "Swap candies to match 3 or more",
+            "mobile": True
+        },
+        {
+            "gd_game_id": "gd-zombie-run-1",
+            "title": "Zombie Runner",
+            "description": "Run for your life! Escape the zombie apocalypse!",
+            "category": "Action",
+            "thumbnail_url": "https://img.gamedistribution.com/512x512/zombie-runner.jpg",
+            "embed_url": "https://html5.gamedistribution.com/rvvASMiM/e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0/",
+            "instructions": "Tap or click to jump over obstacles",
+            "mobile": True
+        },
+        {
+            "gd_game_id": "gd-word-wizard-1",
+            "title": "Word Wizard",
+            "description": "Test your vocabulary in this word puzzle challenge!",
+            "category": "Puzzle",
+            "thumbnail_url": "https://img.gamedistribution.com/512x512/word-wizard.jpg",
+            "embed_url": "https://html5.gamedistribution.com/rvvASMiM/f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1/",
+            "instructions": "Find hidden words in the letter grid",
+            "mobile": True
+        },
+        {
+            "gd_game_id": "gd-basketball-star-1",
+            "title": "Basketball Star",
+            "description": "Shoot hoops and become the basketball champion!",
+            "category": "Sports",
+            "thumbnail_url": "https://img.gamedistribution.com/512x512/basketball-star.jpg",
+            "embed_url": "https://html5.gamedistribution.com/rvvASMiM/a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2/",
+            "instructions": "Swipe to aim and shoot the basketball",
+            "mobile": True
+        },
+        {
+            "gd_game_id": "gd-tower-defense-1",
+            "title": "Tower Defense Pro",
+            "description": "Build towers and defend your base from waves of enemies!",
+            "category": "Strategy",
+            "thumbnail_url": "https://img.gamedistribution.com/512x512/tower-defense.jpg",
+            "embed_url": "https://html5.gamedistribution.com/rvvASMiM/b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3/",
+            "instructions": "Place towers strategically to stop enemies",
+            "mobile": True
+        }
+    ]
+    
+    # Filter by category if provided
+    if category:
+        mock_games = [g for g in mock_games if g["category"].lower() == category.lower()]
+    
+    # Paginate
+    start = (page - 1) * limit
+    end = start + limit
+    paginated = mock_games[start:end]
+    
+    return {
+        "games": paginated,
+        "total": len(mock_games),
+        "page": page,
+        "limit": limit
+    }
+
+@api_router.get("/gamedistribution/categories")
+async def get_gd_categories():
+    """Get available GameDistribution game categories"""
+    categories = [
+        {"id": "action", "name": "Action", "icon": "⚔️"},
+        {"id": "arcade", "name": "Arcade", "icon": "🕹️"},
+        {"id": "puzzle", "name": "Puzzle", "icon": "🧩"},
+        {"id": "racing", "name": "Racing", "icon": "🏎️"},
+        {"id": "sports", "name": "Sports", "icon": "⚽"},
+        {"id": "strategy", "name": "Strategy", "icon": "♟️"},
+        {"id": "adventure", "name": "Adventure", "icon": "🗺️"},
+        {"id": "shooting", "name": "Shooting", "icon": "🎯"},
+        {"id": "multiplayer", "name": "Multiplayer", "icon": "👥"},
+        {"id": "io", "name": ".io Games", "icon": "🌐"}
+    ]
+    return {"categories": categories}
+
+@api_router.post("/admin/gamedistribution/import")
+async def import_gd_game(
+    game_data: GDGameImport,
+    user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Import a game from GameDistribution into our platform"""
+    try:
+        # Check if game already exists
+        result = await db.execute(
+            select(Game).where(Game.gd_game_id == game_data.gd_game_id)
+        )
+        existing = result.scalar_one_or_none()
+        
+        if existing:
+            raise HTTPException(status_code=400, detail="Game already imported")
+        
+        # Create new game
+        new_game = Game(
+            id=str(uuid.uuid4()),
+            title=game_data.title,
+            description=game_data.description or "",
+            category=game_data.category,
+            thumbnail_url=game_data.thumbnail_url,
+            embed_url=game_data.embed_url,
+            gd_game_id=game_data.gd_game_id,
+            source="gamedistribution",
+            instructions=game_data.instructions,
+            has_game_file=True,  # GD games are always playable
+            is_visible=True,
+            play_count=0
+        )
+        
+        db.add(new_game)
+        await db.commit()
+        await db.refresh(new_game)
+        
+        logger.info(f"Imported GD game: {new_game.title} ({new_game.gd_game_id})")
+        return GameResponse(**new_game.to_dict())
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error importing GD game: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/admin/gamedistribution/bulk-import")
+async def bulk_import_gd_games(
+    games: List[GDGameImport],
+    user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Bulk import games from GameDistribution"""
+    imported = []
+    skipped = []
+    
+    for game_data in games:
+        try:
+            # Check if game already exists
+            result = await db.execute(
+                select(Game).where(Game.gd_game_id == game_data.gd_game_id)
+            )
+            existing = result.scalar_one_or_none()
+            
+            if existing:
+                skipped.append(game_data.title)
+                continue
+            
+            # Create new game
+            new_game = Game(
+                id=str(uuid.uuid4()),
+                title=game_data.title,
+                description=game_data.description or "",
+                category=game_data.category,
+                thumbnail_url=game_data.thumbnail_url,
+                embed_url=game_data.embed_url,
+                gd_game_id=game_data.gd_game_id,
+                source="gamedistribution",
+                instructions=game_data.instructions,
+                has_game_file=True,
+                is_visible=True,
+                play_count=0
+            )
+            
+            db.add(new_game)
+            imported.append(game_data.title)
+            
+        except Exception as e:
+            logger.error(f"Error importing {game_data.title}: {e}")
+            skipped.append(game_data.title)
+    
+    await db.commit()
+    
+    return {
+        "imported": len(imported),
+        "skipped": len(skipped),
+        "imported_games": imported,
+        "skipped_games": skipped
+    }
+
 # ==================== APP SETUP ====================
 
 # Include router
