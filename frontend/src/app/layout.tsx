@@ -20,28 +20,39 @@ const manrope = Manrope({
 
 export const metadata: Metadata = {
   title: "HYPD Games - Play Instant Games",
-  description: "TikTok-style instant gaming platform. Swipe, play, enjoy!",
+  description: "TikTok-style instant gaming platform. Swipe through endless games and play instantly - no downloads required!",
   manifest: "/manifest.json",
+  metadataBase: new URL("https://hypd.games"),
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "HYPD Games",
   },
-  keywords: ["games", "browser games", "instant games", "free games", "play online"],
+  keywords: ["games", "browser games", "instant games", "free games", "play online", "mobile games", "html5 games", "casual games"],
   authors: [{ name: "HYPD Games" }],
   creator: "HYPD Games",
   publisher: "HYPD Games",
   openGraph: {
     type: "website",
     locale: "en_US",
+    url: "https://hypd.games",
     siteName: "HYPD Games",
     title: "HYPD Games - Play Instant Games",
-    description: "TikTok-style instant gaming platform. Swipe, play, enjoy!",
+    description: "TikTok-style instant gaming platform. Swipe through endless games and play instantly!",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "HYPD Games - Play Instant Games",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "HYPD Games - Play Instant Games",
-    description: "TikTok-style instant gaming platform. Swipe, play, enjoy!",
+    description: "TikTok-style instant gaming platform. Swipe through endless games and play instantly!",
+    images: ["/og-image.png"],
   },
   robots: {
     index: true,
@@ -50,6 +61,9 @@ export const metadata: Metadata = {
       index: true,
       follow: true,
     },
+  },
+  verification: {
+    google: "your-google-verification-code", // Add when you have it
   },
 };
 
