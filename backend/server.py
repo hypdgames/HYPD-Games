@@ -533,7 +533,7 @@ async def get_categories(db: AsyncSession = Depends(get_db)):
     """Get all unique game categories"""
     result = await db.execute(
         select(Game.category)
-        .where(Game.is_visible == True)
+        .where(Game.is_visible.is_(True))
         .distinct()
     )
     categories = [row[0] for row in result.all()]
