@@ -8,7 +8,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import StreamingResponse, HTMLResponse, JSONResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
-from sqlalchemy import select, update, delete, func, and_, or_
+from sqlalchemy import select, update, delete, func, and_, or_, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 from supabase import create_client, Client
 import os
@@ -28,7 +28,16 @@ import httpx
 
 # Local imports
 from database import get_db, engine, Base
-from models import User, Game, PlaySession, AppSettings
+from models import (
+    User, Game, PlaySession, AppSettings,
+    Friendship, FriendshipStatus, Challenge, ChallengeParticipant,
+    ChallengeType, ChallengeStatus, LeaderboardEntry, AnalyticsEvent, DailyStats
+)
+from cache import (
+    get_games_feed, set_games_feed, invalidate_games_cache,
+    get_leaderboard, set_leaderboard, invalidate_leaderboard,
+    is_redis_available, get_cache, set_cache, delete_cache
+)
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
