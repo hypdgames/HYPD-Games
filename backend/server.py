@@ -391,7 +391,7 @@ async def get_games(
     if category and category != "all":
         query = query.where(Game.category == category)
     if visible_only:
-        query = query.where(Game.is_visible == True)
+        query = query.where(Game.is_visible.is_(True))
     
     query = query.order_by(Game.created_at.desc())
     result = await db.execute(query)
