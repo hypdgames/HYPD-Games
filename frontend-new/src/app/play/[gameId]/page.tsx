@@ -170,7 +170,7 @@ export default function GamePlayerPage() {
       <button
         onMouseDown={handleDragStart}
         onTouchStart={handleDragStart}
-        onClick={(e) => {
+        onClick={() => {
           // Only navigate if not dragging
           if (!isDragging) {
             handleBack();
