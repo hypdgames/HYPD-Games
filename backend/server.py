@@ -1139,10 +1139,13 @@ async def bulk_import_gd_games(
 # Include router
 app.include_router(api_router)
 
-# CORS middleware
+# CORS middleware - configurable via environment variable
+CORS_ORIGINS = os.environ.get('CORS_ORIGINS', '*')
+cors_origins = CORS_ORIGINS.split(',') if CORS_ORIGINS != '*' else ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
