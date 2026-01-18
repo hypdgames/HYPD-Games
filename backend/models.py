@@ -56,12 +56,18 @@ class Game(Base):
     video_preview_url = Column(Text, nullable=True)
     gif_preview_url = Column(Text, nullable=True)
     preview_type = Column(String(20), default='image')  # 'video', 'gif', 'image'
-    game_file_url = Column(Text, nullable=True)  # Supabase Storage URL
+    game_file_url = Column(Text, nullable=True)  # Supabase Storage URL or GameDistribution embed URL
     game_file_id = Column(String(255), nullable=True)  # For backward compatibility
     has_game_file = Column(Boolean, default=False)
     is_visible = Column(Boolean, default=True, index=True)
     play_count = Column(Integer, default=0)
     created_at = Column(DateTime(timezone=True), default=utc_now)
+    
+    # GameDistribution specific fields
+    gd_game_id = Column(String(255), nullable=True, unique=True, index=True)  # GameDistribution game ID
+    source = Column(String(50), default='custom')  # 'custom', 'gamedistribution'
+    embed_url = Column(Text, nullable=True)  # GameDistribution embed URL
+    instructions = Column(Text, nullable=True)  # How to play instructions
     
     # Relationships
     play_sessions = relationship('PlaySession', back_populates='game', cascade='all, delete-orphan')
@@ -81,7 +87,11 @@ class Game(Base):
             "has_game_file": self.has_game_file,
             "is_visible": self.is_visible,
             "play_count": self.play_count,
-            "created_at": self.created_at.isoformat() if self.created_at else None
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "gd_game_id": self.gd_game_id,
+            "source": self.source or "custom",
+            "embed_url": self.embed_url,
+            "instructions": self.instructions
         }
 
 
