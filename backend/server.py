@@ -305,8 +305,11 @@ async def update_high_score(data: HighScoreUpdate, user: dict = Depends(get_curr
 
 # ==================== GAME ROUTES ====================
 
-@api_router.get("/games", response_model=List[GameResponse])
+@api_router.get("/games")
 async def get_games(category: Optional[str] = None, visible_only: bool = True):
+    """Get all games with caching for better performance"""
+    from fastapi.responses import JSONResponse
+    
     query = {}
     if category and category != "all":
         query["category"] = category
@@ -314,7 +317,12 @@ async def get_games(category: Optional[str] = None, visible_only: bool = True):
         query["is_visible"] = True
     
     games = await db.games.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
-    return [GameResponse(**g) for g in games]
+    game_responses = [GameResponse(**g).model_dump() for g in games]
+    
+    response = JSONResponse(content=game_responses)
+    # Cache for 1 minute - short cache for feed freshness
+    response.headers["Cache-Control"] = "public, max-age=60"
+    return response
 
 @api_router.get("/games/{game_id}", response_model=GameResponse)
 async def get_game(game_id: str):
