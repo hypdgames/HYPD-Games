@@ -292,7 +292,7 @@ async def get_optional_user(
         if user_id:
             result = await db.execute(select(User).where(User.id == user_id))
             return result.scalar_one_or_none()
-    except:
+    except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
         pass
     return None
 
