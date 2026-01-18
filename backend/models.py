@@ -219,7 +219,7 @@ class AnalyticsEvent(Base):
     user_id = Column(String(36), ForeignKey('users.id', ondelete='SET NULL'), nullable=True, index=True)
     game_id = Column(String(36), ForeignKey('games.id', ondelete='SET NULL'), nullable=True, index=True)
     session_id = Column(String(36), nullable=True, index=True)
-    metadata = Column(JSON, default=dict)  # Additional event data
+    event_data = Column(JSON, default=dict)  # Additional event data
     timestamp = Column(DateTime(timezone=True), default=utc_now, index=True)
     
     def to_dict(self):
@@ -229,7 +229,7 @@ class AnalyticsEvent(Base):
             "user_id": self.user_id,
             "game_id": self.game_id,
             "session_id": self.session_id,
-            "metadata": self.metadata,
+            "event_data": self.event_data,
             "timestamp": self.timestamp.isoformat() if self.timestamp else None
         }
 
