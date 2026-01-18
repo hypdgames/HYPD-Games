@@ -1,0 +1,55 @@
+version: '3.8'
+
+# Production docker-compose with SSL/HTTPS support
+# Use with: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+services:
+  # Nginx reverse proxy with SSL
+  nginx-proxy:
+    image: nginxproxy/nginx-proxy
+    container_name: hypd-nginx-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - certs:/etc/nginx/certs:ro
+      - vhost:/etc/nginx/vhost.d
+      - html:/usr/share/nginx/html
+    networks:
+      - hypd-network
+
+  # Let's Encrypt SSL certificate manager
+  acme-companion:
+    image: nginxproxy/acme-companion
+    container_name: hypd-acme
+    restart: unless-stopped
+    depends_on:
+      - nginx-proxy
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - certs:/etc/nginx/certs:rw
+      - vhost:/etc/nginx/vhost.d
+      - html:/usr/share/nginx/html
+      - acme:/etc/acme.sh
+    environment:
+      - DEFAULT_EMAIL=${SSL_EMAIL}
+      - NGINX_PROXY_CONTAINER=hypd-nginx-proxy
+    networks:
+      - hypd-network
+
+  # Override frontend for production
+  frontend:
+    ports: []  # Remove direct port mapping
+    environment:
+      - VIRTUAL_HOST=${DOMAIN}
+      - LETSENCRYPT_HOST=${DOMAIN}
+    expose:
+      - "80"
+
+volumes:
+  certs:
+  vhost:
+  html:
+  acme:
