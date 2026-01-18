@@ -12,7 +12,6 @@ import {
   ArrowLeft,
   Gamepad2,
   BarChart3,
-  Settings,
   Image as ImageIcon,
   Video,
 } from "lucide-react";
@@ -71,8 +70,8 @@ export default function AdminDashboard() {
         const data = await res.json();
         setGames(data);
       }
-    } catch (e) {
-      console.error("Error fetching games:", e);
+    } catch (error) {
+      console.error("Error fetching games:", error);
     }
     setLoading(false);
   };
@@ -166,7 +165,7 @@ export default function AdminDashboard() {
         );
         fetchGames();
       }
-    } catch (e) {
+    } catch {
       toast.error("Failed to update visibility");
     }
   };
