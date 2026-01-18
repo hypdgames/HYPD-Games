@@ -1,69 +1,164 @@
 # Hypd Games - Product Requirements Document
 
 ## Project Overview
-**Name:** Hypd Games  
-**Type:** Mobile-first instant gaming website  
-**Core Concept:** TikTok-style vertical endless scroll feed for HTML5 browser games  
+**Project Name:** Hypd Games  
+**Core Concept:** A mobile-first instant gaming website featuring a TikTok-style endless scroll feed where users swipe through game previews and tap to play instantly.
 
-## Original Problem Statement
-Build a mobile-first instant gaming website featuring a vertical, "TikTok-style" endless scroll feed where users swipe through game previews and tap to play instantly. Features include Game Feed, Game Player (fullscreen with draggable back button), Navigation tabs (Feed, Explore, PRO, Profile), and Admin Dashboard for game management.
+## Technology Stack (Updated Jan 2025)
 
-## User Choices
-- **Authentication:** JWT-based custom auth (email/password)
-- **Storage:** Mock storage with MongoDB GridFS (not AWS S3)
-- **PRO Membership:** Placeholder page for now
-- **Sample Games:** 4+ HTML5 games included for demo
-- **Design:** Dark gaming aesthetic with lime (#CCFF00) accent color
+### ✅ Frontend (MIGRATED)
+- **Framework:** Next.js 14 + TypeScript (migrated from React CRA)
+- **Styling:** Tailwind CSS
+- **Animations:** Framer Motion
+- **Feed Virtualization:** TanStack Virtual + react-use-gesture
+- **State Management:** Zustand
+- **UI Components:** Radix UI + shadcn/ui
 
-## User Personas
-1. **Casual Mobile Gamers** - Looking for instant browser games during commute/breaks
-2. **Game Publishers** - Want to publish and manage HTML5 games
-3. **Platform Admins** - Need to curate and manage game catalog
+### ✅ Backend (Current)
+- **Framework:** FastAPI (Python)
+- **Database:** MongoDB
+- **File Storage:** GridFS (to be migrated to CDN)
+- **Auth:** JWT (PyJWT)
 
-## Core Requirements (Static)
-1. Mobile-first responsive design
-2. TikTok-style vertical snap scrolling
-3. Instant game loading (no downloads)
-4. User authentication with progress saving
-5. Admin game management dashboard
+### ⏳ Planned Migrations
+- **Backend:** Supabase (PostgreSQL + Auth + Edge Functions)
+- **Storage:** Cloudflare R2 + CDN
+- **Video:** Support for video/GIF game previews
 
 ---
 
-## What's Been Implemented (January 17, 2026)
+## Implemented Features
 
-### Backend (FastAPI + MongoDB)
-- ✅ JWT Authentication (register, login, profile)
-- ✅ Game CRUD operations
-- ✅ Game file storage with GridFS (mock)
-- ✅ User saved games & high scores
-- ✅ Admin game management endpoints
-- ✅ Settings endpoint for logo customization
-- ✅ Sample game seeding endpoint
-- ✅ 4 embedded HTML5 games (Neon Blocks, Space Dodge, Color Match, Cyber Runner)
-- ✅ **Analytics System** - Play session tracking, overview stats, per-game analytics
-- ✅ **Retention Analytics** - Day 1/7/30 retention, cohort analysis, DAU trend
-- ✅ **Export Analytics** - CSV and JSON export endpoints
-- ✅ **WebGL Support** - Extended MIME types for WebGL/Unity games
+### Phase 1: Core Platform ✅
+- [x] TikTok-style vertical game feed with snap scrolling
+- [x] TanStack Virtual for performance (only renders visible items)
+- [x] react-use-gesture for swipe mechanics
+- [x] Full-screen game player with draggable back button
+- [x] 4-tab navigation: Feed, Explore, PRO, Profile
+- [x] JWT authentication (login/register)
+- [x] Admin Dashboard with game management
 
-### Frontend (React)
-- ✅ Game Feed - TikTok-style vertical snap scroll
-- ✅ Game Player - Fullscreen iframe with draggable back button + session tracking
-- ✅ Explore Page - Category tiles, search, grid view
-- ✅ PRO Page - Membership placeholder with pricing plans
-- ✅ Profile Page - Login/Register, saved games, high scores
-- ✅ Admin Dashboard - Game management, logo upload, seed games
-- ✅ **Analytics Dashboard** - Tabs for Overview, Retention, Games + Export buttons
-- ✅ **Theme System** - Auto/Light/Dark modes with localStorage persistence
-- ✅ **Upload Progress** - Visual progress indicator for game uploads
-- ✅ Bottom Navigation - Glass effect, 4 tabs
+### Phase 2: UX Enhancements ✅
+- [x] Auto/Light/Dark theme system with persistence
+- [x] PWA manifest for standalone mode
+- [x] Mobile-optimized responsive design
+- [x] Game save functionality
+- [x] Play count tracking
+- [x] Share functionality (Web Share API)
 
-### Design System
-- Dark theme (#050505 background)
-- Light theme support
-- Lime accent (#CCFF00)
-- Chivo (headings) + Manrope (body) fonts
-- Glassmorphism effects
-- Framer Motion animations
+### Phase 3: Admin Features ✅
+- [x] Game upload with progress indicator
+- [x] Game visibility toggle
+- [x] Game deletion
+- [x] Basic analytics (plays, games count)
+- [x] Support for 3 preview types: video, gif, image
+
+---
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     FRONTEND (Next.js 14)                   │
+│  Pages: /, /explore, /pro, /profile, /admin, /play/[id]    │
+│  Components: BottomNav, ThemeToggle, GameCard, etc.         │
+│  State: Zustand (auth-store, theme-store)                   │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   BACKEND (FastAPI)                         │
+│  /api/auth/* - Authentication                               │
+│  /api/games/* - Game CRUD                                   │
+│  /api/admin/* - Admin endpoints                             │
+│  /api/analytics/* - Play tracking                           │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   DATABASE (MongoDB)                        │
+│  Collections: users, games, analytics, fs.files, fs.chunks  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## File Structure (Updated)
+
+```
+/app/
+├── backend/
+│   ├── server.py           # FastAPI app
+│   ├── requirements.txt
+│   └── .env
+├── frontend/               # Next.js 14 + TypeScript
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── layout.tsx
+│   │   │   ├── page.tsx           # TikTok-style feed
+│   │   │   ├── explore/page.tsx
+│   │   │   ├── pro/page.tsx
+│   │   │   ├── profile/page.tsx
+│   │   │   ├── admin/page.tsx
+│   │   │   └── play/[gameId]/page.tsx
+│   │   ├── components/
+│   │   │   ├── bottom-nav.tsx
+│   │   │   ├── theme-toggle.tsx
+│   │   │   ├── providers.tsx
+│   │   │   └── ui/
+│   │   ├── store/
+│   │   │   ├── auth-store.ts
+│   │   │   └── theme-store.ts
+│   │   ├── types/
+│   │   │   └── index.ts
+│   │   └── lib/
+│   │       └── utils.ts
+│   ├── public/
+│   │   └── manifest.json
+│   ├── tailwind.config.ts
+│   └── package.json
+└── games/
+    └── flappy-frenzy/
+```
+
+---
+
+## Upcoming Tasks (Prioritized)
+
+### P0 - Critical
+1. **Backend Migration to Supabase**
+   - Set up Supabase project
+   - Migrate PostgreSQL schema
+   - Migrate authentication
+   - Update frontend API calls
+
+### P1 - High Priority
+2. **CDN Integration (Cloudflare R2)**
+   - Move game files from GridFS to R2
+   - Set up signed URLs for secure downloads
+   - Implement video preview support
+
+3. **GameDistribution Integration**
+   - Research GameDistribution SDK
+   - Implement ad placements
+   - Set up revenue tracking
+
+### P2 - Medium Priority
+4. **Ad System**
+   - Feed interstitial ads (every 5-8 games)
+   - In-game rewarded ads API
+   - Google Ad Manager integration
+
+5. **SEO Improvements**
+   - Dynamic meta tags for game pages
+   - Open Graph images
+   - Sitemap generation
+
+### P3 - Low Priority
+6. **Performance Optimization**
+   - Redis caching for feed
+   - Image/video optimization pipeline
+   - Service worker for game pre-caching
 
 ---
 
@@ -72,138 +167,21 @@ Build a mobile-first instant gaming website featuring a vertical, "TikTok-style"
 
 ---
 
-## P0 Features (Completed ✅)
-- [x] Game Feed with snap scrolling
-- [x] Game Player with fullscreen
-- [x] User authentication
-- [x] Admin game management
-- [x] Bottom navigation
+## Changelog
 
-## P1 Features (Completed ✅ - January 17, 2026)
-- [x] Upload progress indicators for game files
-- [x] WebGL game support (extended MIME types)
+### January 18, 2025
+- **MAJOR:** Migrated frontend from React (CRA) to Next.js 14 + TypeScript
+- **MAJOR:** Implemented TanStack Virtual for virtualized feed
+- **MAJOR:** Added react-use-gesture for swipe mechanics
+- **Added:** PWA manifest for standalone mode
+- **Added:** Zustand for state management
+- **Updated:** All pages to use Next.js App Router
+- **Updated:** Design system preserved (lime accent, glassmorphism, etc.)
+- **Tested:** All core flows working (feed, explore, profile, admin)
 
-## P2 Features (Completed ✅ - January 17, 2026)
-- [x] Theme persistence in localStorage
-- [x] Auto theme option (follows system preference)
-- [x] User retention metrics (Day 1/7/30)
-- [x] Cohort analysis
-- [x] CSV/JSON export for analytics
-
-## Future Features (Backlog)
-- [ ] Video previews for games
-- [ ] Social sharing integration
-- [ ] User leaderboards
-- [ ] Game progress auto-save
-- [ ] Stripe integration for PRO membership
-- [ ] Cloud storage (S3) for game files
-- [ ] Push notifications
-- [ ] Game recommendations based on play history
-- [ ] SEO optimization for game discovery
-- [ ] Next.js migration for SSR (original requirement)
-
----
-
-## Key API Endpoints
-
-### Authentication
-- `POST /api/auth/register` - User registration
-- `POST /api/auth/login` - User login
-- `GET /api/auth/me` - Get current user
-
-### Games
-- `GET /api/games` - List all games
-- `GET /api/games/{id}/play` - Get game content
-- `GET /api/games/{id}/assets/{path}` - Serve game assets
-
-### Analytics (Admin)
-- `GET /api/admin/analytics/overview` - Overview stats
-- `GET /api/admin/analytics/retention` - Retention & cohort data
-- `GET /api/admin/analytics/export/csv` - Export as CSV
-- `GET /api/admin/analytics/export/json` - Export as JSON
-- `GET /api/admin/analytics/game/{id}` - Per-game analytics
-
-### Admin
-- `POST /api/admin/games/create-with-files` - Create game with uploads
-- `PUT /api/admin/games/{id}/update-with-files` - Update game
-- `DELETE /api/admin/games/{id}` - Delete game
-- `POST /api/admin/seed` - Seed sample games
-
----
-
-## Architecture
-```
-/app/
-├── backend/
-│   ├── server.py          # FastAPI application
-│   ├── requirements.txt
-│   └── .env
-├── frontend/
-│   ├── src/
-│   │   ├── App.js
-│   │   ├── pages/
-│   │   │   ├── GameFeed.jsx
-│   │   │   ├── GamePlayer.jsx
-│   │   │   ├── Explore.jsx
-│   │   │   ├── Pro.jsx
-│   │   │   ├── Profile.jsx
-│   │   │   ├── AdminDashboard.jsx
-│   │   │   └── AnalyticsDashboard.jsx
-│   │   ├── contexts/
-│   │   │   └── ThemeContext.jsx
-│   │   └── components/
-│   │       ├── BottomNav.jsx
-│   │       └── ThemeToggle.jsx
-│   └── .env
-├── memory/
-│   └── PRD.md
-└── test_reports/
-    └── iteration_*.json
-```
-
----
-
-## Database Schema (MongoDB)
-
-### users
-```json
-{
-  "id": "uuid",
-  "username": "string",
-  "email": "string",
-  "password": "hashed",
-  "is_admin": "boolean",
-  "created_at": "datetime",
-  "saved_games": ["game_ids"],
-  "high_scores": {"game_id": score}
-}
-```
-
-### games
-```json
-{
-  "id": "uuid",
-  "title": "string",
-  "description": "string",
-  "category": "string",
-  "thumbnail_url": "base64 or url",
-  "game_file_id": "GridFS id",
-  "has_game_file": "boolean",
-  "is_visible": "boolean",
-  "play_count": "number",
-  "created_at": "datetime"
-}
-```
-
-### play_sessions
-```json
-{
-  "id": "uuid",
-  "game_id": "string",
-  "user_id": "string (optional)",
-  "duration_seconds": "number",
-  "score": "number (optional)",
-  "played_at": "datetime",
-  "date": "YYYY-MM-DD"
-}
-```
+### Previous Session
+- Created Flappy Frenzy game with pixel art style
+- Added file upload progress indicators
+- Implemented Auto theme option
+- Added analytics features (retention, cohorts, export)
+- Created Docker deployment package
