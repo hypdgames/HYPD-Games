@@ -1,7 +1,7 @@
 import { MetadataRoute } from "next";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
-const SITE_URL = "https://swipegame-4.preview.emergentagent.com"; // Update this for production
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://hypd-games-production.up.railway.app";
+const SITE_URL = "https://hypd.games";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Static pages
