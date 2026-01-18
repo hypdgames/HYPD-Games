@@ -819,16 +819,12 @@ def init_storage_buckets():
         existing_names = [b.name for b in existing_buckets]
         logger.info(f"Existing storage buckets: {existing_names}")
         
-        buckets_to_create = [
-            (GAMES_BUCKET, {"public": True}),
-            (THUMBNAILS_BUCKET, {"public": True}),
-            (PREVIEWS_BUCKET, {"public": True}),
-        ]
+        buckets_to_create = [GAMES_BUCKET, THUMBNAILS_BUCKET, PREVIEWS_BUCKET]
         
-        for bucket_name, options in buckets_to_create:
+        for bucket_name in buckets_to_create:
             if bucket_name not in existing_names:
                 try:
-                    supabase_client.storage.create_bucket(bucket_name, options)
+                    supabase_client.storage.create_bucket(id=bucket_name, options={"public": True})
                     logger.info(f"Created storage bucket: {bucket_name}")
                 except Exception as e:
                     logger.warning(f"Bucket {bucket_name} creation: {e}")
