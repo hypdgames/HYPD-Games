@@ -8,6 +8,7 @@ import { useDrag } from "@use-gesture/react";
 import { Play, Volume2, VolumeX, Heart, Share2, Loader2 } from "lucide-react";
 import { useAuthStore } from "@/store";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { precacheGame } from "@/components/service-worker";
 import { toast } from "sonner";
 import type { Game, FeedItem } from "@/types";
 
@@ -29,6 +30,7 @@ export default function GameFeed() {
   
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const precachedRef = useRef<Set<string>>(new Set());
 
   // Fetch games
   useEffect(() => {
