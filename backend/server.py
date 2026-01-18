@@ -323,6 +323,22 @@ async def get_game(game_id: str):
         raise HTTPException(status_code=404, detail="Game not found")
     return GameResponse(**game)
 
+@api_router.get("/games/{game_id}/meta")
+async def get_game_meta(game_id: str):
+    """Get game metadata for SEO - lightweight endpoint with caching"""
+    game = await db.games.find_one(
+        {"id": game_id}, 
+        {"_id": 0, "id": 1, "title": 1, "description": 1, "category": 1, "thumbnail_url": 1, "play_count": 1}
+    )
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    from fastapi.responses import JSONResponse
+    response = JSONResponse(content=game)
+    # Cache for 5 minutes
+    response.headers["Cache-Control"] = "public, max-age=300"
+    return response
+
 @api_router.get("/games/{game_id}/play")
 async def get_game_file(game_id: str):
     game = await db.games.find_one({"id": game_id})
