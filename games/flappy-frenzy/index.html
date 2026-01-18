@@ -12,7 +12,7 @@
         }
         
         body {
-            background: linear-gradient(180deg, #4EC5F1 0%, #87CEEB 50%, #B0E0E6 100%);
+            background: #1a1a2e;
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -30,9 +30,8 @@
             max-width: 450px;
             height: 100vh;
             max-height: 800px;
-            background: #4EC5F1;
             overflow: hidden;
-            box-shadow: 0 0 30px rgba(0,0,0,0.3);
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
         }
         
         #gameCanvas {
@@ -61,167 +60,237 @@
         }
         
         #menuScreen {
-            background: linear-gradient(180deg, #4EC5F1 0%, #87CEEB 50%, #7CB342 100%);
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
         }
         
         #characterScreen {
-            background: linear-gradient(180deg, #2C3E50 0%, #34495E 100%);
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
             padding: 20px;
         }
         
         #gameOverScreen {
-            background: rgba(0, 0, 0, 0.85);
+            background: rgba(0, 0, 0, 0.9);
         }
         
         .title {
             font-family: 'Press Start 2P', monospace;
-            font-size: 28px;
-            color: #FFD700;
+            font-size: 24px;
+            color: #e94560;
             text-shadow: 
-                4px 4px 0 #FF6B00,
-                -2px -2px 0 #8B4513,
-                2px -2px 0 #8B4513,
-                -2px 2px 0 #8B4513;
+                4px 4px 0 #533483,
+                -2px -2px 0 #0f3460,
+                2px -2px 0 #0f3460,
+                -2px 2px 0 #0f3460,
+                0 6px 0 #1a1a2e;
             margin-bottom: 10px;
             text-align: center;
             line-height: 1.4;
+            animation: titleGlow 2s infinite alternate;
+        }
+        
+        @keyframes titleGlow {
+            from { filter: drop-shadow(0 0 10px #e94560); }
+            to { filter: drop-shadow(0 0 20px #e94560); }
         }
         
         .subtitle {
             font-family: 'Press Start 2P', monospace;
-            font-size: 12px;
-            color: #FFF;
+            font-size: 10px;
+            color: #eee;
             text-shadow: 2px 2px 0 #333;
             margin-bottom: 40px;
         }
         
         .btn {
             font-family: 'Press Start 2P', monospace;
-            font-size: 14px;
+            font-size: 12px;
             padding: 15px 30px;
             margin: 10px;
             border: none;
-            border-radius: 8px;
+            border-radius: 4px;
             cursor: pointer;
             transition: transform 0.1s, box-shadow 0.1s;
             text-transform: uppercase;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            animation: btnShine 3s infinite;
+        }
+        
+        @keyframes btnShine {
+            0% { left: -100%; }
+            50%, 100% { left: 100%; }
         }
         
         .btn:active {
-            transform: scale(0.95);
+            transform: scale(0.95) translateY(2px);
         }
         
         .btn-play {
-            background: linear-gradient(180deg, #4CAF50 0%, #388E3C 100%);
+            background: linear-gradient(180deg, #e94560 0%, #c73e54 50%, #a33548 100%);
             color: white;
-            box-shadow: 0 6px 0 #2E7D32, 0 8px 15px rgba(0,0,0,0.3);
+            box-shadow: 0 6px 0 #7a2a38, 0 8px 20px rgba(233, 69, 96, 0.4);
+            border: 2px solid #ff6b8a;
         }
         
         .btn-play:hover {
-            background: linear-gradient(180deg, #66BB6A 0%, #43A047 100%);
+            box-shadow: 0 6px 0 #7a2a38, 0 8px 30px rgba(233, 69, 96, 0.6);
         }
         
         .btn-menu {
-            background: linear-gradient(180deg, #FF9800 0%, #F57C00 100%);
+            background: linear-gradient(180deg, #533483 0%, #442a6b 50%, #351f54 100%);
             color: white;
-            box-shadow: 0 6px 0 #E65100, 0 8px 15px rgba(0,0,0,0.3);
+            box-shadow: 0 6px 0 #281840, 0 8px 20px rgba(83, 52, 131, 0.4);
+            border: 2px solid #7a4db5;
         }
         
         .character-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
+            gap: 12px;
             margin: 20px 0;
-            max-width: 350px;
+            max-width: 340px;
         }
         
         .character-card {
-            background: linear-gradient(180deg, #3D5A80 0%, #293241 100%);
-            border: 4px solid #5C7A99;
-            border-radius: 12px;
-            padding: 15px;
+            background: linear-gradient(180deg, #16213e 0%, #0f3460 100%);
+            border: 3px solid #533483;
+            border-radius: 8px;
+            padding: 12px;
             cursor: pointer;
             transition: all 0.2s;
             text-align: center;
+            position: relative;
+        }
+        
+        .character-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: 5px;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.5);
+            pointer-events: none;
         }
         
         .character-card:hover {
             transform: translateY(-5px);
-            border-color: #FFD700;
+            border-color: #e94560;
+            box-shadow: 0 10px 20px rgba(233, 69, 96, 0.3);
         }
         
         .character-card.selected {
-            border-color: #FFD700;
-            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+            border-color: #e94560;
+            box-shadow: 0 0 25px rgba(233, 69, 96, 0.5);
+        }
+        
+        .character-card.selected::before {
+            content: '★';
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            font-size: 20px;
+            color: #e94560;
+            text-shadow: 0 0 10px #e94560;
         }
         
         .character-preview {
-            width: 64px;
-            height: 64px;
-            margin: 0 auto 10px;
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 8px;
             image-rendering: pixelated;
         }
         
         .character-name {
             font-family: 'Press Start 2P', monospace;
-            font-size: 8px;
-            color: #FFF;
+            font-size: 7px;
+            color: #eee;
         }
         
         .score-display {
             font-family: 'Press Start 2P', monospace;
-            font-size: 36px;
-            color: #FFD700;
-            text-shadow: 3px 3px 0 #8B4513;
+            font-size: 48px;
+            color: #e94560;
+            text-shadow: 4px 4px 0 #533483;
             margin: 20px 0;
+            animation: scoreGlow 1s infinite alternate;
+        }
+        
+        @keyframes scoreGlow {
+            from { filter: drop-shadow(0 0 5px #e94560); }
+            to { filter: drop-shadow(0 0 15px #e94560); }
         }
         
         .final-score {
             font-family: 'Press Start 2P', monospace;
-            font-size: 14px;
-            color: #FFF;
+            font-size: 12px;
+            color: #eee;
             margin: 10px 0;
         }
         
         .high-score {
             font-family: 'Press Start 2P', monospace;
-            font-size: 12px;
-            color: #FFD700;
+            font-size: 10px;
+            color: #e94560;
             margin-bottom: 30px;
+        }
+        
+        .new-record {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 14px;
+            color: #00ff88;
+            animation: newRecord 0.5s infinite alternate;
+            margin-bottom: 10px;
+        }
+        
+        @keyframes newRecord {
+            from { transform: scale(1); }
+            to { transform: scale(1.1); }
         }
         
         .tap-hint {
             font-family: 'Press Start 2P', monospace;
-            font-size: 10px;
-            color: rgba(255,255,255,0.8);
+            font-size: 8px;
+            color: rgba(255,255,255,0.6);
             animation: pulse 1.5s infinite;
             margin-top: 30px;
         }
         
         @keyframes pulse {
-            0%, 100% { opacity: 0.5; }
+            0%, 100% { opacity: 0.4; }
             50% { opacity: 1; }
         }
         
         .birds-preview {
             display: flex;
             justify-content: center;
-            gap: 10px;
+            gap: 8px;
             margin: 20px 0;
         }
         
         .bird-bounce {
-            animation: bounce 0.5s infinite alternate;
+            animation: bounce 0.6s infinite alternate ease-in-out;
         }
         
-        .bird-bounce:nth-child(2) { animation-delay: 0.1s; }
-        .bird-bounce:nth-child(3) { animation-delay: 0.2s; }
-        .bird-bounce:nth-child(4) { animation-delay: 0.3s; }
-        .bird-bounce:nth-child(5) { animation-delay: 0.4s; }
+        .bird-bounce:nth-child(2) { animation-delay: 0.12s; }
+        .bird-bounce:nth-child(3) { animation-delay: 0.24s; }
+        .bird-bounce:nth-child(4) { animation-delay: 0.36s; }
+        .bird-bounce:nth-child(5) { animation-delay: 0.48s; }
         
         @keyframes bounce {
-            from { transform: translateY(0); }
-            to { transform: translateY(-10px); }
+            from { transform: translateY(0) rotate(-5deg); }
+            to { transform: translateY(-15px) rotate(5deg); }
         }
         
         #hud {
@@ -240,13 +309,18 @@
         
         #currentScore {
             font-family: 'Press Start 2P', monospace;
-            font-size: 32px;
+            font-size: 36px;
             color: #FFF;
             text-shadow: 
-                3px 3px 0 #000,
-                -1px -1px 0 #000,
-                1px -1px 0 #000,
-                -1px 1px 0 #000;
+                3px 3px 0 #1a1a2e,
+                -1px -1px 0 #1a1a2e,
+                1px -1px 0 #1a1a2e,
+                -1px 1px 0 #1a1a2e,
+                0 0 20px rgba(233, 69, 96, 0.5);
+        }
+        
+        .logo {
+            margin-bottom: 20px;
         }
     </style>
 </head>
@@ -260,124 +334,160 @@
         
         <!-- Menu Screen -->
         <div id="menuScreen" class="screen active">
-            <div class="title">FLAPPY<br>FRENZY</div>
-            <div class="subtitle">Tap to Fly!</div>
+            <canvas id="logoCanvas" class="logo" width="300" height="80"></canvas>
+            <div class="subtitle">★ Tap to Fly ★</div>
             <div class="birds-preview" id="birdsPreview"></div>
-            <button class="btn btn-play" onclick="showCharacterSelect()">PLAY</button>
-            <div class="tap-hint">Tap anywhere to flap</div>
+            <button class="btn btn-play" onclick="showCharacterSelect()">▶ PLAY</button>
+            <div class="tap-hint">Touch screen or press SPACE</div>
         </div>
         
         <!-- Character Select Screen -->
         <div id="characterScreen" class="screen">
-            <div class="title" style="font-size: 18px;">SELECT BIRD</div>
+            <div class="title" style="font-size: 14px;">★ SELECT BIRD ★</div>
             <div class="character-grid" id="characterGrid"></div>
-            <button class="btn btn-play" onclick="startGame()">START</button>
-            <button class="btn btn-menu" onclick="showMenu()">BACK</button>
+            <button class="btn btn-play" onclick="startGame()">▶ START</button>
+            <button class="btn btn-menu" onclick="showMenu()">◀ BACK</button>
         </div>
         
         <!-- Game Over Screen -->
         <div id="gameOverScreen" class="screen">
-            <div class="title" style="font-size: 24px;">GAME OVER</div>
+            <div class="title" style="font-size: 20px;">GAME OVER</div>
+            <div id="newRecordText" class="new-record" style="display: none;">★ NEW RECORD! ★</div>
             <div class="score-display" id="finalScoreDisplay">0</div>
             <div class="final-score">SCORE</div>
             <div class="high-score" id="highScoreDisplay">BEST: 0</div>
-            <button class="btn btn-play" onclick="restartGame()">RETRY</button>
-            <button class="btn btn-menu" onclick="showCharacterSelect()">CHANGE BIRD</button>
+            <button class="btn btn-play" onclick="restartGame()">↻ RETRY</button>
+            <button class="btn btn-menu" onclick="showCharacterSelect()">⇄ CHANGE</button>
         </div>
     </div>
     
     <script>
         // ==================== GAME CONFIGURATION ====================
         const CONFIG = {
-            gravity: 0.45,
-            jumpForce: -8,
-            pipeSpeed: 3,
-            pipeGap: 160,
-            pipeWidth: 70,
-            pipeSpawnRate: 1800,
-            groundHeight: 80,
-            birdSize: 40
+            gravity: 0.42,
+            jumpForce: -7.5,
+            pipeSpeed: 2.8,
+            pipeGap: 155,
+            pipeWidth: 75,
+            pipeSpawnRate: 1900,
+            groundHeight: 90,
+            birdSize: 48
         };
         
-        // ==================== CHARACTER DEFINITIONS ====================
+        // ==================== ENHANCED CHARACTER DEFINITIONS ====================
         const CHARACTERS = [
             {
-                id: 'sunny',
-                name: 'Sunny',
+                id: 'phoenix',
+                name: 'Phoenix',
                 colors: {
-                    body: '#FFD700',
-                    bodyDark: '#FFA500',
-                    belly: '#FFFACD',
-                    beak: '#FF4500',
-                    eye: '#000',
-                    eyeWhite: '#FFF',
-                    wing: '#FFC107',
-                    accessory: null
+                    main: '#e94560',
+                    light: '#ff6b8a',
+                    mid: '#c73e54',
+                    dark: '#8b2a3d',
+                    darkest: '#5c1c29',
+                    belly: '#ffb4c4',
+                    bellyLight: '#ffd4de',
+                    beak: '#ffa500',
+                    beakDark: '#cc8400',
+                    eye: '#1a1a2e',
+                    eyeWhite: '#ffffff',
+                    eyeShine: '#e94560',
+                    wing: '#c73e54',
+                    wingDark: '#8b2a3d',
+                    accessory: 'flame'
                 }
             },
             {
-                id: 'royal',
-                name: 'Royal',
+                id: 'mystic',
+                name: 'Mystic',
                 colors: {
-                    body: '#9C27B0',
-                    bodyDark: '#7B1FA2',
-                    belly: '#E1BEE7',
-                    beak: '#FF9800',
-                    eye: '#000',
-                    eyeWhite: '#FFF',
-                    wing: '#8E24AA',
-                    accessory: 'crown'
+                    main: '#533483',
+                    light: '#7a4db5',
+                    mid: '#442a6b',
+                    dark: '#351f54',
+                    darkest: '#241540',
+                    belly: '#c4a8e0',
+                    bellyLight: '#dcc8f0',
+                    beak: '#ffd700',
+                    beakDark: '#b89a00',
+                    eye: '#1a1a2e',
+                    eyeWhite: '#ffffff',
+                    eyeShine: '#e94560',
+                    wing: '#442a6b',
+                    wingDark: '#351f54',
+                    accessory: 'crystal'
                 }
             },
             {
-                id: 'speedy',
-                name: 'Speedy',
+                id: 'cyber',
+                name: 'Cyber',
                 colors: {
-                    body: '#00BCD4',
-                    bodyDark: '#0097A7',
-                    belly: '#B2EBF2',
-                    beak: '#FF5722',
-                    eye: '#000',
-                    eyeWhite: '#FFF',
-                    wing: '#00ACC1',
-                    accessory: 'goggles'
+                    main: '#00d4ff',
+                    light: '#66e5ff',
+                    mid: '#00a8cc',
+                    dark: '#007a99',
+                    darkest: '#004d66',
+                    belly: '#b4f0ff',
+                    bellyLight: '#d4f8ff',
+                    beak: '#ff6b00',
+                    beakDark: '#cc5500',
+                    eye: '#1a1a2e',
+                    eyeWhite: '#ffffff',
+                    eyeShine: '#00ff88',
+                    wing: '#00a8cc',
+                    wingDark: '#007a99',
+                    accessory: 'visor'
                 }
             },
             {
-                id: 'blossom',
-                name: 'Blossom',
+                id: 'sakura',
+                name: 'Sakura',
                 colors: {
-                    body: '#E91E63',
-                    bodyDark: '#C2185B',
-                    belly: '#F8BBD9',
-                    beak: '#FF9800',
-                    eye: '#000',
-                    eyeWhite: '#FFF',
-                    wing: '#D81B60',
-                    accessory: 'bow'
+                    main: '#ff8fab',
+                    light: '#ffb3c6',
+                    mid: '#e07090',
+                    dark: '#b85070',
+                    darkest: '#8a3855',
+                    belly: '#ffe4ec',
+                    bellyLight: '#fff0f5',
+                    beak: '#ffa07a',
+                    beakDark: '#e08060',
+                    eye: '#1a1a2e',
+                    eyeWhite: '#ffffff',
+                    eyeShine: '#ff69b4',
+                    wing: '#e07090',
+                    wingDark: '#b85070',
+                    accessory: 'flower'
                 }
             },
             {
-                id: 'chill',
-                name: 'Chill',
+                id: 'emerald',
+                name: 'Emerald',
                 colors: {
-                    body: '#4CAF50',
-                    bodyDark: '#388E3C',
-                    belly: '#C8E6C9',
-                    beak: '#FF9800',
-                    eye: '#000',
-                    eyeWhite: '#FFF',
-                    wing: '#43A047',
-                    accessory: 'sunglasses'
+                    main: '#00ff88',
+                    light: '#66ffb4',
+                    mid: '#00cc6a',
+                    dark: '#00994f',
+                    darkest: '#006635',
+                    belly: '#b4ffd8',
+                    bellyLight: '#d4ffe8',
+                    beak: '#ffa500',
+                    beakDark: '#cc8400',
+                    eye: '#1a1a2e',
+                    eyeWhite: '#ffffff',
+                    eyeShine: '#00ff88',
+                    wing: '#00cc6a',
+                    wingDark: '#00994f',
+                    accessory: 'gem'
                 }
             }
         ];
         
         // ==================== GAME STATE ====================
         let canvas, ctx;
-        let gameState = 'menu'; // menu, playing, gameover
+        let gameState = 'menu';
         let selectedCharacter = CHARACTERS[0];
-        let bird = { x: 0, y: 0, velocity: 0, rotation: 0, wingAngle: 0 };
+        let bird = { x: 0, y: 0, velocity: 0, rotation: 0, wingFrame: 0 };
         let pipes = [];
         let score = 0;
         let highScore = localStorage.getItem('flappyFrenzyHighScore') || 0;
@@ -385,7 +495,9 @@
         let groundOffset = 0;
         let clouds = [];
         let particles = [];
-        let buildings = [];
+        let stars = [];
+        let isNewRecord = false;
+        let frameCount = 0;
         
         // ==================== INITIALIZATION ====================
         function init() {
@@ -395,21 +507,17 @@
             resizeCanvas();
             window.addEventListener('resize', resizeCanvas);
             
-            // Input handlers
             canvas.addEventListener('click', handleInput);
             canvas.addEventListener('touchstart', handleInput, { passive: false });
             document.addEventListener('keydown', (e) => {
                 if (e.code === 'Space') handleInput(e);
             });
             
-            // Generate character previews
             generateCharacterPreviews();
             generateBirdsPreview();
-            
-            // Initialize background elements
             initBackground();
+            drawLogo();
             
-            // Start render loop
             requestAnimationFrame(gameLoop);
         }
         
@@ -420,31 +528,54 @@
         }
         
         function initBackground() {
-            // Generate clouds
-            clouds = [];
-            for (let i = 0; i < 6; i++) {
-                clouds.push({
-                    x: Math.random() * canvas.width,
-                    y: 50 + Math.random() * 150,
-                    size: 30 + Math.random() * 50,
-                    speed: 0.3 + Math.random() * 0.3
+            // Generate stars
+            stars = [];
+            for (let i = 0; i < 50; i++) {
+                stars.push({
+                    x: Math.random() * 450,
+                    y: Math.random() * 400,
+                    size: 1 + Math.random() * 2,
+                    twinkle: Math.random() * Math.PI * 2
                 });
             }
             
-            // Generate buildings
-            buildings = [];
-            let x = 0;
-            while (x < canvas.width + 100) {
-                buildings.push({
-                    x: x,
-                    width: 40 + Math.random() * 60,
-                    height: 80 + Math.random() * 120
+            // Generate clouds
+            clouds = [];
+            for (let i = 0; i < 4; i++) {
+                clouds.push({
+                    x: Math.random() * 450,
+                    y: 80 + Math.random() * 120,
+                    size: 40 + Math.random() * 40,
+                    speed: 0.2 + Math.random() * 0.2
                 });
-                x += buildings[buildings.length - 1].width + 10;
             }
         }
         
-        // ==================== CHARACTER PREVIEW GENERATION ====================
+        function drawLogo() {
+            const logoCanvas = document.getElementById('logoCanvas');
+            const lctx = logoCanvas.getContext('2d');
+            lctx.clearRect(0, 0, 300, 80);
+            
+            // Draw stylized logo
+            lctx.font = '24px "Press Start 2P"';
+            lctx.textAlign = 'center';
+            
+            // Shadow
+            lctx.fillStyle = '#1a1a2e';
+            lctx.fillText('FLAPPY', 154, 34);
+            lctx.fillText('FRENZY', 154, 64);
+            
+            // Main gradient text
+            const gradient = lctx.createLinearGradient(50, 0, 250, 80);
+            gradient.addColorStop(0, '#e94560');
+            gradient.addColorStop(0.5, '#ff6b8a');
+            gradient.addColorStop(1, '#e94560');
+            lctx.fillStyle = gradient;
+            lctx.fillText('FLAPPY', 150, 30);
+            lctx.fillText('FRENZY', 150, 60);
+        }
+        
+        // ==================== CHARACTER RENDERING ====================
         function generateCharacterPreviews() {
             const grid = document.getElementById('characterGrid');
             grid.innerHTML = '';
@@ -455,12 +586,12 @@
                 card.onclick = () => selectCharacter(index);
                 
                 const previewCanvas = document.createElement('canvas');
-                previewCanvas.width = 64;
-                previewCanvas.height = 64;
+                previewCanvas.width = 80;
+                previewCanvas.height = 80;
                 previewCanvas.className = 'character-preview';
                 
                 const pCtx = previewCanvas.getContext('2d');
-                drawBirdSprite(pCtx, 32, 32, char.colors, 1.5, 0, 0);
+                drawDetailedBird(pCtx, 40, 40, char.colors, 2, 0, 0);
                 
                 const name = document.createElement('div');
                 name.className = 'character-name';
@@ -478,16 +609,197 @@
             
             CHARACTERS.forEach((char) => {
                 const previewCanvas = document.createElement('canvas');
-                previewCanvas.width = 48;
-                previewCanvas.height = 48;
+                previewCanvas.width = 56;
+                previewCanvas.height = 56;
                 previewCanvas.className = 'bird-bounce';
                 previewCanvas.style.imageRendering = 'pixelated';
                 
                 const pCtx = previewCanvas.getContext('2d');
-                drawBirdSprite(pCtx, 24, 24, char.colors, 1, 0, 0);
+                drawDetailedBird(pCtx, 28, 28, char.colors, 1.3, 0, 0);
                 
                 preview.appendChild(previewCanvas);
             });
+        }
+        
+        function drawDetailedBird(ctx, x, y, colors, scale, rotation, frame) {
+            const s = 3 * scale; // Base pixel size
+            
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(rotation * Math.PI / 180);
+            
+            // === TAIL FEATHERS ===
+            ctx.fillStyle = colors.dark;
+            ctx.fillRect(-s * 6, -s * 1, s * 2, s * 1);
+            ctx.fillRect(-s * 6, s * 0, s * 2, s * 1);
+            ctx.fillRect(-s * 6, s * 1, s * 2, s * 1);
+            ctx.fillStyle = colors.darkest;
+            ctx.fillRect(-s * 7, -s * 0.5, s * 1, s * 2);
+            
+            // === WING (animated) ===
+            const wingY = Math.sin(frame * 0.3) * s * 1.5;
+            
+            // Wing shadow
+            ctx.fillStyle = colors.wingDark;
+            ctx.fillRect(-s * 2, s * 1 + wingY, s * 4, s * 3);
+            
+            // Wing main
+            ctx.fillStyle = colors.wing;
+            ctx.fillRect(-s * 2, s * 0.5 + wingY, s * 4, s * 2.5);
+            
+            // Wing highlight
+            ctx.fillStyle = colors.light;
+            ctx.fillRect(-s * 1, s * 0.5 + wingY, s * 2, s * 1);
+            
+            // Wing feather details
+            ctx.fillStyle = colors.dark;
+            ctx.fillRect(-s * 2, s * 2.5 + wingY, s * 1, s * 1);
+            ctx.fillRect(s * 0, s * 2.5 + wingY, s * 1, s * 1);
+            
+            // === BODY ===
+            // Body shadow/outline
+            ctx.fillStyle = colors.darkest;
+            ctx.fillRect(-s * 4, -s * 3, s * 8, s * 7);
+            
+            // Body dark
+            ctx.fillStyle = colors.dark;
+            ctx.fillRect(-s * 3.5, -s * 2.5, s * 7, s * 6);
+            
+            // Body main
+            ctx.fillStyle = colors.main;
+            ctx.fillRect(-s * 3, -s * 2, s * 6, s * 5);
+            
+            // Body highlight
+            ctx.fillStyle = colors.light;
+            ctx.fillRect(-s * 2.5, -s * 1.5, s * 4, s * 2);
+            
+            // Body top shine
+            ctx.fillStyle = 'rgba(255,255,255,0.3)';
+            ctx.fillRect(-s * 2, -s * 1.5, s * 3, s * 1);
+            
+            // === BELLY ===
+            ctx.fillStyle = colors.belly;
+            ctx.fillRect(-s * 2, s * 0.5, s * 4, s * 2);
+            
+            // Belly highlight
+            ctx.fillStyle = colors.bellyLight;
+            ctx.fillRect(-s * 1.5, s * 0.5, s * 2, s * 1);
+            
+            // === EYE ===
+            // Eye white (large)
+            ctx.fillStyle = colors.eyeWhite;
+            ctx.fillRect(s * 0.5, -s * 2, s * 3, s * 3);
+            
+            // Eye outline
+            ctx.fillStyle = colors.darkest;
+            ctx.fillRect(s * 0, -s * 2.5, s * 4, s * 0.5);
+            ctx.fillRect(s * 0, s * 0.5, s * 4, s * 0.5);
+            ctx.fillRect(s * 0, -s * 2, s * 0.5, s * 3);
+            ctx.fillRect(s * 3.5, -s * 2, s * 0.5, s * 3);
+            
+            // Pupil
+            ctx.fillStyle = colors.eye;
+            ctx.fillRect(s * 1.5, -s * 1, s * 1.5, s * 2);
+            
+            // Eye shine
+            ctx.fillStyle = colors.eyeWhite;
+            ctx.fillRect(s * 2, -s * 1.5, s * 0.5, s * 0.5);
+            
+            // Eye glow
+            ctx.fillStyle = colors.eyeShine;
+            ctx.globalAlpha = 0.5;
+            ctx.fillRect(s * 1, -s * 0.5, s * 0.5, s * 0.5);
+            ctx.globalAlpha = 1;
+            
+            // === BEAK ===
+            // Beak dark/shadow
+            ctx.fillStyle = colors.beakDark;
+            ctx.fillRect(s * 3.5, s * 0, s * 3, s * 2);
+            
+            // Beak main
+            ctx.fillStyle = colors.beak;
+            ctx.fillRect(s * 3.5, -s * 0.5, s * 2.5, s * 2);
+            
+            // Beak tip
+            ctx.fillStyle = colors.beakDark;
+            ctx.fillRect(s * 5.5, s * 0, s * 1, s * 1);
+            
+            // Beak highlight
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.fillRect(s * 3.5, -s * 0.5, s * 1.5, s * 0.5);
+            
+            // Beak nostril
+            ctx.fillStyle = colors.beakDark;
+            ctx.fillRect(s * 4, s * 0, s * 0.5, s * 0.5);
+            
+            // === HEAD FEATHERS ===
+            ctx.fillStyle = colors.mid;
+            ctx.fillRect(-s * 1, -s * 3, s * 1, s * 1);
+            ctx.fillRect(s * 0, -s * 3.5, s * 1, s * 1);
+            ctx.fillRect(s * 1, -s * 3, s * 1, s * 1);
+            
+            // === ACCESSORY ===
+            drawAccessory(ctx, colors.accessory, s, frame);
+            
+            ctx.restore();
+        }
+        
+        function drawAccessory(ctx, type, s, frame) {
+            if (type === 'flame') {
+                // Animated flame crown
+                const flicker = Math.sin(frame * 0.5) * s * 0.3;
+                ctx.fillStyle = '#ff4400';
+                ctx.fillRect(-s * 1, -s * 4.5 + flicker, s * 1, s * 1.5);
+                ctx.fillRect(s * 0, -s * 5 + flicker, s * 1, s * 2);
+                ctx.fillRect(s * 1, -s * 4.5 + flicker, s * 1, s * 1.5);
+                ctx.fillStyle = '#ffaa00';
+                ctx.fillRect(-s * 0.5, -s * 4 + flicker, s * 0.5, s * 1);
+                ctx.fillRect(s * 0.5, -s * 4.5 + flicker, s * 0.5, s * 1.5);
+                ctx.fillRect(s * 1.5, -s * 4 + flicker, s * 0.5, s * 1);
+                ctx.fillStyle = '#ffff00';
+                ctx.fillRect(s * 0.25, -s * 4 + flicker, s * 0.5, s * 0.5);
+            } else if (type === 'crystal') {
+                // Magic crystal
+                ctx.fillStyle = '#9966ff';
+                ctx.fillRect(s * 0, -s * 5, s * 1, s * 2);
+                ctx.fillRect(-s * 0.5, -s * 4, s * 2, s * 1);
+                ctx.fillStyle = '#cc99ff';
+                ctx.fillRect(s * 0.25, -s * 4.5, s * 0.5, s * 1);
+                ctx.fillStyle = '#ffffff';
+                ctx.globalAlpha = 0.6;
+                ctx.fillRect(s * 0.25, -s * 4.75, s * 0.25, s * 0.5);
+                ctx.globalAlpha = 1;
+            } else if (type === 'visor') {
+                // Cyber visor
+                ctx.fillStyle = '#333';
+                ctx.fillRect(-s * 1, -s * 2.5, s * 5.5, s * 1);
+                ctx.fillStyle = '#00ffff';
+                ctx.globalAlpha = 0.8;
+                ctx.fillRect(-s * 0.5, -s * 2.25, s * 4.5, s * 0.5);
+                ctx.globalAlpha = 1;
+                ctx.fillStyle = '#ffffff';
+                ctx.globalAlpha = 0.4;
+                ctx.fillRect(-s * 0.5, -s * 2.25, s * 1, s * 0.25);
+                ctx.globalAlpha = 1;
+            } else if (type === 'flower') {
+                // Cherry blossom
+                ctx.fillStyle = '#ff69b4';
+                ctx.fillRect(-s * 0.5, -s * 4.5, s * 1, s * 1);
+                ctx.fillRect(-s * 1.5, -s * 4, s * 1, s * 1);
+                ctx.fillRect(s * 0.5, -s * 4, s * 1, s * 1);
+                ctx.fillRect(-s * 1, -s * 3.5, s * 1, s * 1);
+                ctx.fillRect(s * 0, -s * 3.5, s * 1, s * 1);
+                ctx.fillStyle = '#ffff00';
+                ctx.fillRect(-s * 0.25, -s * 4, s * 0.5, s * 0.5);
+            } else if (type === 'gem') {
+                // Emerald gem
+                ctx.fillStyle = '#00cc44';
+                ctx.fillRect(-s * 0.5, -s * 4.5, s * 2, s * 1);
+                ctx.fillRect(-s * 1, -s * 4, s * 3, s * 1);
+                ctx.fillRect(-s * 0.5, -s * 3.5, s * 2, s * 0.5);
+                ctx.fillStyle = '#66ff99';
+                ctx.fillRect(s * 0, -s * 4.25, s * 0.5, s * 0.5);
+            }
         }
         
         function selectCharacter(index) {
@@ -523,6 +835,7 @@
             
             document.getElementById('finalScoreDisplay').textContent = score;
             document.getElementById('highScoreDisplay').textContent = 'BEST: ' + highScore;
+            document.getElementById('newRecordText').style.display = isNewRecord ? 'block' : 'none';
         }
         
         function startGame() {
@@ -532,18 +845,18 @@
             document.getElementById('gameOverScreen').classList.remove('active');
             document.getElementById('hud').classList.add('active');
             
-            // Reset game state
             bird = {
-                x: canvas.width * 0.3,
+                x: canvas.width * 0.25,
                 y: canvas.height * 0.4,
                 velocity: 0,
                 rotation: 0,
-                wingAngle: 0
+                wingFrame: 0
             };
             pipes = [];
             score = 0;
             lastPipeSpawn = 0;
             particles = [];
+            isNewRecord = false;
             
             document.getElementById('currentScore').textContent = '0';
         }
@@ -558,17 +871,19 @@
             
             if (gameState === 'playing') {
                 bird.velocity = CONFIG.jumpForce;
-                bird.wingAngle = -0.5;
+                bird.wingFrame = 10;
                 
-                // Add flap particles
-                for (let i = 0; i < 5; i++) {
+                // Flap particles
+                for (let i = 0; i < 8; i++) {
+                    const angle = Math.random() * Math.PI + Math.PI / 2;
                     particles.push({
-                        x: bird.x - 10,
+                        x: bird.x - 15,
                         y: bird.y + 10,
-                        vx: -2 - Math.random() * 2,
-                        vy: 1 + Math.random() * 2,
-                        life: 20,
-                        color: '#FFF'
+                        vx: Math.cos(angle) * (2 + Math.random() * 2),
+                        vy: Math.sin(angle) * (2 + Math.random() * 2),
+                        life: 25,
+                        color: selectedCharacter.colors.light,
+                        size: 3 + Math.random() * 3
                     });
                 }
             }
@@ -576,18 +891,24 @@
         
         // ==================== GAME LOOP ====================
         function gameLoop(timestamp) {
+            frameCount++;
             update(timestamp);
             render();
             requestAnimationFrame(gameLoop);
         }
         
         function update(timestamp) {
+            // Update stars
+            stars.forEach(star => {
+                star.twinkle += 0.05;
+            });
+            
             // Update clouds
             clouds.forEach(cloud => {
                 cloud.x -= cloud.speed;
                 if (cloud.x + cloud.size < 0) {
                     cloud.x = canvas.width + cloud.size;
-                    cloud.y = 50 + Math.random() * 150;
+                    cloud.y = 80 + Math.random() * 120;
                 }
             });
             
@@ -596,11 +917,11 @@
             // Update bird physics
             bird.velocity += CONFIG.gravity;
             bird.y += bird.velocity;
-            bird.rotation = Math.min(Math.max(bird.velocity * 3, -30), 90);
-            bird.wingAngle *= 0.9;
+            bird.rotation = Math.min(Math.max(bird.velocity * 4, -25), 70);
+            bird.wingFrame++;
             
-            // Update ground offset
-            groundOffset = (groundOffset + CONFIG.pipeSpeed) % 24;
+            // Ground offset
+            groundOffset = (groundOffset + CONFIG.pipeSpeed) % 32;
             
             // Spawn pipes
             if (timestamp - lastPipeSpawn > CONFIG.pipeSpawnRate) {
@@ -612,44 +933,44 @@
             pipes.forEach(pipe => {
                 pipe.x -= CONFIG.pipeSpeed;
                 
-                // Score when passing pipe
                 if (!pipe.scored && pipe.x + CONFIG.pipeWidth < bird.x) {
                     pipe.scored = true;
                     score++;
                     document.getElementById('currentScore').textContent = score;
                     
                     // Score particles
-                    for (let i = 0; i < 10; i++) {
+                    for (let i = 0; i < 15; i++) {
+                        const angle = Math.random() * Math.PI * 2;
                         particles.push({
                             x: bird.x,
                             y: bird.y,
-                            vx: (Math.random() - 0.5) * 5,
-                            vy: (Math.random() - 0.5) * 5,
-                            life: 30,
-                            color: '#FFD700'
+                            vx: Math.cos(angle) * (3 + Math.random() * 3),
+                            vy: Math.sin(angle) * (3 + Math.random() * 3),
+                            life: 35,
+                            color: '#e94560',
+                            size: 4 + Math.random() * 4
                         });
                     }
                 }
             });
             
-            // Remove off-screen pipes
             pipes = pipes.filter(pipe => pipe.x + CONFIG.pipeWidth > -50);
             
             // Update particles
             particles.forEach(p => {
                 p.x += p.vx;
                 p.y += p.vy;
+                p.vy += 0.1;
                 p.life--;
             });
             particles = particles.filter(p => p.life > 0);
             
-            // Check collisions
             checkCollisions();
         }
         
         function spawnPipe() {
-            const minY = 100;
-            const maxY = canvas.height - CONFIG.groundHeight - CONFIG.pipeGap - 100;
+            const minY = 120;
+            const maxY = canvas.height - CONFIG.groundHeight - CONFIG.pipeGap - 120;
             const gapY = minY + Math.random() * (maxY - minY);
             
             pipes.push({
@@ -660,33 +981,27 @@
         }
         
         function checkCollisions() {
-            const birdRadius = CONFIG.birdSize / 2 - 5;
+            const birdRadius = CONFIG.birdSize / 2 - 8;
             
-            // Ground collision
+            // Ground
             if (bird.y + birdRadius > canvas.height - CONFIG.groundHeight) {
                 gameOver();
                 return;
             }
             
-            // Ceiling collision
+            // Ceiling
             if (bird.y - birdRadius < 0) {
                 bird.y = birdRadius;
                 bird.velocity = 0;
             }
             
-            // Pipe collision
+            // Pipes
             for (const pipe of pipes) {
-                const pipeLeft = pipe.x;
-                const pipeRight = pipe.x + CONFIG.pipeWidth;
+                const pipeLeft = pipe.x + 5;
+                const pipeRight = pipe.x + CONFIG.pipeWidth - 5;
                 
                 if (bird.x + birdRadius > pipeLeft && bird.x - birdRadius < pipeRight) {
-                    // Check top pipe
-                    if (bird.y - birdRadius < pipe.gapY) {
-                        gameOver();
-                        return;
-                    }
-                    // Check bottom pipe
-                    if (bird.y + birdRadius > pipe.gapY + CONFIG.pipeGap) {
+                    if (bird.y - birdRadius < pipe.gapY || bird.y + birdRadius > pipe.gapY + CONFIG.pipeGap) {
                         gameOver();
                         return;
                     }
@@ -700,267 +1015,223 @@
             if (score > highScore) {
                 highScore = score;
                 localStorage.setItem('flappyFrenzyHighScore', highScore);
+                isNewRecord = true;
             }
             
-            setTimeout(showGameOver, 500);
+            setTimeout(showGameOver, 600);
         }
         
         // ==================== RENDERING ====================
         function render() {
-            // Clear canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            // Draw sky gradient
-            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-            gradient.addColorStop(0, '#4EC5F1');
-            gradient.addColorStop(0.5, '#87CEEB');
-            gradient.addColorStop(0.8, '#B0E0E6');
-            gradient.addColorStop(1, '#7CB342');
-            ctx.fillStyle = gradient;
+            // Sky gradient
+            const skyGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            skyGradient.addColorStop(0, '#0f0f23');
+            skyGradient.addColorStop(0.3, '#1a1a2e');
+            skyGradient.addColorStop(0.6, '#16213e');
+            skyGradient.addColorStop(0.85, '#0f3460');
+            skyGradient.addColorStop(1, '#1a5276');
+            ctx.fillStyle = skyGradient;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            // Draw clouds
+            drawStars();
             drawClouds();
+            drawCityscape();
             
-            // Draw buildings (parallax background)
-            drawBuildings();
+            pipes.forEach(pipe => drawDetailedPipe(pipe));
             
-            // Draw pipes
-            pipes.forEach(pipe => drawPipe(pipe));
-            
-            // Draw ground
             drawGround();
-            
-            // Draw particles
             drawParticles();
             
-            // Draw bird
             if (gameState === 'playing' || gameState === 'gameover') {
                 ctx.save();
                 ctx.translate(bird.x, bird.y);
                 ctx.rotate(bird.rotation * Math.PI / 180);
-                drawBirdSprite(ctx, 0, 0, selectedCharacter.colors, 1.2, bird.wingAngle, Date.now());
+                drawDetailedBird(ctx, 0, 0, selectedCharacter.colors, 1.5, 0, bird.wingFrame);
                 ctx.restore();
             }
         }
         
-        function drawClouds() {
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-            clouds.forEach(cloud => {
-                // Draw pixelated cloud
-                const s = cloud.size / 5;
-                ctx.fillRect(cloud.x + s, cloud.y, s * 3, s * 2);
-                ctx.fillRect(cloud.x, cloud.y + s, s * 5, s * 2);
-                ctx.fillRect(cloud.x + s, cloud.y + s * 2, s * 3, s);
+        function drawStars() {
+            stars.forEach(star => {
+                const alpha = 0.3 + Math.sin(star.twinkle) * 0.3;
+                ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+                ctx.fillRect(star.x, star.y, star.size, star.size);
             });
         }
         
-        function drawBuildings() {
+        function drawClouds() {
+            clouds.forEach(cloud => {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+                const s = cloud.size / 6;
+                ctx.fillRect(cloud.x + s, cloud.y, s * 4, s * 2);
+                ctx.fillRect(cloud.x, cloud.y + s, s * 6, s * 2);
+                ctx.fillRect(cloud.x + s, cloud.y + s * 2, s * 4, s);
+            });
+        }
+        
+        function drawCityscape() {
             const groundY = canvas.height - CONFIG.groundHeight;
             
-            buildings.forEach(building => {
-                // Draw building silhouette
-                ctx.fillStyle = 'rgba(52, 73, 94, 0.4)';
-                ctx.fillRect(
-                    building.x - groundOffset * 0.2,
-                    groundY - building.height,
-                    building.width,
-                    building.height
-                );
+            // Far buildings (darker)
+            ctx.fillStyle = 'rgba(15, 52, 96, 0.6)';
+            for (let x = 0; x < canvas.width; x += 60) {
+                const h = 60 + Math.sin(x * 0.1) * 40;
+                ctx.fillRect(x - groundOffset * 0.1, groundY - h, 50, h);
+            }
+            
+            // Near buildings
+            ctx.fillStyle = 'rgba(22, 33, 62, 0.8)';
+            for (let x = 20; x < canvas.width; x += 80) {
+                const h = 80 + Math.cos(x * 0.08) * 50;
+                ctx.fillRect(x - groundOffset * 0.2, groundY - h, 60, h);
                 
-                // Draw windows
-                ctx.fillStyle = 'rgba(255, 255, 200, 0.3)';
-                for (let wy = groundY - building.height + 15; wy < groundY - 20; wy += 25) {
-                    for (let wx = building.x - groundOffset * 0.2 + 8; wx < building.x - groundOffset * 0.2 + building.width - 8; wx += 15) {
-                        ctx.fillRect(wx, wy, 8, 12);
+                // Windows
+                ctx.fillStyle = 'rgba(233, 69, 96, 0.3)';
+                for (let wy = groundY - h + 15; wy < groundY - 10; wy += 20) {
+                    for (let wx = x - groundOffset * 0.2 + 8; wx < x - groundOffset * 0.2 + 52; wx += 15) {
+                        if (Math.random() > 0.3) {
+                            ctx.fillRect(wx, wy, 8, 10);
+                        }
                     }
                 }
-            });
+                ctx.fillStyle = 'rgba(22, 33, 62, 0.8)';
+            }
         }
         
-        function drawPipe(pipe) {
+        function drawDetailedPipe(pipe) {
             const groundY = canvas.height - CONFIG.groundHeight;
+            const w = CONFIG.pipeWidth;
             
-            // Pipe colors
-            const pipeLight = '#7CB342';
-            const pipeDark = '#558B2F';
-            const pipeHighlight = '#9CCC65';
-            const pipeShadow = '#33691E';
+            // Colors
+            const pipeMain = '#533483';
+            const pipeLight = '#7a4db5';
+            const pipeDark = '#351f54';
+            const pipeDarkest = '#241540';
+            const pipeHighlight = '#9966cc';
             
             // Top pipe
-            drawPipeSection(pipe.x, 0, CONFIG.pipeWidth, pipe.gapY, pipeLight, pipeDark, pipeHighlight, pipeShadow, true);
+            const topHeight = pipe.gapY;
+            if (topHeight > 0) {
+                // Pipe body shadow
+                ctx.fillStyle = pipeDarkest;
+                ctx.fillRect(pipe.x + 8, 0, w - 16, topHeight);
+                
+                // Pipe body dark
+                ctx.fillStyle = pipeDark;
+                ctx.fillRect(pipe.x + 10, 0, w - 20, topHeight);
+                
+                // Pipe body main
+                ctx.fillStyle = pipeMain;
+                ctx.fillRect(pipe.x + 12, 0, w - 28, topHeight);
+                
+                // Pipe highlight
+                ctx.fillStyle = pipeLight;
+                ctx.fillRect(pipe.x + 14, 0, 8, topHeight);
+                
+                // Pipe shine
+                ctx.fillStyle = pipeHighlight;
+                ctx.fillRect(pipe.x + 16, 0, 4, topHeight);
+                
+                // Cap
+                ctx.fillStyle = pipeDarkest;
+                ctx.fillRect(pipe.x, topHeight - 35, w, 35);
+                ctx.fillStyle = pipeDark;
+                ctx.fillRect(pipe.x + 2, topHeight - 33, w - 4, 31);
+                ctx.fillStyle = pipeMain;
+                ctx.fillRect(pipe.x + 4, topHeight - 31, w - 10, 27);
+                ctx.fillStyle = pipeLight;
+                ctx.fillRect(pipe.x + 6, topHeight - 29, 10, 23);
+                ctx.fillStyle = pipeHighlight;
+                ctx.fillRect(pipe.x + 8, topHeight - 27, 5, 19);
+                
+                // Cap border
+                ctx.fillStyle = pipeDarkest;
+                ctx.fillRect(pipe.x, topHeight - 35, w, 4);
+                ctx.fillRect(pipe.x, topHeight - 4, w, 4);
+            }
             
             // Bottom pipe
-            drawPipeSection(pipe.x, pipe.gapY + CONFIG.pipeGap, CONFIG.pipeWidth, groundY - pipe.gapY - CONFIG.pipeGap, pipeLight, pipeDark, pipeHighlight, pipeShadow, false);
-        }
-        
-        function drawPipeSection(x, y, width, height, light, dark, highlight, shadow, isTop) {
-            if (height <= 0) return;
-            
-            // Main pipe body
-            ctx.fillStyle = light;
-            ctx.fillRect(x + 6, y, width - 12, height);
-            
-            // Left highlight
-            ctx.fillStyle = highlight;
-            ctx.fillRect(x + 6, y, 8, height);
-            
-            // Right shadow
-            ctx.fillStyle = dark;
-            ctx.fillRect(x + width - 14, y, 8, height);
-            
-            // Pipe cap
-            const capHeight = 30;
-            const capY = isTop ? y + height - capHeight : y;
-            
-            // Cap main
-            ctx.fillStyle = light;
-            ctx.fillRect(x, capY, width, capHeight);
-            
-            // Cap highlight
-            ctx.fillStyle = highlight;
-            ctx.fillRect(x, capY, 10, capHeight);
-            
-            // Cap shadow
-            ctx.fillStyle = dark;
-            ctx.fillRect(x + width - 10, capY, 10, capHeight);
-            
-            // Cap border
-            ctx.fillStyle = shadow;
-            ctx.fillRect(x, capY, width, 4);
-            ctx.fillRect(x, capY + capHeight - 4, width, 4);
-            
-            // Pixel details
-            ctx.fillStyle = 'rgba(255,255,255,0.3)';
-            for (let py = y; py < y + height; py += 20) {
-                ctx.fillRect(x + 10, py, 4, 4);
+            const bottomY = pipe.gapY + CONFIG.pipeGap;
+            const bottomHeight = groundY - bottomY;
+            if (bottomHeight > 0) {
+                // Pipe body shadow
+                ctx.fillStyle = pipeDarkest;
+                ctx.fillRect(pipe.x + 8, bottomY + 35, w - 16, bottomHeight - 35);
+                
+                // Pipe body dark
+                ctx.fillStyle = pipeDark;
+                ctx.fillRect(pipe.x + 10, bottomY + 35, w - 20, bottomHeight - 35);
+                
+                // Pipe body main
+                ctx.fillStyle = pipeMain;
+                ctx.fillRect(pipe.x + 12, bottomY + 35, w - 28, bottomHeight - 35);
+                
+                // Pipe highlight
+                ctx.fillStyle = pipeLight;
+                ctx.fillRect(pipe.x + 14, bottomY + 35, 8, bottomHeight - 35);
+                
+                // Pipe shine
+                ctx.fillStyle = pipeHighlight;
+                ctx.fillRect(pipe.x + 16, bottomY + 35, 4, bottomHeight - 35);
+                
+                // Cap
+                ctx.fillStyle = pipeDarkest;
+                ctx.fillRect(pipe.x, bottomY, w, 35);
+                ctx.fillStyle = pipeDark;
+                ctx.fillRect(pipe.x + 2, bottomY + 2, w - 4, 31);
+                ctx.fillStyle = pipeMain;
+                ctx.fillRect(pipe.x + 4, bottomY + 4, w - 10, 27);
+                ctx.fillStyle = pipeLight;
+                ctx.fillRect(pipe.x + 6, bottomY + 6, 10, 23);
+                ctx.fillStyle = pipeHighlight;
+                ctx.fillRect(pipe.x + 8, bottomY + 8, 5, 19);
+                
+                // Cap border
+                ctx.fillStyle = pipeDarkest;
+                ctx.fillRect(pipe.x, bottomY, w, 4);
+                ctx.fillRect(pipe.x, bottomY + 31, w, 4);
             }
         }
         
         function drawGround() {
             const groundY = canvas.height - CONFIG.groundHeight;
             
-            // Grass top
-            ctx.fillStyle = '#7CB342';
-            ctx.fillRect(0, groundY, canvas.width, 20);
+            // Ground gradient
+            const groundGradient = ctx.createLinearGradient(0, groundY, 0, canvas.height);
+            groundGradient.addColorStop(0, '#e94560');
+            groundGradient.addColorStop(0.1, '#c73e54');
+            groundGradient.addColorStop(0.3, '#533483');
+            groundGradient.addColorStop(1, '#351f54');
+            ctx.fillStyle = groundGradient;
+            ctx.fillRect(0, groundY, canvas.width, CONFIG.groundHeight);
             
-            // Grass detail
-            ctx.fillStyle = '#689F38';
-            for (let x = -groundOffset; x < canvas.width + 24; x += 24) {
-                ctx.fillRect(x, groundY, 12, 20);
+            // Ground pattern
+            ctx.fillStyle = '#7a4db5';
+            for (let x = -groundOffset; x < canvas.width + 32; x += 32) {
+                ctx.fillRect(x, groundY, 16, 8);
+                ctx.fillRect(x + 16, groundY + 16, 16, 8);
+                ctx.fillRect(x, groundY + 32, 16, 8);
             }
             
-            // Dirt
-            ctx.fillStyle = '#8D6E63';
-            ctx.fillRect(0, groundY + 20, canvas.width, CONFIG.groundHeight - 20);
-            
-            // Dirt pattern
-            ctx.fillStyle = '#795548';
-            for (let x = -groundOffset; x < canvas.width + 24; x += 48) {
-                ctx.fillRect(x, groundY + 25, 24, 15);
-                ctx.fillRect(x + 24, groundY + 45, 24, 15);
-            }
-            
-            // Top border
-            ctx.fillStyle = '#558B2F';
+            // Ground top highlight
+            ctx.fillStyle = '#ff6b8a';
             ctx.fillRect(0, groundY, canvas.width, 4);
+            
+            // Ground top border
+            ctx.fillStyle = '#8b2a3d';
+            ctx.fillRect(0, groundY + 4, canvas.width, 2);
         }
         
         function drawParticles() {
             particles.forEach(p => {
-                ctx.globalAlpha = p.life / 30;
+                const alpha = p.life / 35;
                 ctx.fillStyle = p.color;
-                ctx.fillRect(p.x - 3, p.y - 3, 6, 6);
+                ctx.globalAlpha = alpha;
+                ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
             });
             ctx.globalAlpha = 1;
-        }
-        
-        function drawBirdSprite(ctx, x, y, colors, scale, wingAngle, time) {
-            const s = 4 * scale; // Pixel size
-            
-            ctx.save();
-            ctx.translate(x, y);
-            
-            // Wing (animated)
-            const wingOffset = Math.sin((time / 80) + wingAngle * 10) * 3;
-            ctx.fillStyle = colors.wing;
-            ctx.fillRect(-s * 2, s + wingOffset, s * 3, s * 2);
-            ctx.fillStyle = colors.bodyDark;
-            ctx.fillRect(-s * 2, s + wingOffset, s * 3, s * 0.5);
-            
-            // Body
-            ctx.fillStyle = colors.body;
-            ctx.fillRect(-s * 3, -s * 2, s * 6, s * 5);
-            
-            // Body shading
-            ctx.fillStyle = colors.bodyDark;
-            ctx.fillRect(-s * 3, s * 2, s * 6, s);
-            ctx.fillRect(s * 2, -s * 2, s, s * 5);
-            
-            // Belly
-            ctx.fillStyle = colors.belly;
-            ctx.fillRect(-s * 2, 0, s * 3, s * 2);
-            
-            // Eye white
-            ctx.fillStyle = colors.eyeWhite;
-            ctx.fillRect(s, -s * 1.5, s * 2, s * 2);
-            
-            // Eye pupil
-            ctx.fillStyle = colors.eye;
-            ctx.fillRect(s * 1.5, -s, s, s);
-            
-            // Eye shine
-            ctx.fillStyle = '#FFF';
-            ctx.fillRect(s * 1.8, -s * 1.2, s * 0.4, s * 0.4);
-            
-            // Beak
-            ctx.fillStyle = colors.beak;
-            ctx.fillRect(s * 3, -s * 0.5, s * 2, s * 1.5);
-            ctx.fillRect(s * 4, s * 0.5, s, s * 0.5);
-            
-            // Beak highlight
-            ctx.fillStyle = '#FFF';
-            ctx.globalAlpha = 0.3;
-            ctx.fillRect(s * 3, -s * 0.5, s * 2, s * 0.5);
-            ctx.globalAlpha = 1;
-            
-            // Tail
-            ctx.fillStyle = colors.bodyDark;
-            ctx.fillRect(-s * 4, -s, s, s * 3);
-            
-            // Accessory
-            if (colors.accessory === 'crown') {
-                ctx.fillStyle = '#FFD700';
-                ctx.fillRect(-s * 2, -s * 4, s * 4, s * 2);
-                ctx.fillRect(-s * 2, -s * 5, s, s);
-                ctx.fillRect(0, -s * 5, s, s);
-                ctx.fillRect(s, -s * 5, s, s);
-                // Jewel
-                ctx.fillStyle = '#E91E63';
-                ctx.fillRect(-s * 0.5, -s * 3.5, s, s);
-            } else if (colors.accessory === 'goggles') {
-                ctx.fillStyle = '#333';
-                ctx.fillRect(-s, -s * 2, s * 4, s);
-                ctx.fillStyle = '#87CEEB';
-                ctx.fillRect(0, -s * 2.5, s * 2.5, s * 1.5);
-                ctx.fillStyle = 'rgba(255,255,255,0.4)';
-                ctx.fillRect(0.2 * s, -s * 2.3, s, s * 0.5);
-            } else if (colors.accessory === 'bow') {
-                ctx.fillStyle = '#FF69B4';
-                ctx.fillRect(-s * 2, -s * 4, s * 4, s * 2);
-                ctx.fillRect(-s * 3, -s * 3.5, s, s);
-                ctx.fillRect(s * 2, -s * 3.5, s, s);
-                ctx.fillStyle = '#FFF';
-                ctx.fillRect(-s * 0.5, -s * 3.5, s, s);
-            } else if (colors.accessory === 'sunglasses') {
-                ctx.fillStyle = '#1a1a1a';
-                ctx.fillRect(-s * 2, -s * 1.5, s * 5, s * 0.8);
-                ctx.fillRect(-s, -s * 2, s * 3.5, s * 2);
-                ctx.fillStyle = '#333';
-                ctx.fillRect(-s * 0.5, -s * 1.8, s * 2.5, s * 1.5);
-            }
-            
-            ctx.restore();
         }
         
         // ==================== START ====================
