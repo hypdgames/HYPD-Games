@@ -14,7 +14,7 @@ export default function BottomNav() {
       className="fixed bottom-0 left-0 right-0 glass border-t border-border z-50"
       data-testid="bottom-navigation"
     >
-      <div className="flex justify-around max-w-md mx-auto pt-3 pb-2">
+      <div className="flex justify-around max-w-md mx-auto pt-4 pb-2">
         {navItems.map(({ path, icon: Icon, label }) => (
           <NavLink
             key={path}
