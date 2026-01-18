@@ -806,15 +806,48 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Initialize storage buckets (sync function for startup)
+def init_storage_buckets():
+    """Create storage buckets if they don't exist"""
+    if not supabase_client:
+        logger.warning("Supabase client not initialized, skipping bucket creation")
+        return
+    
+    try:
+        # List existing buckets
+        existing_buckets = supabase_client.storage.list_buckets()
+        existing_names = [b.name for b in existing_buckets]
+        logger.info(f"Existing storage buckets: {existing_names}")
+        
+        buckets_to_create = [
+            (GAMES_BUCKET, {"public": True}),
+            (THUMBNAILS_BUCKET, {"public": True}),
+            (PREVIEWS_BUCKET, {"public": True}),
+        ]
+        
+        for bucket_name, options in buckets_to_create:
+            if bucket_name not in existing_names:
+                try:
+                    supabase_client.storage.create_bucket(bucket_name, options)
+                    logger.info(f"Created storage bucket: {bucket_name}")
+                except Exception as e:
+                    logger.warning(f"Bucket {bucket_name} creation: {e}")
+            else:
+                logger.info(f"Bucket {bucket_name} already exists")
+    except Exception as e:
+        logger.error(f"Error initializing storage buckets: {e}")
+
 # Startup event
 @app.on_event("startup")
 async def startup():
     logger.info("Starting Hypd Games API with Supabase PostgreSQL")
+    # Initialize storage buckets
+    init_storage_buckets()
 
 # Root redirect
 @app.get("/")
 async def root():
-    return {"message": "Hypd Games API", "docs": "/docs", "database": "postgresql"}
+    return {"message": "Hypd Games API", "docs": "/docs", "database": "postgresql", "storage": "supabase"}
 
 if __name__ == "__main__":
     import uvicorn
