@@ -71,15 +71,17 @@
 │  Pages: /, /explore, /pro, /profile, /admin, /play/[id]    │
 │  Components: BottomNav, ThemeToggle, GameCard, etc.         │
 │  State: Zustand (auth-store, theme-store)                   │
+│  PWA: Service Worker (sw.js) + manifest.json                │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                   BACKEND (FastAPI)                         │
 │  /api/auth/* - Authentication                               │
-│  /api/games/* - Game CRUD                                   │
+│  /api/games/* - Game CRUD + Meta endpoint                   │
 │  /api/admin/* - Admin endpoints                             │
 │  /api/analytics/* - Play tracking                           │
+│  Cache Headers: 60s games, 300s meta                        │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -104,15 +106,23 @@
 │   │   ├── app/
 │   │   │   ├── layout.tsx
 │   │   │   ├── page.tsx           # TikTok-style feed
-│   │   │   ├── explore/page.tsx
-│   │   │   ├── pro/page.tsx
+│   │   │   ├── explore/
+│   │   │   │   ├── page.tsx
+│   │   │   │   ├── explore-page.tsx
+│   │   │   │   └── layout.tsx     # SEO metadata
+│   │   │   ├── pro/
+│   │   │   │   ├── page.tsx
+│   │   │   │   └── layout.tsx     # SEO metadata
 │   │   │   ├── profile/page.tsx
 │   │   │   ├── admin/page.tsx
-│   │   │   └── play/[gameId]/page.tsx
+│   │   │   └── play/[gameId]/
+│   │   │       ├── page.tsx       # Dynamic SEO
+│   │   │       └── game-player.tsx
 │   │   ├── components/
 │   │   │   ├── bottom-nav.tsx
 │   │   │   ├── theme-toggle.tsx
 │   │   │   ├── providers.tsx
+│   │   │   ├── service-worker.tsx # SW registration
 │   │   │   └── ui/
 │   │   ├── store/
 │   │   │   ├── auth-store.ts
