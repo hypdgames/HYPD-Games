@@ -154,7 +154,7 @@
 2. **CDN Integration (Cloudflare R2)**
    - Move game files from GridFS to R2
    - Set up signed URLs for secure downloads
-   - Implement video preview support
+   - Enable video preview uploads
 
 3. **GameDistribution Integration**
    - Research GameDistribution SDK
@@ -167,16 +167,18 @@
    - In-game rewarded ads API
    - Google Ad Manager integration
 
-5. **SEO Improvements**
-   - Dynamic meta tags for game pages
-   - Open Graph images
-   - Sitemap generation
+5. **Sitemap Generation**
+   - Dynamic sitemap.xml for all games
+   - Submit to Google Search Console
 
-### P3 - Low Priority
-6. **Performance Optimization**
-   - Redis caching for feed
-   - Image/video optimization pipeline
-   - Service worker for game pre-caching
+### P3 - Low Priority (Nice to Have)
+6. **Redis Caching**
+   - Add Redis for feed caching at scale
+   - Session management
+
+7. **Video Optimization Pipeline**
+   - Automatic WebP/AVIF conversion
+   - Video transcoding for previews
 
 ---
 
