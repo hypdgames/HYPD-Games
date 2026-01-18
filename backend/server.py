@@ -1605,19 +1605,19 @@ async def get_analytics_overview(
         select(func.count(User.id)).where(User.created_at >= today_start)
     )
     plays_today = await db.execute(
-        select(func.count(PlaySession.id)).where(PlaySession.session_start >= today_start)
+        select(func.count(PlaySession.id)).where(PlaySession.played_at >= today_start)
     )
     
     # Active users (played in last 24 hours)
     active_users = await db.execute(
         select(func.count(func.distinct(PlaySession.user_id))).where(
-            PlaySession.session_start >= now - timedelta(hours=24)
+            PlaySession.played_at >= now - timedelta(hours=24)
         )
     )
     
     # This week
     plays_this_week = await db.execute(
-        select(func.count(PlaySession.id)).where(PlaySession.session_start >= week_start)
+        select(func.count(PlaySession.id)).where(PlaySession.played_at >= week_start)
     )
     
     # Top games
@@ -1671,8 +1671,8 @@ async def get_daily_analytics(
         plays = await db.execute(
             select(func.count(PlaySession.id)).where(
                 and_(
-                    PlaySession.session_start >= day_start,
-                    PlaySession.session_start < day_end
+                    PlaySession.played_at >= day_start,
+                    PlaySession.played_at < day_end
                 )
             )
         )
@@ -1681,8 +1681,8 @@ async def get_daily_analytics(
         unique_players = await db.execute(
             select(func.count(func.distinct(PlaySession.user_id))).where(
                 and_(
-                    PlaySession.session_start >= day_start,
-                    PlaySession.session_start < day_end
+                    PlaySession.played_at >= day_start,
+                    PlaySession.played_at < day_end
                 )
             )
         )
@@ -1742,8 +1742,8 @@ async def get_retention_analytics(
                 select(PlaySession).where(
                     and_(
                         PlaySession.user_id == u.id,
-                        PlaySession.session_start >= check_date,
-                        PlaySession.session_start < check_date + timedelta(days=1)
+                        PlaySession.played_at >= check_date,
+                        PlaySession.played_at < check_date + timedelta(days=1)
                     )
                 ).limit(1)
             )
