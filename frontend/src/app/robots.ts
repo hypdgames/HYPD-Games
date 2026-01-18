@@ -9,6 +9,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/admin", "/api/"],
       },
     ],
-    sitemap: "https://swipegame-4.preview.emergentagent.com/sitemap.xml",
+    sitemap: "https://hypd.games/sitemap.xml",
   };
 }
