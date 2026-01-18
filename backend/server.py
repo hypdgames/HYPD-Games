@@ -351,7 +351,7 @@ async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
     await db.refresh(new_user)
     
     token = create_token(new_user.id)
-    return {"access_token": token, "user": UserResponse(**new_user.to_dict())}
+    return {"access_token": token, "user": UserResponse(**new_user.to_dict(include_private=True))}
 
 @api_router.post("/auth/login")
 async def login(credentials: UserLogin, db: AsyncSession = Depends(get_db)):
@@ -362,11 +362,11 @@ async def login(credentials: UserLogin, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     token = create_token(user.id)
-    return {"access_token": token, "user": UserResponse(**user.to_dict())}
+    return {"access_token": token, "user": UserResponse(**user.to_dict(include_private=True))}
 
 @api_router.get("/auth/me", response_model=UserResponse)
 async def get_me(user: User = Depends(get_current_user)):
-    return UserResponse(**user.to_dict())
+    return UserResponse(**user.to_dict(include_private=True))
 
 @api_router.post("/auth/save-game/{game_id}")
 async def save_game(game_id: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
