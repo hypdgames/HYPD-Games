@@ -11,17 +11,22 @@ const nextConfig = {
         protocol: "https",
         hostname: "*.preview.emergentagent.com",
       },
+      {
+        protocol: "https",
+        hostname: "*.supabase.co",
+      },
+      {
+        protocol: "https",
+        hostname: "img.gamedistribution.com",
+      },
+      {
+        protocol: "https",
+        hostname: "*.railway.app",
+      },
     ],
   },
-  // Rewrites for API calls (optional - for local dev)
-  async rewrites() {
-    return [
-      {
-        source: "/api/:path*",
-        destination: `${process.env.NEXT_PUBLIC_API_URL || ""}/api/:path*`,
-      },
-    ];
-  },
+  // Output standalone for optimized production builds
+  output: "standalone",
 };
 
 export default nextConfig;
