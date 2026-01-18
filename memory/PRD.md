@@ -15,16 +15,17 @@
 - **UI Components:** Radix UI + shadcn/ui
 - **PWA:** Service Worker + Web App Manifest
 
-### ✅ Backend (Current)
+### ✅ Backend (MIGRATED TO SUPABASE)
 - **Framework:** FastAPI (Python)
-- **Database:** MongoDB
-- **File Storage:** GridFS (to be migrated to CDN)
-- **Auth:** JWT (PyJWT)
-- **Caching:** HTTP Cache headers
+- **Database:** PostgreSQL via Supabase
+- **ORM:** SQLAlchemy with async support
+- **Migrations:** Alembic
+- **Auth:** JWT (PyJWT) - custom implementation
+- **File Storage:** In-memory cache (to be migrated to Supabase Storage)
 
 ### ⏳ Planned Migrations
-- **Backend:** Supabase (PostgreSQL + Auth + Edge Functions)
-- **Storage:** Cloudflare R2 + CDN
+- **Storage:** Supabase Storage for game files (replacing in-memory cache)
+- **Auth:** Consider migrating to Supabase Auth for social logins
 
 ---
 
