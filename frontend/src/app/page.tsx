@@ -275,6 +275,44 @@ export default function GameFeed() {
       data-testid="game-feed"
       {...bind()}
     >
+      {/* Pull-to-Refresh Indicator */}
+      <AnimatePresence>
+        {(pullDistance > 0 || refreshing) && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed top-16 left-1/2 -translate-x-1/2 z-50"
+          >
+            <motion.div
+              animate={{
+                scale: pullDistance >= PULL_THRESHOLD || refreshing ? 1 : pullDistance / PULL_THRESHOLD,
+                rotate: refreshing ? 360 : 0,
+              }}
+              transition={{
+                rotate: { repeat: refreshing ? Infinity : 0, duration: 1, ease: "linear" },
+              }}
+              className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                pullDistance >= PULL_THRESHOLD || refreshing
+                  ? "bg-lime text-black"
+                  : "bg-card/80 backdrop-blur-sm text-foreground border border-border"
+              }`}
+            >
+              <RefreshCw className="w-5 h-5" />
+            </motion.div>
+            {pullDistance > 20 && !refreshing && (
+              <motion.p
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-xs text-center mt-2 text-white/70"
+              >
+                {pullDistance >= PULL_THRESHOLD ? "Release to refresh" : "Pull to refresh"}
+              </motion.p>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <div className="fixed top-0 left-0 right-0 z-40 p-4 flex justify-between items-center">
         {settings?.logo_url ? (
