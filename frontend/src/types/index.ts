@@ -9,10 +9,16 @@ export interface Game {
   gif_preview_url?: string;
   preview_type: 'video' | 'gif' | 'image';
   game_file_id?: string;
+  game_file_url?: string;
   has_game_file: boolean;
   is_visible: boolean;
   play_count: number;
   created_at: string;
+  // GameDistribution fields
+  gd_game_id?: string;
+  source?: 'custom' | 'gamedistribution';
+  embed_url?: string;
+  instructions?: string;
 }
 
 // User types
