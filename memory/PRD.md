@@ -13,17 +13,18 @@
 - **Feed Virtualization:** TanStack Virtual + react-use-gesture
 - **State Management:** Zustand
 - **UI Components:** Radix UI + shadcn/ui
+- **PWA:** Service Worker + Web App Manifest
 
 ### ✅ Backend (Current)
 - **Framework:** FastAPI (Python)
 - **Database:** MongoDB
 - **File Storage:** GridFS (to be migrated to CDN)
 - **Auth:** JWT (PyJWT)
+- **Caching:** HTTP Cache headers
 
 ### ⏳ Planned Migrations
 - **Backend:** Supabase (PostgreSQL + Auth + Edge Functions)
 - **Storage:** Cloudflare R2 + CDN
-- **Video:** Support for video/GIF game previews
 
 ---
 
@@ -52,6 +53,13 @@
 - [x] Game deletion
 - [x] Basic analytics (plays, games count)
 - [x] Support for 3 preview types: video, gif, image
+
+### Phase 4: Performance & SEO ✅ (NEW)
+- [x] **Service Worker** for caching and offline support
+- [x] **Game Pre-caching** - Next 2 games are pre-cached as user scrolls
+- [x] **SEO Meta Tags** - Dynamic titles, descriptions, Open Graph for all pages
+- [x] **HTTP Cache Headers** - 60s cache for games list, 5min for game meta
+- [x] **Twitter Cards** - summary_large_image for game sharing
 
 ---
 
