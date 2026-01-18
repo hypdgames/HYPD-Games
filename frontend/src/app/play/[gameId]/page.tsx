@@ -1,4 +1,4 @@
-import type { Metadata, ResolvingMetadata } from "next";
+import type { Metadata } from "next";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
@@ -7,10 +7,7 @@ type Props = {
 };
 
 // Generate dynamic metadata for SEO
-export async function generateMetadata(
-  { params }: Props,
-  parent: ResolvingMetadata
-): Promise<Metadata> {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const gameId = params.gameId;
 
   try {
