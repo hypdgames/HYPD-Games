@@ -24,7 +24,8 @@
 - **File Storage:** ✅ Supabase Storage (games, game-thumbnails, game-previews buckets)
 
 ### ⏳ Planned Integrations
-- **GameDistribution SDK:** For game library and ad monetization
+- ~~**GameDistribution SDK:** For game library and ad monetization~~ ✅ COMPLETED (mock mode)
+- **GameDistribution Real Integration:** Configure actual GD API credentials for live games
 - **Cloudinary:** For video preview optimization (optional)
 - **Redis:** For feed caching at scale (optional)
 
@@ -71,6 +72,18 @@
 - [x] Play endpoint serves game HTML directly (avoids CSP issues)
 - [x] Thumbnails served from Supabase public URLs
 - [x] Full test coverage with pytest (14/14 tests passing)
+
+### Phase 6: GameDistribution Integration ✅ (COMPLETED - Mock Mode)
+- [x] Browse GameDistribution games endpoint with mock data
+- [x] Categories endpoint with 10 game categories
+- [x] Single game import from GameDistribution
+- [x] Bulk import multiple games at once
+- [x] Admin "Import" tab in dashboard to browse and import GD games
+- [x] "Already Added" badges for imported games
+- [x] Game model extended with gd_game_id, source, embed_url, instructions
+- [x] Game player supports GD game embedding via iframe wrapper
+- [x] Play count tracking for GD games
+- [x] 17/17 tests passing
 
 ---
 
