@@ -333,10 +333,14 @@ export default function AdminDashboard() {
 
       <div className="p-6 max-w-4xl mx-auto">
         <Tabs defaultValue="games" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-6">
+          <TabsList className="grid w-full grid-cols-4 mb-6">
             <TabsTrigger value="games" className="flex items-center gap-2">
               <Gamepad2 className="w-4 h-4" />
               Games
+            </TabsTrigger>
+            <TabsTrigger value="gamedistribution" className="flex items-center gap-2">
+              <Globe className="w-4 h-4" />
+              Import
             </TabsTrigger>
             <TabsTrigger value="upload" className="flex items-center gap-2">
               <Upload className="w-4 h-4" />
@@ -344,7 +348,7 @@ export default function AdminDashboard() {
             </TabsTrigger>
             <TabsTrigger value="analytics" className="flex items-center gap-2">
               <BarChart3 className="w-4 h-4" />
-              Analytics
+              Stats
             </TabsTrigger>
           </TabsList>
 
