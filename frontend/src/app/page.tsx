@@ -67,6 +67,21 @@ export default function GameFeed() {
     }
   }, [user]);
 
+  // Pre-cache next games when index changes
+  useEffect(() => {
+    // Pre-cache next 2 games for smooth transitions
+    for (let i = 1; i <= 2; i++) {
+      const nextIndex = currentIndex + i;
+      if (nextIndex < feedItems.length) {
+        const item = feedItems[nextIndex];
+        if (item.type === "game" && item.data && !precachedRef.current.has(item.data.id)) {
+          precacheGame(item.data.id);
+          precachedRef.current.add(item.data.id);
+        }
+      }
+    }
+  }, [currentIndex, feedItems]);
+
   // Virtual list for performance
   const virtualizer = useVirtualizer({
     count: feedItems.length,
