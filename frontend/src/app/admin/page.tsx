@@ -99,6 +99,97 @@ export default function AdminDashboard() {
     setLoading(false);
   };
 
+  // Fetch GameDistribution games
+  const fetchGdGames = async (category?: string, search?: string) => {
+    setGdLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (category) params.append("category", category);
+      if (search) params.append("search", search);
+      
+      const res = await fetch(`${API_URL}/api/gamedistribution/browse?${params}`);
+      if (res.ok) {
+        const data = await res.json();
+        setGdGames(data.games || []);
+      }
+    } catch (error) {
+      console.error("Error fetching GD games:", error);
+      toast.error("Failed to load games from GameDistribution");
+    }
+    setGdLoading(false);
+  };
+
+  // Load GD games on tab switch
+  useEffect(() => {
+    if (gdGames.length === 0) {
+      fetchGdGames();
+    }
+  }, []);
+
+  const toggleGdGameSelection = (gdGameId: string) => {
+    setSelectedGdGames(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(gdGameId)) {
+        newSet.delete(gdGameId);
+      } else {
+        newSet.add(gdGameId);
+      }
+      return newSet;
+    });
+  };
+
+  const importSelectedGames = async () => {
+    if (selectedGdGames.size === 0) {
+      toast.error("Please select at least one game to import");
+      return;
+    }
+
+    setImporting(true);
+    try {
+      const gamesToImport = gdGames
+        .filter(g => selectedGdGames.has(g.gd_game_id))
+        .map(g => ({
+          gd_game_id: g.gd_game_id,
+          title: g.title,
+          description: g.description,
+          category: g.category,
+          thumbnail_url: g.thumbnail_url,
+          embed_url: g.embed_url,
+          instructions: g.instructions
+        }));
+
+      const res = await fetch(`${API_URL}/api/admin/gamedistribution/bulk-import`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(gamesToImport),
+      });
+
+      if (res.ok) {
+        const result = await res.json();
+        toast.success(`Imported ${result.imported} games!`);
+        if (result.skipped > 0) {
+          toast.info(`${result.skipped} games were already imported`);
+        }
+        setSelectedGdGames(new Set());
+        fetchGames();
+      } else {
+        const error = await res.json();
+        toast.error(error.detail || "Failed to import games");
+      }
+    } catch (error) {
+      console.error("Import error:", error);
+      toast.error("Failed to import games");
+    }
+    setImporting(false);
+  };
+
+  const isGameImported = (gdGameId: string) => {
+    return games.some(g => g.gd_game_id === gdGameId);
+  };
+
   const handleCreateGame = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!thumbnailFile || !gameFile) {
