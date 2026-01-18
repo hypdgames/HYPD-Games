@@ -163,6 +163,27 @@ def compress_image(image_data: bytes, max_size: int = 800, quality: int = 75) ->
         logger.error(f"Image compression error: {e}")
         return f"data:image/jpeg;base64,{base64.b64encode(image_data).decode()}"
 
+# Image compression helper that returns bytes (for Supabase Storage upload)
+def compress_image_bytes(image_data: bytes, max_size: int = 800, quality: int = 75) -> bytes:
+    """Compress and resize image, return as bytes"""
+    try:
+        img = Image.open(io.BytesIO(image_data))
+        
+        if img.mode in ('RGBA', 'P'):
+            img = img.convert('RGB')
+        
+        if max(img.size) > max_size:
+            ratio = max_size / max(img.size)
+            new_size = (int(img.size[0] * ratio), int(img.size[1] * ratio))
+            img = img.resize(new_size, Image.Resampling.LANCZOS)
+        
+        buffer = io.BytesIO()
+        img.save(buffer, format='JPEG', quality=quality, optimize=True)
+        return buffer.getvalue()
+    except Exception as e:
+        logger.error(f"Image compression error: {e}")
+        return image_data
+
 # Create the main app
 app = FastAPI(title="Hypd Games API")
 
