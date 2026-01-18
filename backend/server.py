@@ -785,38 +785,7 @@ async def record_play_session(
     
     return {"success": True}
 
-@api_router.get("/admin/analytics/overview")
-async def admin_analytics_overview(
-    user: User = Depends(require_admin),
-    db: AsyncSession = Depends(get_db)
-):
-    """Get analytics overview"""
-    # Total games
-    games_result = await db.execute(select(func.count(Game.id)))
-    total_games = games_result.scalar()
-    
-    # Total users
-    users_result = await db.execute(select(func.count(User.id)))
-    total_users = users_result.scalar()
-    
-    # Total plays
-    plays_result = await db.execute(select(func.sum(Game.play_count)))
-    total_plays = plays_result.scalar() or 0
-    
-    # Today's sessions
-    today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
-    today_result = await db.execute(
-        select(func.count(PlaySession.id))
-        .where(PlaySession.played_at >= today)
-    )
-    today_plays = today_result.scalar() or 0
-    
-    return {
-        "total_games": total_games,
-        "total_users": total_users,
-        "total_plays": int(total_plays),
-        "today_plays": today_plays
-    }
+# Old simple analytics moved to advanced analytics section below
 
 # ==================== SETTINGS ENDPOINTS ====================
 
