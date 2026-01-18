@@ -18,177 +18,169 @@ Feature Specifications:
 **User's preferred language**: English
 
 **what currently exists?**
-A full-stack Hypd Games application with a React frontend, FastAPI backend, and MongoDB database.
+The application has undergone a major architectural migration based on user-approved recommendations. The original stack (React SPA + FastAPI + MongoDB) has been completely replaced.
 
-The platform includes:
-- A TikTok-style vertical game feed.
-- JWT-based user authentication and an admin system.
-- An Admin Dashboard with game management (CRUD) and advanced analytics (retention, cohorts, data export).
-- A Game Player that loads and plays HTML5 games from uploaded ZIP files.
-- A light/dark Auto theme system that persists in local storage.
-- File upload progress indicators.
-- A newly created and uploaded Flappy Frenzy game, inspired by Flappy Bird, with a detailed pixel art style.
-- A complete set of Docker files and deployment scripts for self-hosting.
+The current stack is:
+- **Frontend**: **Next.js 14** with **TypeScript**, using the App Router. The UI/design has been preserved.
+- **State Management**: **Zustand** (replaced Context API).
+- **Feed Mechanics**: A TikTok-style swipeable feed implemented with **TanStack Virtual** (for performance) and **react-use-gesture** (for swipe physics).
+- **Backend**: **FastAPI** connected to a **Supabase PostgreSQL** database.
+- **Database**: **Supabase PostgreSQL**, with schema managed by **Alembic** migrations.
+- **File Storage**: In the process of migrating from MongoDB GridFS to **Supabase Storage**.
+- **PWA**: The application is configured as a Progressive Web App.
+- **SEO**: Dynamic , , and server-side generated meta tags for game pages are implemented.
 
 **Last working item**:
-- Last item agent was working: The user requested a change in the art style of the Flappy Frenzy game to match a more detailed, high-quality pixel art aesthetic from a Behance link. The agent generated new game assets, rebuilt the game's HTML file, tested it, and uploaded the updated version to the platform.
-- Status: USER VERIFICATION PENDING
-- Agent Testing Done: Y
-- Which testing method agent to use? screenshot tool
+- Last item agent was working: Migrating game file handling from the old MongoDB/GridFS system to **Supabase Storage**. The agent installed the  client and updated  to include the Supabase client and helper functions for file uploads. The agent was in the middle of rewriting the game creation endpoint () to upload game assets to Supabase Storage.
+- Status: IN PROGRESS
+- Agent Testing Done: N
+- Which testing method agent to use? backend testing agent or manual  to test the game upload endpoint.
 - User Testing Done: N
 
 **All Pending/In progress Issue list**:
-  - Issue 1: Bottom navbar content is not vertically centered (P0)
-  - Issue 2: User asked to create a Flappy Bird game with a new art style (P0)
+  - Issue 1: Bottom navbar content may not be vertically centered (P1)
 
   Issues Detail:
-  - Issue 1: 
-     - Attempted fixes: The agent made multiple attempts to fix this by adjusting padding (, , ), changing flexbox properties (, ), and removing the  class at the user's request. The user repeatedly stated it was still not centered. The last attempt involved setting equal  padding after removing the safe area class, but the user has not confirmed if this is acceptable.
+  - Issue 1:
+     - Attempted fixes: This was a recurring issue in the old React SPA. The frontend has been completely rewritten in Next.js, including the  component. However, it has not been explicitly verified if the alignment is now correct according to the user's standards.
      - Next debug checklist:
-        1. View .
-        2. Use browser developer tools (via screenshot analysis or by recreating the setup) to inspect the CSS properties of the navbar and its child elements.
-        3. The core issue is likely the combination of a fixed height ( or ), padding, and flexbox properties. A clean solution using , , and  on the link items should be tried.
-        4. Re-introduce the  for iOS usability and adjust padding to compensate, explaining the reason to the user.
-     - Why fix this issue and what will be achieved with the fix? The bottom navigation is a core UI element. Fixing it will improve the app's professional appearance and usability, resolving a persistent point of user dissatisfaction.
-     - Status:  IN PROGRESS
+        1.  Take a screenshot of the main page, focusing on the bottom navigation bar.
+        2.  Analyze the screenshot to see if the icons and text are perfectly centered vertically.
+        3.  If not, inspect  and adjust the flexbox and padding properties (, , etc.) to achieve perfect alignment.
+     - Why fix this issue and what will be achieved with the fix? To resolve a long-standing user-reported UI bug and improve the application's professional polish.
+     - Status: TESTING PENDING
      - Is recurring issue? Y
      - Should Test frontend/backend/both after fix? Frontend
-     - Blocked on other issue: None
-
-  - Issue 2:
-     - Where to resume: The new game has been created and uploaded to the platform. The next step is to show the result to the user and ask for confirmation that the new art style meets their expectations.
-     - What will be achieved with this? This will complete the user's request for a new, high-quality game on the platform.
-     - Status: USER VERIFICATION PENDING
-     - Blocked on something: None
+     - Blocked on other issue: none
 
 **In progress Task List**:
-There are no in-progress tasks separate from the pending issues above.
+  - Task 1: Complete Supabase Storage Integration (P0)
+
+ Task Detail:
+  - Task 1: 
+     - Where to resume: The  endpoint in  needs to be completed. The current implementation still contains parts of the old GridFS logic. The next steps are:
+        1.  Finish rewriting the  endpoint to upload the game ZIP file and thumbnail to Supabase Storage buckets.
+        2.  Ensure the public URLs returned by Supabase are saved in the  table in the PostgreSQL database.
+        3.  Update the  endpoint to return the game's public URL from Supabase Storage, rather than trying to stream the file.
+        4.  Update the frontend  component to use this URL in the iframe .
+        5.  Thoroughly test the game upload and play functionality.
+     - What will be achieved with this? This will complete the database and storage migration, resolving a major performance bottleneck and enabling persistent, scalable file storage for games.
+     - Status: IN PROGRESS
+     - Should Test frontend/backend/both after fix? Both
+     - Blocked on something: None
 
 **Upcoming and Future Tasks**
+- **Upcoming Tasks:**
+    - **P1: GameDistribution Integration**: Integrate the GameDistribution SDK to populate the platform with games and implement ad monetization, as requested by the user.
 - **Future Tasks:**
-    - **P2: Social Features:** Implement social features like friend challenges or game sharing to boost virality, as suggested by the previous agent.
-    - **P2: Google Analytics:** Add integration for Google Analytics for more robust user tracking.
-    - **P2: Refactor :** The component has undergone many conflicting edits and should be refactored for clarity and correctness. Also, re-evaluate the removal of  as it impacts mobile usability.
+    - **P2: Video Previews**: Implement video previews for the game feed, using a service like Cloudinary for optimization. The UI should support showing videos, GIFs, or static images based on what is available for a game.
+    - **P2: Redis Caching**: Integrate Redis to cache the game feed API responses, reducing database load and improving feed-scrolling performance at scale.
+    - **P2: Social Features**: Implement social features like friend challenges or game sharing.
 
 **Completed work in this session**
-- **P1/P2 Features Implemented**:
-  - **Game Upload Enhancements**: Added upload progress indicators using  in .
-  - **WebGL Support**: Added MIME types for  files in .
-  - **UX Enhancements**: Implemented an Auto theme option that respects system preference in .
-  - **Analytics Enhancements**: Added backend endpoints and frontend UI for user retention, cohort analysis, and CSV/JSON data export in  and .
-- **Deployment Package Created**:
-  - Created Dockerfiles for frontend and backend (, ).
-  - Created Docker Compose files for development and production (, ).
-  - Created Nginx configuration () and a deployment script ().
-  - Wrote a comprehensive self-hosting guide in .
-- **New Game Created: Flappy Frenzy**:
-  - Designed, coded, and created a complete Flappy Bird-style game from scratch ().
-  - Iterated on the game's art style based on user feedback, upgrading to a more detailed, high-quality pixel art aesthetic.
-  - Uploaded the game to the Hypd Games platform.
-- **Backend Health Check**: Added a  endpoint to .
-- **UI Adjustments**: Modified the bottom navbar to be slimmer, though vertical alignment remains an issue.
-- **Testing**: Ran backend tests using the testing agent, which all passed.
+- **Full-Stack Architectural Migration**:
+    - **Frontend**: Migrated from a React SPA to a **Next.js 14 + TypeScript** application.
+    - **Backend**: Migrated from **MongoDB** to **Supabase (PostgreSQL)** using SQLAlchemy and Alembic.
+    - **State Management**: Replaced Context API with **Zustand**.
+- **Core Feature Implementation (TikTok-Style Feed)**:
+    - Implemented a virtualized infinite scroll feed using **TanStack Virtual**.
+    - Added physics-based swipe gestures and snap-scrolling using **react-use-gesture**.
+    - Added Pull to Refresh functionality to the feed.
+- **SEO & Performance Enhancements**:
+    - Implemented server-side rendered meta tags for dynamic game pages.
+    - Created dynamic  and  files.
+    - Added  headers to backend API endpoints for browser caching.
+    - Implemented a **Service Worker** to pre-cache game assets for the next game in the feed.
+- **Authentication**: Migrated user authentication from custom JWT on Mongo to work with PostgreSQL.
+- **Testing**: Performed extensive manual testing (screenshots, curl) to verify the UI and functionality after the migration.
 
 **Earlier issues found/mentioned but not fixed**
-   - **Issue 1**: The vertical alignment of the content within the bottom navbar () is incorrect. The user has reported this multiple times, stating there is more padding below the icons and text than above. The agent's fixes have so far been unsuccessful in satisfying the user.
+   - **Issue 1**: The vertical alignment of the bottom navbar. This was a persistent issue in the previous stack. It needs to be re-verified in the new Next.js frontend.
 
 **Known issue recurrence from previous fork**
-None.
+  - None in this session, but the navbar issue is a holdover from a previous one.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- **Frontend**: React, Framer Motion, Tailwind CSS, .
-- **Backend**: FastAPI, Motor (async MongoDB driver), PyJWT.
-- **Database**: MongoDB with GridFS for file storage.
-- **Deployment**: Docker, Docker Compose, Nginx.
-- **Features**: JWT Authentication, dynamic theming, image compression, dynamic asset serving from ZIPs, advanced analytics, self-hosting package.
+- **Frontend**: Next.js (App Router), React, TypeScript, Tailwind CSS, Framer Motion, **TanStack Virtual**, **react-use-gesture**, **Zustand**.
+- **Backend**: FastAPI, **PostgreSQL**, **SQLAlchemy**, **Alembic**, **Supabase-py**.
+- **Database**: Supabase (PostgreSQL).
+- **File Storage**: Supabase Storage (in progress).
+- **Deployment**: Docker, Supervisor (running ).
 
 **key DB schema**
+Defined in  via SQLAlchemy:
 - **users**: 
 - **games**: 
-- **analytics**: 
-- **fs.files, fs.chunks**: GridFS collections.
+- **play_sessions**: 
+- **settings**: 
 
 **changes in tech stack**
-- No changes in this session. Still uses React (Vite) instead of the originally requested Next.js, and MongoDB/GridFS instead of PostgreSQL/S3.
+- **Frontend Framework**: React (Create React App) -> **Next.js 14 (App Router) + TypeScript**.
+- **Database**: MongoDB -> **Supabase (PostgreSQL)**.
+- **Backend ORM**: Motor -> **SQLAlchemy**.
+- **State Management**: React Context -> **Zustand**.
+- **File Storage**: MongoDB GridFS -> **Supabase Storage** (Migration in progress).
+- **Feed Implementation**: Basic scroll -> **TanStack Virtual + react-use-gesture**.
 
 **All files of reference**
-- : Core file for the unresolved UI bug.
-- : The newly created and updated game file.
-- : Contains all backend logic, including new analytics and health endpoints.
-- : Updated with file upload progress.
-- : Updated with new analytics features.
-- : Updated with Auto theme logic.
-- , , , : Key files for the self-hosting guide.
+- : The main FastAPI application file, rewritten for PostgreSQL. **Currently being edited for Supabase Storage.**
+- : The main TikTok-style game feed page.
+- : Defines the new PostgreSQL database schema.
+- : Handles database connection and sessions.
+- : The new bottom navigation component.
+- : The service worker for pre-caching.
 
 **Areas that need refactoring**:
-- : This file has been edited multiple times with conflicting CSS classes to fix the vertical alignment issue. It needs to be cleaned up and implemented correctly using a standard flexbox centering approach.
-- The user-requested removal of the  class is a potential usability problem on modern iPhones and should be discussed with the user and potentially reverted.
+- The  endpoint in  is mid-refactor and must be completed.
+- The  endpoint for games also needs updating to serve from Supabase Storage.
 
 **key api endpoints**
-- : New health check endpoint.
-- : Get user retention data.
-- : Get cohort analysis data.
-- : Export analytics to CSV.
-- : Export analytics to JSON.
-- (Existing endpoints for auth, games, and basic analytics remain).
+- : (In Progress) Endpoint for uploading games. Being updated for Supabase Storage.
+- : Returns the list of games for the feed. Cache headers have been added.
+- : New endpoint to provide metadata for SEO tags on game pages.
+- : Dynamically generated sitemap.
+- Auth endpoints (, ) now use the PostgreSQL user table.
 
 **Critical Info for New Agent**
-- The highest priority is resolving the bottom navbar's vertical alignment issue in . The user is very sensitive to UI details and has rejected multiple fixes. Inspect the component's CSS carefully.
-- The second priority is getting user confirmation on the new Flappy Frenzy art style.
-- Be aware that the  class was removed from the navbar at the user's request. This is not ideal for iOS devices, and you should be prepared to explain its purpose and suggest re-adding it.
-- The agent has already provided extensive documentation for self-hosting with Docker. Refer to  if the user asks about this topic again.
-- The agent offered to contact support about the Made with Emergent watermark but did not follow through. Be prepared to answer this question if it comes up again.
+- The entire stack has been migrated. **Do not refer to the initial handoff summary for technical implementation details**. The source of truth is the new code in  (Next.js) and  (FastAPI + SQLAlchemy).
+- Your immediate priority is to **complete the Supabase Storage migration**. The game upload and play functionality is currently broken.
+- User has provided all necessary Supabase credentials (Project URL, API Keys, DB Password), which have been configured in .
+- The user has explicitly decided **not** to migrate existing games and will instead use GameDistribution. Your task is to ensure the *upload functionality* for future games works with Supabase.
 
 **documents and test reports created in this job**
-- 
--  (updated)
-- 
-- 
-- 
-- 
-- 
-- 
-- 
-- 🎮 Hypd Games Deployment
-========================
-Mode: dev
-
-⚠️  No .env file found. Creating from example...
-📝 Please edit .env with your settings, then run this script again.
-- 
+-  (Significantly updated to reflect the new architecture and completed tasks).
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User**: Asks to recreate the Flappy Bird game art using a more detailed style from a Behance link. (In Progress)
-2.  **User**: Asks about creating a new game, Flappy Bird. (Completed)
-3.  **User**: Asks if the Made with Emergent watermark can be removed. (Agent answered)
-4.  **User**: Requests to remove the safe area and set equal 12px padding on the top and bottom of the navbar. (Completed)
-5.  **User**: States the navbar is still not centered and asks for more padding adjustment. (In Progress)
-6.  **User**: States the navbar is *still* not vertically centered. (In Progress)
-7.  **User**: Points out with a cropped image that the padding under the navbar icons is much larger than above. (In Progress)
-8.  **User**: Rejects the horizontal navbar layout and clarifies the vertical centering issue again. (In Progress)
-9.  **User**: States the navbar icons are too close to the top and need to be more centered. (In Progress)
-10. **User**: Requests the bottom navbar be made 30% slimmer. (Completed)
+1.  **User**: Agrees to migrate to Next.js, TanStack Virtual, Supabase, and Cloudinary. (Completed)
+2.  **User**: Confirms a fresh start is okay but wants the UI to look identical. Asks for confirmation on Supabase/Cloudinary. Decides not to migrate old games. (Completed)
+3.  **User**: Gives the green light to start the migration. (Completed)
+4.  **User**: Asks to continue with enhancements after the main migration. (Completed)
+5.  **User**: Asks to continue after SEO/Service worker enhancements are done. (Completed)
+6.  **User**: Provides Supabase project URL and API keys. (Completed)
+7.  **User**: Provides the Supabase database connection string (with a password placeholder). (Completed)
+8.  **User**: Provides the actual database password. (Completed)
+9.  **User**: Asks to continue with the next steps after the Supabase DB migration is complete. (Completed)
+10. **User**: No pending messages. The last instruction was to continue with the next steps (Supabase Storage and GameDistribution).
 
 **Project Health Check:**
-- **Broken**: The bottom navigation bar's vertical alignment is not correct according to the user.
-- **Mocked**: Game file storage is still mocked with MongoDB GridFS instead of a cloud storage service like AWS S3.
+- **Broken**:
+    - **Game Upload and Play**: This core functionality is non-operational due to the ongoing migration from GridFS to Supabase Storage. This is the highest priority fix.
+- **Mocked**: None.
 
 **3rd Party Integrations**
-- None implemented.
+- **Supabase**: Integrated for PostgreSQL database and Authentication. Storage integration is in progress.
+- **GameDistribution**: Planned for next integration.
+- **Cloudinary**: Discussed and approved by user for video previews, but not yet implemented.
 
 **Testing status**
-  - Testing agent used after significant changes: YES (for backend features)
+  - Testing agent used after significant changes: NO (Agent performed extensive manual testing via screenshots and curl).
   - Troubleshoot agent used after agent stuck in loop: NO
   - Test files created: []
-  - Known regressions: None.
+  - Known regressions: Game upload/play functionality is intentionally broken during migration.
 
 **Credentials to test flow:**
-- **Username**: 
-- **Password**: 
-
-**What agent forgot to execute**
-- The agent did not get final user confirmation for the navbar alignment fix before the user changed topics. The issue remains unresolved from the user's perspective.
-- The agent offered to ask the  about removing the platform watermark but did not execute this action.</analysis>
+- **Admin User**:  / 
+- **Supabase Credentials**: Are configured in .</analysis>
