@@ -483,34 +483,88 @@ async def admin_create_game_with_files(
     user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db)
 ):
-    """Create a new game with uploaded files"""
+    """Create a new game with uploaded files to Supabase Storage"""
     try:
-        # Process thumbnail
-        thumbnail_data = await thumbnail.read()
-        thumbnail_url = compress_image(thumbnail_data)
-        
-        # Process game zip
         game_id = str(uuid.uuid4())
-        zip_data = await game_zip.read()
+        thumbnail_url = None
+        game_file_url = None
+        video_url = None
+        has_game_file = False
         
+        # Read all file data
+        thumbnail_data = await thumbnail.read()
+        zip_data = await game_zip.read()
+        video_data = await video_preview.read() if video_preview and preview_type == "video" else None
+        
+        # Process and upload thumbnail to Supabase Storage
+        if supabase_client:
+            try:
+                # Compress thumbnail
+                compressed_thumb = compress_image_bytes(thumbnail_data)
+                thumb_path = f"{game_id}/thumbnail.jpg"
+                
+                # Upload thumbnail
+                thumb_upload = upload_to_storage(THUMBNAILS_BUCKET, thumb_path, compressed_thumb, "image/jpeg")
+                if thumb_upload:
+                    thumbnail_url = thumb_upload
+                    logger.info(f"Thumbnail uploaded to Supabase: {thumb_path}")
+            except Exception as e:
+                logger.error(f"Thumbnail upload error: {e}")
+                # Fallback to base64
+                thumbnail_url = compress_image(thumbnail_data)
+        else:
+            # Fallback to base64 if Supabase not available
+            thumbnail_url = compress_image(thumbnail_data)
+        
+        # Process game ZIP file
         try:
             with zipfile.ZipFile(io.BytesIO(zip_data), 'r') as zip_ref:
-                # Find index.html
+                # Find and extract index.html
+                html_content = None
                 for name in zip_ref.namelist():
                     if name.endswith('index.html'):
                         html_content = zip_ref.read(name).decode('utf-8')
-                        game_files_cache[game_id] = html_content
                         break
+                
+                if html_content:
+                    if supabase_client:
+                        # Upload the HTML content to Supabase Storage
+                        game_path = f"{game_id}/index.html"
+                        game_upload = upload_to_storage(GAMES_BUCKET, game_path, html_content.encode('utf-8'), "text/html")
+                        if game_upload:
+                            game_file_url = game_upload
+                            has_game_file = True
+                            logger.info(f"Game HTML uploaded to Supabase: {game_path}")
+                        else:
+                            # Fallback to in-memory cache
+                            game_files_cache[game_id] = html_content
+                            has_game_file = True
+                    else:
+                        # Store in memory cache
+                        game_files_cache[game_id] = html_content
+                        has_game_file = True
+                        
         except zipfile.BadZipFile:
             raise HTTPException(status_code=400, detail="Invalid ZIP file")
         
-        # Process video preview if provided
-        video_url = None
-        if video_preview and preview_type == "video":
-            video_data = await video_preview.read()
+        # Upload video preview if provided
+        if video_data and supabase_client:
+            try:
+                video_path = f"{game_id}/preview.mp4"
+                video_upload = upload_to_storage(PREVIEWS_BUCKET, video_path, video_data, "video/mp4")
+                if video_upload:
+                    video_url = video_upload
+                    logger.info(f"Video preview uploaded to Supabase: {video_path}")
+                else:
+                    # Fallback to base64 (not recommended for large videos)
+                    video_url = f"data:video/mp4;base64,{base64.b64encode(video_data).decode()}"
+            except Exception as e:
+                logger.error(f"Video upload error: {e}")
+                video_url = f"data:video/mp4;base64,{base64.b64encode(video_data).decode()}"
+        elif video_data:
             video_url = f"data:video/mp4;base64,{base64.b64encode(video_data).decode()}"
         
-        # Create game
+        # Create game record
         new_game = Game(
             id=game_id,
             title=title,
@@ -519,7 +573,8 @@ async def admin_create_game_with_files(
             thumbnail_url=thumbnail_url,
             video_preview_url=video_url,
             preview_type=preview_type,
-            has_game_file=game_id in game_files_cache,
+            game_file_url=game_file_url,  # Supabase Storage URL
+            has_game_file=has_game_file,
             is_visible=True,
             play_count=0
         )
@@ -528,8 +583,11 @@ async def admin_create_game_with_files(
         await db.commit()
         await db.refresh(new_game)
         
+        logger.info(f"Game created: {game_id} - {title}")
         return GameResponse(**new_game.to_dict())
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error creating game: {e}")
         raise HTTPException(status_code=500, detail=str(e))
