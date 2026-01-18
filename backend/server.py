@@ -1143,6 +1143,674 @@ async def bulk_import_gd_games(
         "skipped_games": skipped
     }
 
+# ==================== SOCIAL FEATURES ====================
+
+# Pydantic models for social features
+class FriendRequest(BaseModel):
+    user_id: str
+
+class ChallengeCreate(BaseModel):
+    title: str
+    description: Optional[str] = None
+    challenge_type: str = "daily"  # daily, weekly, friend
+    target_type: str = "plays"  # plays, score, time, games_played
+    target_value: int
+    game_id: Optional[str] = None
+    friend_id: Optional[str] = None  # For friend challenges
+    ends_at: Optional[str] = None
+
+class ScoreSubmission(BaseModel):
+    game_id: str
+    score: int
+    play_time: int = 0  # seconds
+
+# ---- Friends ----
+
+@api_router.get("/friends")
+async def get_friends(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get user's friends list"""
+    # Get accepted friendships where user is either requester or addressee
+    result = await db.execute(
+        select(Friendship).where(
+            and_(
+                or_(
+                    Friendship.requester_id == user.id,
+                    Friendship.addressee_id == user.id
+                ),
+                Friendship.status == FriendshipStatus.ACCEPTED
+            )
+        )
+    )
+    friendships = result.scalars().all()
+    
+    friends = []
+    for f in friendships:
+        friend_id = f.addressee_id if f.requester_id == user.id else f.requester_id
+        friend_result = await db.execute(select(User).where(User.id == friend_id))
+        friend = friend_result.scalar_one_or_none()
+        if friend:
+            friends.append(friend.to_dict())
+    
+    return {"friends": friends}
+
+@api_router.get("/friends/requests")
+async def get_friend_requests(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get pending friend requests"""
+    result = await db.execute(
+        select(Friendship).where(
+            and_(
+                Friendship.addressee_id == user.id,
+                Friendship.status == FriendshipStatus.PENDING
+            )
+        )
+    )
+    requests = result.scalars().all()
+    
+    pending = []
+    for r in requests:
+        requester_result = await db.execute(select(User).where(User.id == r.requester_id))
+        requester = requester_result.scalar_one_or_none()
+        if requester:
+            pending.append({
+                "request_id": r.id,
+                "user": requester.to_dict(),
+                "created_at": r.created_at.isoformat()
+            })
+    
+    return {"requests": pending}
+
+@api_router.post("/friends/request")
+async def send_friend_request(
+    request: FriendRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Send a friend request"""
+    if request.user_id == user.id:
+        raise HTTPException(status_code=400, detail="Cannot friend yourself")
+    
+    # Check if target user exists
+    result = await db.execute(select(User).where(User.id == request.user_id))
+    target = result.scalar_one_or_none()
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Check for existing friendship
+    existing = await db.execute(
+        select(Friendship).where(
+            or_(
+                and_(Friendship.requester_id == user.id, Friendship.addressee_id == request.user_id),
+                and_(Friendship.requester_id == request.user_id, Friendship.addressee_id == user.id)
+            )
+        )
+    )
+    if existing.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Friendship already exists or pending")
+    
+    # Create friend request
+    friendship = Friendship(
+        requester_id=user.id,
+        addressee_id=request.user_id,
+        status=FriendshipStatus.PENDING
+    )
+    db.add(friendship)
+    await db.commit()
+    
+    return {"success": True, "message": "Friend request sent"}
+
+@api_router.post("/friends/accept/{request_id}")
+async def accept_friend_request(
+    request_id: str,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Accept a friend request"""
+    result = await db.execute(
+        select(Friendship).where(
+            and_(
+                Friendship.id == request_id,
+                Friendship.addressee_id == user.id,
+                Friendship.status == FriendshipStatus.PENDING
+            )
+        )
+    )
+    friendship = result.scalar_one_or_none()
+    if not friendship:
+        raise HTTPException(status_code=404, detail="Friend request not found")
+    
+    friendship.status = FriendshipStatus.ACCEPTED
+    friendship.updated_at = datetime.now(timezone.utc)
+    await db.commit()
+    
+    return {"success": True, "message": "Friend request accepted"}
+
+@api_router.post("/friends/decline/{request_id}")
+async def decline_friend_request(
+    request_id: str,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Decline a friend request"""
+    result = await db.execute(
+        select(Friendship).where(
+            and_(
+                Friendship.id == request_id,
+                Friendship.addressee_id == user.id,
+                Friendship.status == FriendshipStatus.PENDING
+            )
+        )
+    )
+    friendship = result.scalar_one_or_none()
+    if not friendship:
+        raise HTTPException(status_code=404, detail="Friend request not found")
+    
+    friendship.status = FriendshipStatus.DECLINED
+    friendship.updated_at = datetime.now(timezone.utc)
+    await db.commit()
+    
+    return {"success": True, "message": "Friend request declined"}
+
+@api_router.delete("/friends/{friend_id}")
+async def remove_friend(
+    friend_id: str,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Remove a friend"""
+    result = await db.execute(
+        select(Friendship).where(
+            and_(
+                or_(
+                    and_(Friendship.requester_id == user.id, Friendship.addressee_id == friend_id),
+                    and_(Friendship.requester_id == friend_id, Friendship.addressee_id == user.id)
+                ),
+                Friendship.status == FriendshipStatus.ACCEPTED
+            )
+        )
+    )
+    friendship = result.scalar_one_or_none()
+    if not friendship:
+        raise HTTPException(status_code=404, detail="Friendship not found")
+    
+    await db.delete(friendship)
+    await db.commit()
+    
+    return {"success": True, "message": "Friend removed"}
+
+# ---- Leaderboards ----
+
+@api_router.get("/leaderboard/global")
+async def get_global_leaderboard(
+    limit: int = 50,
+    db: AsyncSession = Depends(get_db)
+):
+    """Get global leaderboard (top players by total play time and games)"""
+    # Check cache first
+    cached = get_leaderboard("global")
+    if cached:
+        return {"leaderboard": cached, "cached": True}
+    
+    result = await db.execute(
+        select(User)
+        .order_by(desc(User.total_games_played), desc(User.total_play_time))
+        .limit(limit)
+    )
+    users = result.scalars().all()
+    
+    leaderboard = []
+    for i, u in enumerate(users, 1):
+        leaderboard.append({
+            "rank": i,
+            "user": u.to_dict(),
+            "total_games": u.total_games_played or 0,
+            "total_time": u.total_play_time or 0
+        })
+    
+    # Cache the result
+    set_leaderboard(leaderboard, "global")
+    
+    return {"leaderboard": leaderboard, "cached": False}
+
+@api_router.get("/leaderboard/game/{game_id}")
+async def get_game_leaderboard(
+    game_id: str,
+    limit: int = 50,
+    db: AsyncSession = Depends(get_db)
+):
+    """Get leaderboard for a specific game"""
+    # Check cache first
+    cached = get_leaderboard("game", game_id)
+    if cached:
+        return {"leaderboard": cached, "cached": True}
+    
+    # Get high scores from users for this game
+    result = await db.execute(select(User))
+    users = result.scalars().all()
+    
+    scores = []
+    for u in users:
+        if u.high_scores and game_id in u.high_scores:
+            scores.append({
+                "user": u.to_dict(),
+                "score": u.high_scores[game_id]
+            })
+    
+    # Sort by score descending
+    scores.sort(key=lambda x: x["score"], reverse=True)
+    scores = scores[:limit]
+    
+    # Add ranks
+    leaderboard = [{"rank": i + 1, **s} for i, s in enumerate(scores)]
+    
+    # Cache the result
+    set_leaderboard(leaderboard, "game", game_id)
+    
+    return {"leaderboard": leaderboard, "cached": False}
+
+@api_router.post("/leaderboard/submit")
+async def submit_score(
+    submission: ScoreSubmission,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Submit a score for a game"""
+    # Update user's high score if this is higher
+    high_scores = user.high_scores or {}
+    current_high = high_scores.get(submission.game_id, 0)
+    
+    if submission.score > current_high:
+        high_scores[submission.game_id] = submission.score
+        user.high_scores = high_scores
+    
+    # Update play stats
+    user.total_games_played = (user.total_games_played or 0) + 1
+    user.total_play_time = (user.total_play_time or 0) + submission.play_time
+    user.last_active_at = datetime.now(timezone.utc)
+    
+    await db.commit()
+    
+    # Invalidate leaderboard cache
+    invalidate_leaderboard(submission.game_id)
+    invalidate_leaderboard()
+    
+    return {
+        "success": True,
+        "new_high_score": submission.score > current_high,
+        "high_score": high_scores.get(submission.game_id, submission.score)
+    }
+
+# ---- Challenges ----
+
+@api_router.get("/challenges")
+async def get_challenges(
+    challenge_type: Optional[str] = None,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get active challenges"""
+    now = datetime.now(timezone.utc)
+    
+    query = select(Challenge).where(
+        and_(
+            Challenge.status == ChallengeStatus.ACTIVE,
+            or_(Challenge.ends_at.is_(None), Challenge.ends_at > now)
+        )
+    )
+    
+    if challenge_type:
+        query = query.where(Challenge.challenge_type == ChallengeType(challenge_type))
+    
+    result = await db.execute(query.order_by(desc(Challenge.created_at)))
+    challenges = result.scalars().all()
+    
+    # Get user's progress for each challenge
+    challenges_with_progress = []
+    for c in challenges:
+        participation = await db.execute(
+            select(ChallengeParticipant).where(
+                and_(
+                    ChallengeParticipant.challenge_id == c.id,
+                    ChallengeParticipant.user_id == user.id
+                )
+            )
+        )
+        participant = participation.scalar_one_or_none()
+        
+        challenge_data = c.to_dict()
+        challenge_data["joined"] = participant is not None
+        challenge_data["progress"] = participant.progress if participant else 0
+        challenge_data["completed"] = participant.completed if participant else False
+        challenges_with_progress.append(challenge_data)
+    
+    return {"challenges": challenges_with_progress}
+
+@api_router.post("/challenges/join/{challenge_id}")
+async def join_challenge(
+    challenge_id: str,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Join a challenge"""
+    result = await db.execute(
+        select(Challenge).where(Challenge.id == challenge_id)
+    )
+    challenge = result.scalar_one_or_none()
+    if not challenge:
+        raise HTTPException(status_code=404, detail="Challenge not found")
+    
+    # Check if already joined
+    existing = await db.execute(
+        select(ChallengeParticipant).where(
+            and_(
+                ChallengeParticipant.challenge_id == challenge_id,
+                ChallengeParticipant.user_id == user.id
+            )
+        )
+    )
+    if existing.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Already joined this challenge")
+    
+    participant = ChallengeParticipant(
+        challenge_id=challenge_id,
+        user_id=user.id,
+        progress=0,
+        completed=False
+    )
+    db.add(participant)
+    await db.commit()
+    
+    return {"success": True, "message": "Joined challenge"}
+
+@api_router.post("/challenges/create")
+async def create_challenge(
+    challenge_data: ChallengeCreate,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Create a new challenge (friend challenges)"""
+    ends_at = None
+    if challenge_data.ends_at:
+        ends_at = datetime.fromisoformat(challenge_data.ends_at.replace('Z', '+00:00'))
+    elif challenge_data.challenge_type == "daily":
+        ends_at = datetime.now(timezone.utc) + timedelta(days=1)
+    elif challenge_data.challenge_type == "weekly":
+        ends_at = datetime.now(timezone.utc) + timedelta(weeks=1)
+    
+    challenge = Challenge(
+        title=challenge_data.title,
+        description=challenge_data.description,
+        challenge_type=ChallengeType(challenge_data.challenge_type),
+        status=ChallengeStatus.ACTIVE,
+        target_type=challenge_data.target_type,
+        target_value=challenge_data.target_value,
+        game_id=challenge_data.game_id,
+        creator_id=user.id,
+        ends_at=ends_at
+    )
+    db.add(challenge)
+    await db.commit()
+    await db.refresh(challenge)
+    
+    # Auto-join creator
+    participant = ChallengeParticipant(
+        challenge_id=challenge.id,
+        user_id=user.id,
+        progress=0,
+        completed=False
+    )
+    db.add(participant)
+    
+    # If friend challenge, add the friend
+    if challenge_data.friend_id:
+        friend_participant = ChallengeParticipant(
+            challenge_id=challenge.id,
+            user_id=challenge_data.friend_id,
+            progress=0,
+            completed=False
+        )
+        db.add(friend_participant)
+    
+    await db.commit()
+    
+    return {"success": True, "challenge": challenge.to_dict()}
+
+# ---- Admin: Create system challenges ----
+
+@api_router.post("/admin/challenges/create")
+async def admin_create_challenge(
+    challenge_data: ChallengeCreate,
+    user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Admin: Create a system challenge (daily/weekly)"""
+    ends_at = None
+    if challenge_data.ends_at:
+        ends_at = datetime.fromisoformat(challenge_data.ends_at.replace('Z', '+00:00'))
+    elif challenge_data.challenge_type == "daily":
+        ends_at = datetime.now(timezone.utc).replace(hour=23, minute=59, second=59)
+    elif challenge_data.challenge_type == "weekly":
+        ends_at = datetime.now(timezone.utc) + timedelta(days=7 - datetime.now(timezone.utc).weekday())
+    
+    challenge = Challenge(
+        title=challenge_data.title,
+        description=challenge_data.description,
+        challenge_type=ChallengeType(challenge_data.challenge_type),
+        status=ChallengeStatus.ACTIVE,
+        target_type=challenge_data.target_type,
+        target_value=challenge_data.target_value,
+        game_id=challenge_data.game_id,
+        reward_points=100 if challenge_data.challenge_type == "daily" else 500,
+        ends_at=ends_at
+    )
+    db.add(challenge)
+    await db.commit()
+    await db.refresh(challenge)
+    
+    return {"success": True, "challenge": challenge.to_dict()}
+
+# ==================== ANALYTICS ====================
+
+@api_router.get("/admin/analytics/overview")
+async def get_analytics_overview(
+    user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get comprehensive analytics overview"""
+    now = datetime.now(timezone.utc)
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    week_start = today_start - timedelta(days=now.weekday())
+    month_start = today_start.replace(day=1)
+    
+    # Total stats
+    total_users = await db.execute(select(func.count(User.id)))
+    total_games = await db.execute(select(func.count(Game.id)).where(Game.is_visible.is_(True)))
+    total_plays = await db.execute(select(func.sum(Game.play_count)))
+    
+    # Today's stats
+    new_users_today = await db.execute(
+        select(func.count(User.id)).where(User.created_at >= today_start)
+    )
+    plays_today = await db.execute(
+        select(func.count(PlaySession.id)).where(PlaySession.session_start >= today_start)
+    )
+    
+    # Active users (played in last 24 hours)
+    active_users = await db.execute(
+        select(func.count(func.distinct(PlaySession.user_id))).where(
+            PlaySession.session_start >= now - timedelta(hours=24)
+        )
+    )
+    
+    # This week
+    plays_this_week = await db.execute(
+        select(func.count(PlaySession.id)).where(PlaySession.session_start >= week_start)
+    )
+    
+    # Top games
+    top_games_result = await db.execute(
+        select(Game).where(Game.is_visible.is_(True)).order_by(desc(Game.play_count)).limit(10)
+    )
+    top_games = [{"id": g.id, "title": g.title, "plays": g.play_count} for g in top_games_result.scalars().all()]
+    
+    # Category breakdown
+    category_result = await db.execute(
+        select(Game.category, func.sum(Game.play_count).label("plays"))
+        .where(Game.is_visible.is_(True))
+        .group_by(Game.category)
+        .order_by(desc("plays"))
+    )
+    categories = [{"category": c[0], "plays": c[1] or 0} for c in category_result.all()]
+    
+    return {
+        "overview": {
+            "total_users": total_users.scalar() or 0,
+            "total_games": total_games.scalar() or 0,
+            "total_plays": total_plays.scalar() or 0,
+            "new_users_today": new_users_today.scalar() or 0,
+            "plays_today": plays_today.scalar() or 0,
+            "active_users_24h": active_users.scalar() or 0,
+            "plays_this_week": plays_this_week.scalar() or 0
+        },
+        "top_games": top_games,
+        "categories": categories,
+        "redis_status": "connected" if is_redis_available() else "not configured"
+    }
+
+@api_router.get("/admin/analytics/daily")
+async def get_daily_analytics(
+    days: int = 30,
+    user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get daily analytics for the last N days"""
+    now = datetime.now(timezone.utc)
+    start_date = now - timedelta(days=days)
+    
+    daily_data = []
+    
+    for i in range(days):
+        day = start_date + timedelta(days=i)
+        day_start = day.replace(hour=0, minute=0, second=0, microsecond=0)
+        day_end = day_start + timedelta(days=1)
+        
+        # Plays for this day
+        plays = await db.execute(
+            select(func.count(PlaySession.id)).where(
+                and_(
+                    PlaySession.session_start >= day_start,
+                    PlaySession.session_start < day_end
+                )
+            )
+        )
+        
+        # Unique players
+        unique_players = await db.execute(
+            select(func.count(func.distinct(PlaySession.user_id))).where(
+                and_(
+                    PlaySession.session_start >= day_start,
+                    PlaySession.session_start < day_end
+                )
+            )
+        )
+        
+        # New users
+        new_users = await db.execute(
+            select(func.count(User.id)).where(
+                and_(
+                    User.created_at >= day_start,
+                    User.created_at < day_end
+                )
+            )
+        )
+        
+        daily_data.append({
+            "date": day_start.isoformat(),
+            "plays": plays.scalar() or 0,
+            "unique_players": unique_players.scalar() or 0,
+            "new_users": new_users.scalar() or 0
+        })
+    
+    return {"daily_stats": daily_data}
+
+@api_router.get("/admin/analytics/retention")
+async def get_retention_analytics(
+    user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get user retention analytics"""
+    now = datetime.now(timezone.utc)
+    
+    # Users who signed up in the last 7 days
+    week_ago = now - timedelta(days=7)
+    
+    result = await db.execute(
+        select(User).where(User.created_at >= week_ago)
+    )
+    new_users = result.scalars().all()
+    
+    retention_data = {
+        "day_1": 0,
+        "day_3": 0,
+        "day_7": 0,
+        "total_new_users": len(new_users)
+    }
+    
+    for u in new_users:
+        signup_date = u.created_at
+        
+        # Check if user played after day 1, 3, 7
+        for days, key in [(1, "day_1"), (3, "day_3"), (7, "day_7")]:
+            check_date = signup_date + timedelta(days=days)
+            if check_date > now:
+                continue
+                
+            played = await db.execute(
+                select(PlaySession).where(
+                    and_(
+                        PlaySession.user_id == u.id,
+                        PlaySession.session_start >= check_date,
+                        PlaySession.session_start < check_date + timedelta(days=1)
+                    )
+                ).limit(1)
+            )
+            if played.scalar_one_or_none():
+                retention_data[key] += 1
+    
+    # Calculate percentages
+    if retention_data["total_new_users"] > 0:
+        for key in ["day_1", "day_3", "day_7"]:
+            retention_data[f"{key}_pct"] = round(
+                retention_data[key] / retention_data["total_new_users"] * 100, 1
+            )
+    
+    return {"retention": retention_data}
+
+@api_router.post("/analytics/event")
+async def track_event(
+    event_type: str,
+    game_id: Optional[str] = None,
+    event_data: Optional[dict] = None,
+    user: Optional[User] = Depends(get_optional_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Track an analytics event"""
+    event = AnalyticsEvent(
+        event_type=event_type,
+        user_id=user.id if user else None,
+        game_id=game_id,
+        event_data=event_data or {}
+    )
+    db.add(event)
+    await db.commit()
+    
+    return {"success": True}
+
 # ==================== APP SETUP ====================
 
 # Include router
