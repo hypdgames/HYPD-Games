@@ -426,8 +426,7 @@ async def get_game_meta(game_id: str, db: AsyncSession = Depends(get_db)):
 
 @api_router.get("/games/{game_id}/play")
 async def get_game_file(game_id: str, db: AsyncSession = Depends(get_db)):
-    """Serve game HTML content or redirect to Supabase Storage"""
-    from fastapi.responses import RedirectResponse
+    """Serve game HTML content directly (avoids CSP issues from Supabase Storage redirect)"""
     
     result = await db.execute(select(Game).where(Game.id == game_id))
     game = result.scalar_one_or_none()
@@ -438,10 +437,16 @@ async def get_game_file(game_id: str, db: AsyncSession = Depends(get_db)):
     await db.execute(update(Game).where(Game.id == game_id).values(play_count=Game.play_count + 1))
     await db.commit()
     
-    # Check if game has a Supabase Storage URL
-    if game.game_file_url:
-        # Redirect to the Supabase Storage public URL
-        return RedirectResponse(url=game.game_file_url, status_code=302)
+    # Try to get game content from Supabase Storage
+    if game.game_file_url and supabase_client:
+        try:
+            # Extract path from URL and download content
+            game_path = f"{game_id}/index.html"
+            content = download_from_storage(GAMES_BUCKET, game_path)
+            if content:
+                return HTMLResponse(content=content.decode('utf-8'), media_type="text/html")
+        except Exception as e:
+            logger.error(f"Error downloading game from storage: {e}")
     
     # Fallback: Get game file from in-memory cache
     if game_id in game_files_cache:
