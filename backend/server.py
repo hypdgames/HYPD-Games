@@ -58,6 +58,88 @@ logger = logging.getLogger(__name__)
 # In-memory game file storage (fallback if Supabase Storage not available)
 game_files_cache: dict = {}
 
+# Supabase Storage bucket names
+GAMES_BUCKET = "games"
+THUMBNAILS_BUCKET = "game-thumbnails"
+PREVIEWS_BUCKET = "game-previews"
+
+# Initialize storage buckets
+async def initialize_storage_buckets():
+    """Create storage buckets if they don't exist"""
+    if not supabase_client:
+        logger.warning("Supabase client not initialized, skipping bucket creation")
+        return
+    
+    try:
+        # List existing buckets
+        existing_buckets = supabase_client.storage.list_buckets()
+        existing_names = [b.name for b in existing_buckets]
+        
+        buckets_to_create = [
+            (GAMES_BUCKET, {"public": True}),
+            (THUMBNAILS_BUCKET, {"public": True}),
+            (PREVIEWS_BUCKET, {"public": True}),
+        ]
+        
+        for bucket_name, options in buckets_to_create:
+            if bucket_name not in existing_names:
+                try:
+                    supabase_client.storage.create_bucket(bucket_name, options)
+                    logger.info(f"Created storage bucket: {bucket_name}")
+                except Exception as e:
+                    logger.warning(f"Bucket {bucket_name} may already exist: {e}")
+    except Exception as e:
+        logger.error(f"Error initializing storage buckets: {e}")
+
+# Upload file to Supabase Storage
+def upload_to_storage(bucket: str, file_path: str, content: bytes, content_type: str = "application/octet-stream") -> Optional[str]:
+    """Upload file to Supabase Storage and return public URL"""
+    if not supabase_client:
+        return None
+    
+    try:
+        response = supabase_client.storage.from_(bucket).upload(
+            path=file_path,
+            file=content,
+            file_options={
+                "content-type": content_type,
+                "cache-control": "3600"
+            }
+        )
+        
+        # Get public URL
+        public_url = supabase_client.storage.from_(bucket).get_public_url(file_path)
+        return public_url
+    except Exception as e:
+        logger.error(f"Storage upload error: {e}")
+        return None
+
+# Delete file from Supabase Storage
+def delete_from_storage(bucket: str, file_path: str) -> bool:
+    """Delete file from Supabase Storage"""
+    if not supabase_client:
+        return False
+    
+    try:
+        supabase_client.storage.from_(bucket).remove([file_path])
+        return True
+    except Exception as e:
+        logger.error(f"Storage delete error: {e}")
+        return False
+
+# Download file from Supabase Storage
+def download_from_storage(bucket: str, file_path: str) -> Optional[bytes]:
+    """Download file from Supabase Storage"""
+    if not supabase_client:
+        return None
+    
+    try:
+        response = supabase_client.storage.from_(bucket).download(file_path)
+        return response
+    except Exception as e:
+        logger.error(f"Storage download error: {e}")
+        return None
+
 # Image compression helper
 def compress_image(image_data: bytes, max_size: int = 800, quality: int = 75) -> str:
     """Compress and resize image, return as base64 data URL"""
