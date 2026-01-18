@@ -133,10 +133,47 @@ export default function GameFeed() {
     }, 100);
   }, [currentIndex, feedItems.length]);
 
-  // Gesture handling for swipe
+  // Handle pull-to-refresh
+  const handleRefresh = useCallback(async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    await fetchGames(true);
+    setRefreshing(false);
+    setPullDistance(0);
+    // Reset to top
+    if (containerRef.current) {
+      containerRef.current.scrollTo({ top: 0, behavior: "smooth" });
+      setCurrentIndex(0);
+    }
+  }, [refreshing, fetchGames]);
+
+  // Gesture handling for swipe and pull-to-refresh
   const bind = useDrag(
-    ({ direction: [, dy], velocity: [, vy], last }) => {
-      if (!last || !containerRef.current) return;
+    ({ movement: [, my], direction: [, dy], velocity: [, vy], last, first, cancel }) => {
+      if (!containerRef.current) return;
+      
+      const scrollTop = containerRef.current.scrollTop;
+      const isAtTop = scrollTop <= 0;
+      
+      // Pull-to-refresh logic (only when at top and pulling down)
+      if (isAtTop && my > 0 && currentIndex === 0) {
+        if (!last) {
+          // While dragging down at top
+          const pull = Math.min(my * 0.5, PULL_THRESHOLD + 20);
+          setPullDistance(pull);
+        } else {
+          // On release
+          if (pullDistance >= PULL_THRESHOLD) {
+            handleRefresh();
+          } else {
+            setPullDistance(0);
+          }
+        }
+        return;
+      }
+      
+      // Normal swipe navigation
+      if (!last) return;
       
       const threshold = 0.3;
       if (Math.abs(vy) > threshold) {
