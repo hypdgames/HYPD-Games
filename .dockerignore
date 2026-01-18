@@ -26,11 +26,6 @@ venv
 frontend/build
 *.log
 
-# Environment files (will be set via docker-compose)
-.env
-backend/.env
-frontend/.env
-
 # Test files
 test_reports
 tests
