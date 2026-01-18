@@ -149,7 +149,7 @@ export default function GameFeed() {
 
   // Gesture handling for swipe and pull-to-refresh
   const bind = useDrag(
-    ({ movement: [, my], direction: [, dy], velocity: [, vy], last, first, cancel }) => {
+    ({ movement: [, my], direction: [, dy], velocity: [, vy], last }) => {
       if (!containerRef.current) return;
       
       const scrollTop = containerRef.current.scrollTop;
