@@ -18,7 +18,11 @@ load_dotenv(Path(__file__).parent.parent / '.env')
 
 # Import models for metadata
 from database import Base
-from models import User, Game, PlaySession, AppSettings
+from models import (
+    User, Game, PlaySession, AppSettings,
+    Friendship, Challenge, ChallengeParticipant,
+    LeaderboardEntry, AnalyticsEvent, DailyStats
+)
 
 # this is the Alembic Config object
 config = context.config
