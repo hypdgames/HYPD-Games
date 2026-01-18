@@ -74,8 +74,8 @@ export default function ProfilePage() {
     try {
       await login(loginForm);
       toast.success("Welcome back!");
-    } catch {
-      toast.error(err.message);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Login failed");
     }
     setLoading(false);
   };
@@ -94,8 +94,8 @@ export default function ProfilePage() {
     try {
       await register(registerForm);
       toast.success("Account created successfully!");
-    } catch {
-      toast.error(err.message);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Registration failed");
     }
     setLoading(false);
   };
