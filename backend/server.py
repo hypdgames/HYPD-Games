@@ -33,6 +33,10 @@ from models import User, Game, PlaySession, AppSettings
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
+# Setup logging (must be early for other initializations)
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # JWT Configuration
 JWT_SECRET = os.environ.get('JWT_SECRET', 'hypd-games-secret-key-2024')
 JWT_ALGORITHM = "HS256"
@@ -50,10 +54,6 @@ if SUPABASE_URL and SUPABASE_SERVICE_KEY:
 
 # Security
 security = HTTPBearer()
-
-# Setup logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 # In-memory game file storage (fallback if Supabase Storage not available)
 game_files_cache: dict = {}
