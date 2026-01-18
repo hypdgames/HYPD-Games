@@ -1,6 +1,6 @@
 """
 Hypd Games API Server
-Backend powered by FastAPI + Supabase PostgreSQL
+Backend powered by FastAPI + Supabase PostgreSQL + Supabase Storage
 """
 
 from fastapi import FastAPI, APIRouter, HTTPException, Depends, UploadFile, File, Form, status
@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from sqlalchemy import select, update, delete, func, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
+from supabase import create_client, Client
 import os
 import logging
 from pathlib import Path
@@ -23,6 +24,7 @@ import io
 import base64
 import zipfile
 from PIL import Image
+import httpx
 
 # Local imports
 from database import get_db, engine, Base
@@ -36,6 +38,16 @@ JWT_SECRET = os.environ.get('JWT_SECRET', 'hypd-games-secret-key-2024')
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRATION_HOURS = 24
 
+# Supabase Configuration
+SUPABASE_URL = os.environ.get('SUPABASE_URL')
+SUPABASE_SERVICE_KEY = os.environ.get('SUPABASE_SERVICE_KEY')
+
+# Initialize Supabase client for Storage
+supabase_client: Optional[Client] = None
+if SUPABASE_URL and SUPABASE_SERVICE_KEY:
+    supabase_client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+    logger.info("Supabase Storage client initialized")
+
 # Security
 security = HTTPBearer()
 
@@ -43,7 +55,7 @@ security = HTTPBearer()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# In-memory game file storage (temporary - will move to Supabase Storage)
+# In-memory game file storage (fallback if Supabase Storage not available)
 game_files_cache: dict = {}
 
 # Image compression helper
