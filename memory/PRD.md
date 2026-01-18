@@ -21,11 +21,12 @@
 - **ORM:** SQLAlchemy with async support
 - **Migrations:** Alembic
 - **Auth:** JWT (PyJWT) - custom implementation
-- **File Storage:** In-memory cache (to be migrated to Supabase Storage)
+- **File Storage:** ✅ Supabase Storage (games, game-thumbnails, game-previews buckets)
 
-### ⏳ Planned Migrations
-- **Storage:** Supabase Storage for game files (replacing in-memory cache)
-- **Auth:** Consider migrating to Supabase Auth for social logins
+### ⏳ Planned Integrations
+- **GameDistribution SDK:** For game library and ad monetization
+- **Cloudinary:** For video preview optimization (optional)
+- **Redis:** For feed caching at scale (optional)
 
 ---
 
@@ -55,12 +56,21 @@
 - [x] Basic analytics (plays, games count)
 - [x] Support for 3 preview types: video, gif, image
 
-### Phase 4: Performance & SEO ✅ (NEW)
-- [x] **Service Worker** for caching and offline support
-- [x] **Game Pre-caching** - Next 2 games are pre-cached as user scrolls
-- [x] **SEO Meta Tags** - Dynamic titles, descriptions, Open Graph for all pages
-- [x] **HTTP Cache Headers** - 60s cache for games list, 5min for game meta
-- [x] **Twitter Cards** - summary_large_image for game sharing
+### Phase 4: Performance & SEO ✅
+- [x] Service Worker for caching and offline support
+- [x] Game Pre-caching - Next 2 games are pre-cached as user scrolls
+- [x] SEO Meta Tags - Dynamic titles, descriptions, Open Graph for all pages
+- [x] HTTP Cache Headers - 60s cache for games list, 5min for game meta
+- [x] Twitter Cards - summary_large_image for game sharing
+- [x] Dynamic sitemap.xml and robots.txt
+
+### Phase 5: Supabase Storage Integration ✅ (COMPLETED)
+- [x] Migrated game file storage to Supabase Storage
+- [x] Automatic bucket creation on startup (games, game-thumbnails, game-previews)
+- [x] Game uploads store thumbnails and HTML to Supabase
+- [x] Play endpoint serves game HTML directly (avoids CSP issues)
+- [x] Thumbnails served from Supabase public URLs
+- [x] Full test coverage with pytest (14/14 tests passing)
 
 ---
 
@@ -80,40 +90,42 @@
 │                   BACKEND (FastAPI)                         │
 │  /api/auth/* - Authentication                               │
 │  /api/games/* - Game CRUD + Meta endpoint                   │
-│  /api/admin/* - Admin endpoints                             │
+│  /api/admin/* - Admin endpoints + File upload               │
 │  /api/analytics/* - Play tracking                           │
 │  Cache Headers: 60s games, 300s meta                        │
 └─────────────────────────────────────────────────────────────┘
                               │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│                   DATABASE (MongoDB)                        │
-│  Collections: users, games, analytics, fs.files, fs.chunks  │
-└─────────────────────────────────────────────────────────────┘
+        ┌─────────────────────┴─────────────────────┐
+        ▼                                           ▼
+┌─────────────────────────┐             ┌─────────────────────────┐
+│   SUPABASE POSTGRESQL   │             │   SUPABASE STORAGE      │
+│   Tables: users, games  │             │   Buckets:              │
+│   play_sessions,        │             │   - games               │
+│   app_settings          │             │   - game-thumbnails     │
+└─────────────────────────┘             │   - game-previews       │
+                                        └─────────────────────────┘
 ```
 
 ---
 
-## File Structure (Updated)
+## File Structure
 
 ```
 /app/
 ├── backend/
-│   ├── server.py           # FastAPI app
+│   ├── server.py           # FastAPI app + Supabase Storage
+│   ├── database.py         # SQLAlchemy async setup
+│   ├── models.py           # User, Game, PlaySession models
+│   ├── alembic/            # Database migrations
 │   ├── requirements.txt
-│   └── .env
+│   └── .env                # Supabase credentials
 ├── frontend/               # Next.js 14 + TypeScript
 │   ├── src/
 │   │   ├── app/
 │   │   │   ├── layout.tsx
 │   │   │   ├── page.tsx           # TikTok-style feed
 │   │   │   ├── explore/
-│   │   │   │   ├── page.tsx
-│   │   │   │   ├── explore-page.tsx
-│   │   │   │   └── layout.tsx     # SEO metadata
 │   │   │   ├── pro/
-│   │   │   │   ├── page.tsx
-│   │   │   │   └── layout.tsx     # SEO metadata
 │   │   │   ├── profile/page.tsx
 │   │   │   ├── admin/page.tsx
 │   │   │   └── play/[gameId]/
@@ -123,63 +135,45 @@
 │   │   │   ├── bottom-nav.tsx
 │   │   │   ├── theme-toggle.tsx
 │   │   │   ├── providers.tsx
-│   │   │   ├── service-worker.tsx # SW registration
+│   │   │   ├── service-worker.tsx
 │   │   │   └── ui/
 │   │   ├── store/
-│   │   │   ├── auth-store.ts
-│   │   │   └── theme-store.ts
-│   │   ├── types/
-│   │   │   └── index.ts
 │   │   └── lib/
-│   │       └── utils.ts
-│   ├── public/
-│   │   └── manifest.json
-│   ├── tailwind.config.ts
-│   └── package.json
-└── games/
-    └── flappy-frenzy/
+│   └── public/
+└── tests/
+    └── test_supabase_storage.py    # Backend API tests
 ```
 
 ---
 
 ## Upcoming Tasks (Prioritized)
 
-### P0 - Critical
-1. **Backend Migration to Supabase**
-   - Set up Supabase project
-   - Migrate PostgreSQL schema
-   - Migrate authentication
-   - Update frontend API calls
-
 ### P1 - High Priority
-2. **CDN Integration (Cloudflare R2)**
-   - Move game files from GridFS to R2
-   - Set up signed URLs for secure downloads
-   - Enable video preview uploads
-
-3. **GameDistribution Integration**
+1. **GameDistribution Integration**
    - Research GameDistribution SDK
-   - Implement ad placements
-   - Set up revenue tracking
+   - Implement game catalog import
+   - Set up ad placements and revenue tracking
 
 ### P2 - Medium Priority
-4. **Ad System**
+2. **Video Preview Support (Cloudinary)**
+   - Add video upload support to admin
+   - Implement video optimization pipeline
+   - Support video/gif/image preview types
+
+3. **Ad System**
    - Feed interstitial ads (every 5-8 games)
    - In-game rewarded ads API
    - Google Ad Manager integration
 
-5. **Sitemap Generation**
-   - Dynamic sitemap.xml for all games
-   - Submit to Google Search Console
-
 ### P3 - Low Priority (Nice to Have)
-6. **Redis Caching**
+4. **Redis Caching**
    - Add Redis for feed caching at scale
    - Session management
 
-7. **Video Optimization Pipeline**
-   - Automatic WebP/AVIF conversion
-   - Video transcoding for previews
+5. **Social Features**
+   - Friend challenges
+   - Game sharing with deep links
+   - Leaderboards
 
 ---
 
@@ -190,27 +184,15 @@
 
 ## Changelog
 
-### January 18, 2025
-- **MAJOR:** Migrated frontend from React (CRA) to Next.js 14 + TypeScript
-- **MAJOR:** Implemented TanStack Virtual for virtualized feed
-- **MAJOR:** Added react-use-gesture for swipe mechanics
-- **Added:** PWA manifest for standalone mode
-- **Added:** Zustand for state management
-- **Updated:** All pages to use Next.js App Router
-- **Updated:** Design system preserved (lime accent, glassmorphism, etc.)
-- **Tested:** All core flows working (feed, explore, profile, admin)
-
-### January 18, 2025 (Session 2)
-- **Added:** Service Worker for caching and offline support
-- **Added:** Game pre-caching (next 2 games as user scrolls)
-- **Added:** Dynamic SEO meta tags for all pages
-- **Added:** Open Graph + Twitter Card support for game sharing
-- **Added:** HTTP Cache headers on API endpoints (60s/300s)
-- **Added:** Game metadata endpoint (`/api/games/{id}/meta`)
-- **Added:** Dynamic sitemap.xml for SEO
-- **Added:** robots.txt for search engines
-- **Added:** Pull-to-refresh on game feed (TikTok-style)
-- **Improved:** File structure with separate layout files for SEO
+### January 18, 2025 (Session 4 - SUPABASE STORAGE COMPLETE)
+- **MAJOR:** Completed Supabase Storage integration for game files
+- **Added:** Automatic storage bucket creation (games, game-thumbnails, game-previews)
+- **Added:** Upload endpoint saves thumbnails and game HTML to Supabase Storage
+- **Added:** Play endpoint downloads and serves game content directly (avoids CSP issues)
+- **Added:** Comprehensive pytest test suite (14/14 tests passing)
+- **Fixed:** Logger initialization order bug in server.py
+- **Fixed:** Bucket creation API parameters for supabase-py
+- **Tested:** Full game upload and play flow verified working
 
 ### January 18, 2025 (Session 3 - SUPABASE MIGRATION)
 - **MAJOR:** Migrated database from MongoDB to PostgreSQL/Supabase
@@ -218,12 +200,14 @@
 - **Added:** Alembic for database migrations
 - **Created:** New database schema (users, games, play_sessions, app_settings)
 - **Updated:** All backend endpoints to use PostgreSQL
-- **Tested:** Full authentication flow with new database
-- **Seeded:** Sample games in Supabase
 
-### Previous Session
-- Created Flappy Frenzy game with pixel art style
-- Added file upload progress indicators
-- Implemented Auto theme option
-- Added analytics features (retention, cohorts, export)
-- Created Docker deployment package
+### January 18, 2025 (Session 2)
+- **Added:** Service Worker for caching and offline support
+- **Added:** Game pre-caching (next 2 games as user scrolls)
+- **Added:** Dynamic SEO meta tags for all pages
+- **Added:** Dynamic sitemap.xml and robots.txt
+
+### January 18, 2025 (Session 1)
+- **MAJOR:** Migrated frontend from React (CRA) to Next.js 14 + TypeScript
+- **MAJOR:** Implemented TanStack Virtual for virtualized feed
+- **MAJOR:** Added react-use-gesture for swipe mechanics
