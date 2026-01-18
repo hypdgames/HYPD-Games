@@ -1,235 +1,172 @@
-# Hypd Games - Self-Hosting Deployment Guide
+# Hypd Games - Deployment Guide
 
-## Quick Start (5 minutes)
+## Architecture Overview
 
-### Prerequisites
-- A VPS with Ubuntu 22.04+ (DigitalOcean, Linode, Vultr, AWS, etc.)
-- Minimum specs: 1 CPU, 2GB RAM, 25GB storage
-- A domain name (optional but recommended for HTTPS)
-
-### Step 1: Connect to your server
-```bash
-ssh root@your-server-ip
 ```
-
-### Step 2: Install Docker
-```bash
-# Update system
-apt update && apt upgrade -y
-
-# Install Docker
-curl -fsSL https://get.docker.com | sh
-
-# Install Docker Compose
-apt install docker-compose-plugin -y
-
-# Verify installation
-docker --version
-docker compose version
-```
-
-### Step 3: Clone/Upload the project
-```bash
-# Create app directory
-mkdir -p /opt/hypd-games
-cd /opt/hypd-games
-
-# Upload your project files (use scp, rsync, or git)
-# Example with scp from your local machine:
-# scp -r /path/to/hypd-games/* root@your-server-ip:/opt/hypd-games/
-```
-
-### Step 4: Configure environment
-```bash
-# Copy example env file
-cp .env.example .env
-
-# Edit with your values
-nano .env
-```
-
-**Important:** Change these values in `.env`:
-- `DOMAIN` - Your domain name
-- `SITE_URL` - Full URL with https://
-- `JWT_SECRET` - Generate with: `openssl rand -hex 32`
-- `SSL_EMAIL` - Your email for SSL notifications
-
-### Step 5: Deploy!
-
-**Option A: Without SSL (HTTP only, for testing)**
-```bash
-docker compose up -d
-```
-Your app is now live at `http://your-server-ip`
-
-**Option B: With SSL/HTTPS (Production)**
-```bash
-# Point your domain to your server IP first!
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-```
-Your app is now live at `https://your-domain.com`
-
----
-
-## DigitalOcean Specific Instructions
-
-### Create a Droplet
-1. Go to [DigitalOcean](https://digitalocean.com)
-2. Create → Droplets
-3. Choose:
-   - **Image:** Ubuntu 22.04
-   - **Plan:** Basic, $6/mo (1GB RAM) or $12/mo (2GB RAM recommended)
-   - **Datacenter:** Choose closest to your users
-   - **Authentication:** SSH Key (recommended) or Password
-4. Click "Create Droplet"
-
-### Connect your domain
-1. Go to Networking → Domains
-2. Add your domain
-3. Create an A record pointing to your Droplet IP
-4. Wait 5-15 minutes for DNS propagation
-
-### Using DigitalOcean Managed MongoDB (Optional)
-If you want a managed database instead of self-hosted:
-
-1. Go to Databases → Create Database Cluster
-2. Choose MongoDB
-3. Select plan ($15/mo minimum)
-4. Update your `.env`:
-```
-MONGO_URL=mongodb+srv://doadmin:password@your-cluster.mongo.ondigitalocean.com/hypd_games?authSource=admin&replicaSet=your-cluster
+┌─────────────────────────────────────────────────────────────┐
+│                    VERCEL (Frontend)                        │
+│                 Next.js 14 + TypeScript                     │
+│              https://hypdgames.vercel.app                   │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   RAILWAY (Backend)                         │
+│                      FastAPI                                │
+│           https://hypdgames-api.railway.app                 │
+└─────────────────────────────────────────────────────────────┘
+                              │
+              ┌───────────────┴───────────────┐
+              ▼                               ▼
+┌─────────────────────────┐       ┌─────────────────────────┐
+│    SUPABASE Database    │       │   SUPABASE Storage      │
+│      PostgreSQL         │       │   (Game Files)          │
+└─────────────────────────┘       └─────────────────────────┘
 ```
 
 ---
 
-## Management Commands
+## Step 1: Deploy Backend to Railway
 
-### View logs
-```bash
-# All services
-docker compose logs -f
+### 1.1 Create Railway Account
+1. Go to [railway.app](https://railway.app)
+2. Sign up with GitHub
 
-# Specific service
-docker compose logs -f backend
-docker compose logs -f frontend
-docker compose logs -f mongodb
+### 1.2 Create New Project
+1. Click "New Project" → "Deploy from GitHub repo"
+2. Select your repository
+3. Choose the `backend` folder as the root directory
+
+### 1.3 Configure Environment Variables
+In Railway Dashboard → Variables, add:
+
+```
+DATABASE_URL=postgresql://postgres.kmgymgivnactoigjfbbh:YOUR_PASSWORD@aws-0-ap-northeast-1.pooler.supabase.com:6543/postgres
+SUPABASE_URL=https://kmgymgivnactoigjfbbh.supabase.co
+SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_KEY=your-service-key
+JWT_SECRET=generate-a-strong-random-secret
+CORS_ORIGINS=https://your-frontend.vercel.app
 ```
 
-### Restart services
-```bash
-docker compose restart
+### 1.4 Deploy
+Railway will automatically deploy. Note your Railway URL (e.g., `https://hypdgames-api.up.railway.app`)
+
+---
+
+## Step 2: Deploy Frontend to Vercel
+
+### 2.1 Create Vercel Account
+1. Go to [vercel.com](https://vercel.com)
+2. Sign up with GitHub
+
+### 2.2 Import Project
+1. Click "Add New" → "Project"
+2. Import your GitHub repository
+3. Set Root Directory to `frontend`
+4. Framework Preset: Next.js (auto-detected)
+
+### 2.3 Configure Environment Variables
+In Vercel Dashboard → Settings → Environment Variables, add:
+
+```
+NEXT_PUBLIC_API_URL=https://your-backend.up.railway.app
 ```
 
-### Update the application
-```bash
-# Pull latest code
-git pull  # or upload new files
+### 2.4 Deploy
+Click "Deploy". Vercel will build and deploy automatically.
 
-# Rebuild and restart
-docker compose up -d --build
+---
+
+## Step 3: Update CORS (Important!)
+
+After deploying frontend, go back to Railway and update:
+
+```
+CORS_ORIGINS=https://your-frontend.vercel.app
 ```
 
-### Backup MongoDB data
-```bash
-# Create backup
-docker exec hypd-mongodb mongodump --out /data/backup
+---
 
-# Copy backup to host
-docker cp hypd-mongodb:/data/backup ./mongodb-backup-$(date +%Y%m%d)
-```
+## Step 4: Custom Domain (Optional)
 
-### Restore MongoDB data
-```bash
-# Copy backup to container
-docker cp ./mongodb-backup hypd-mongodb:/data/backup
+### Vercel (Frontend)
+1. Go to Project Settings → Domains
+2. Add your domain (e.g., `hypdgames.com`)
+3. Update DNS records as instructed
 
-# Restore
-docker exec hypd-mongodb mongorestore /data/backup
-```
+### Railway (Backend)
+1. Go to Service Settings → Networking → Custom Domain
+2. Add subdomain (e.g., `api.hypdgames.com`)
+3. Update DNS records as instructed
+
+After adding custom domains, update:
+- Railway: `CORS_ORIGINS=https://hypdgames.com`
+- Vercel: `NEXT_PUBLIC_API_URL=https://api.hypdgames.com`
+
+---
+
+## Environment Variables Summary
+
+### Backend (Railway)
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `DATABASE_URL` | Supabase PostgreSQL connection string | `postgresql://...` |
+| `SUPABASE_URL` | Supabase project URL | `https://xxx.supabase.co` |
+| `SUPABASE_ANON_KEY` | Supabase anonymous key | `eyJ...` |
+| `SUPABASE_SERVICE_KEY` | Supabase service role key | `eyJ...` |
+| `JWT_SECRET` | Secret for JWT tokens | Random 32+ char string |
+| `CORS_ORIGINS` | Allowed frontend origins | `https://hypdgames.com` |
+
+### Frontend (Vercel)
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `NEXT_PUBLIC_API_URL` | Backend API URL | `https://api.hypdgames.com` |
+
+---
+
+## Estimated Costs
+
+| Service | Free Tier | Paid |
+|---------|-----------|------|
+| Vercel | 100GB bandwidth/mo | $20/mo Pro |
+| Railway | $5 free credits/mo | Pay as you go |
+| Supabase | 500MB DB, 1GB storage | $25/mo Pro |
+
+**Total: $0-5/month for hobby usage**
 
 ---
 
 ## Troubleshooting
 
-### App not loading
-```bash
-# Check if containers are running
-docker compose ps
+### CORS Errors
+- Ensure `CORS_ORIGINS` in Railway matches your Vercel URL exactly
+- Include `https://` prefix
+- No trailing slash
 
-# Check logs for errors
-docker compose logs --tail=100
-```
+### Database Connection Issues
+- Verify `DATABASE_URL` format is correct
+- Check Supabase dashboard for connection pooler URL
 
-### MongoDB connection issues
-```bash
-# Check if MongoDB is healthy
-docker exec hypd-mongodb mongosh --eval "db.adminCommand('ping')"
-
-# Check backend can reach MongoDB
-docker compose logs backend | grep -i mongo
-```
-
-### SSL certificate not working
-```bash
-# Check acme-companion logs
-docker compose -f docker-compose.yml -f docker-compose.prod.yml logs acme-companion
-
-# Verify DNS is pointing to your server
-dig your-domain.com
-```
-
-### Out of memory
-```bash
-# Check memory usage
-docker stats
-
-# Add swap space
-fallocate -l 2G /swapfile
-chmod 600 /swapfile
-mkswap /swapfile
-swapon /swapfile
-echo '/swapfile none swap sw 0 0' >> /etc/fstab
-```
+### Build Failures
+- Check build logs in Vercel/Railway dashboards
+- Ensure all environment variables are set
 
 ---
 
-## Security Checklist
+## Post-Deployment Checklist
 
-- [ ] Changed default JWT_SECRET
-- [ ] Changed admin password from `admin123`
-- [ ] Set up firewall (UFW)
-- [ ] Enabled automatic security updates
-- [ ] Set up SSL/HTTPS
-- [ ] Configured backup strategy
-
-### Basic firewall setup
-```bash
-ufw allow OpenSSH
-ufw allow 80/tcp
-ufw allow 443/tcp
-ufw enable
-```
+- [ ] Backend health check: `https://your-api.railway.app/api/health`
+- [ ] Frontend loads game feed
+- [ ] User can login (admin@hypd.games / admin123)
+- [ ] Admin dashboard accessible
+- [ ] Games can be uploaded
+- [ ] Games can be played
 
 ---
 
-## Cost Comparison
+## Support
 
-| Provider | Minimum Spec | Monthly Cost |
-|----------|-------------|--------------|
-| DigitalOcean | 1GB RAM | $6 |
-| DigitalOcean | 2GB RAM (recommended) | $12 |
-| Linode | 2GB RAM | $12 |
-| Vultr | 2GB RAM | $12 |
-| AWS Lightsail | 2GB RAM | $10 |
-| Hetzner | 2GB RAM | €4.50 (~$5) |
-
-**Note:** These are self-managed. You handle updates, security, backups.
-
----
-
-## Need Help?
-
-- Check container logs: `docker compose logs -f`
-- MongoDB shell: `docker exec -it hypd-mongodb mongosh`
-- Backend shell: `docker exec -it hypd-backend bash`
-- Frontend shell: `docker exec -it hypd-frontend sh`
+- Vercel Docs: https://vercel.com/docs
+- Railway Docs: https://docs.railway.app
+- Supabase Docs: https://supabase.com/docs
