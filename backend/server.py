@@ -98,7 +98,7 @@ def upload_to_storage(bucket: str, file_path: str, content: bytes, content_type:
         return None
     
     try:
-        response = supabase_client.storage.from_(bucket).upload(
+        supabase_client.storage.from_(bucket).upload(
             path=file_path,
             file=content,
             file_options={
