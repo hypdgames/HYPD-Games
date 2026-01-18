@@ -226,6 +226,7 @@ class GameResponse(BaseModel):
     video_preview_url: Optional[str] = None
     gif_preview_url: Optional[str] = None
     preview_type: str = "image"
+    game_file_url: Optional[str] = None  # Supabase Storage URL
     has_game_file: bool = False
     is_visible: bool = True
     play_count: int = 0
