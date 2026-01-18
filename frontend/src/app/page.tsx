@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useDrag } from "@use-gesture/react";
-import { Play, Volume2, VolumeX, Heart, Share2, Loader2 } from "lucide-react";
+import { Play, Volume2, VolumeX, Heart, Share2, Loader2, RefreshCw } from "lucide-react";
 import { useAuthStore } from "@/store";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { precacheGame } from "@/components/service-worker";
@@ -16,6 +16,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 // Insert ad every N games
 const AD_FREQUENCY = 6;
+const PULL_THRESHOLD = 80; // pixels to pull before refresh triggers
 
 export default function GameFeed() {
   const router = useRouter();
@@ -24,6 +25,8 @@ export default function GameFeed() {
   const [games, setGames] = useState<Game[]>([]);
   const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [pullDistance, setPullDistance] = useState(0);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [muted, setMuted] = useState(true);
   const [savedGames, setSavedGames] = useState<Set<string>>(new Set());
@@ -32,32 +35,46 @@ export default function GameFeed() {
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const precachedRef = useRef<Set<string>>(new Set());
 
-  // Fetch games
-  useEffect(() => {
-    const fetchGames = async () => {
-      try {
-        const res = await fetch(`${API_URL}/api/games`);
-        if (res.ok) {
-          const data = await res.json();
-          setGames(data);
-          
-          // Create feed items with ad placeholders
-          const items: FeedItem[] = [];
-          data.forEach((game: Game, index: number) => {
-            items.push({ type: "game", data: game });
-            // Insert ad placeholder every AD_FREQUENCY games
-            if ((index + 1) % AD_FREQUENCY === 0 && index < data.length - 1) {
-              items.push({ type: "ad", adType: "video" });
-            }
-          });
-          setFeedItems(items);
+  // Fetch games function (reusable for refresh)
+  const fetchGames = useCallback(async (showToast = false) => {
+    try {
+      const res = await fetch(`${API_URL}/api/games`, {
+        cache: "no-store", // Force fresh data on refresh
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setGames(data);
+        
+        // Create feed items with ad placeholders
+        const items: FeedItem[] = [];
+        data.forEach((game: Game, index: number) => {
+          items.push({ type: "game", data: game });
+          // Insert ad placeholder every AD_FREQUENCY games
+          if ((index + 1) % AD_FREQUENCY === 0 && index < data.length - 1) {
+            items.push({ type: "ad", adType: "video" });
+          }
+        });
+        setFeedItems(items);
+        
+        if (showToast) {
+          toast.success("Feed refreshed!");
         }
-      } catch (e) {
-        console.error("Error fetching games:", e);
       }
+    } catch (e) {
+      console.error("Error fetching games:", e);
+      if (showToast) {
+        toast.error("Failed to refresh");
+      }
+    }
+  }, []);
+
+  // Initial fetch
+  useEffect(() => {
+    const init = async () => {
+      await fetchGames();
       setLoading(false);
     };
-    fetchGames();
+    init();
   }, []);
 
   // Sync saved games from user
