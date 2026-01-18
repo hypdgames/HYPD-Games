@@ -4,6 +4,7 @@ import "./globals.css";
 import { BottomNav } from "@/components/bottom-nav";
 import { Providers } from "@/components/providers";
 import { ToastProvider } from "@/components/toast-provider";
+import { ServiceWorkerRegistration } from "@/components/service-worker";
 
 const chivo = Chivo({
   subsets: ["latin"],
@@ -26,6 +27,30 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
     title: "HYPD Games",
   },
+  keywords: ["games", "browser games", "instant games", "free games", "play online"],
+  authors: [{ name: "HYPD Games" }],
+  creator: "HYPD Games",
+  publisher: "HYPD Games",
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    siteName: "HYPD Games",
+    title: "HYPD Games - Play Instant Games",
+    description: "TikTok-style instant gaming platform. Swipe, play, enjoy!",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "HYPD Games - Play Instant Games",
+    description: "TikTok-style instant gaming platform. Swipe, play, enjoy!",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+    },
+  },
 };
 
 export const viewport: Viewport = {
@@ -45,6 +70,7 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <body className={`${chivo.variable} ${manrope.variable} font-sans antialiased`}>
         <Providers>
+          <ServiceWorkerRegistration />
           <main className="min-h-screen bg-background transition-colors duration-300">
             {children}
           </main>
