@@ -11,16 +11,16 @@ const navItems = [
 export default function BottomNav() {
   return (
     <nav 
-      className="fixed bottom-0 left-0 right-0 glass border-t border-border z-50 pb-safe"
+      className="fixed bottom-0 left-0 right-0 glass border-t border-border z-50"
       data-testid="bottom-navigation"
     >
-      <div className="flex justify-around items-center h-11 max-w-md mx-auto">
+      <div className="flex justify-around items-center h-12 max-w-md mx-auto pb-safe">
         {navItems.map(({ path, icon: Icon, label }) => (
           <NavLink
             key={path}
             to={path}
             className={({ isActive }) =>
-              `flex flex-col items-center justify-center w-14 h-full touch-target transition-all duration-200 ${
+              `flex items-center justify-center gap-1.5 px-3 h-full touch-target transition-all duration-200 ${
                 isActive 
                   ? "text-lime" 
                   : "text-muted-foreground hover:text-foreground"
@@ -36,7 +36,7 @@ export default function BottomNav() {
                   }`} 
                   strokeWidth={isActive ? 2.5 : 1.5}
                 />
-                <span className={`text-[10px] mt-0.5 font-medium ${
+                <span className={`text-[10px] font-medium ${
                   isActive ? "font-bold" : ""
                 }`}>
                   {label}
