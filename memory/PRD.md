@@ -207,7 +207,19 @@
 - **Added:** Open Graph + Twitter Card support for game sharing
 - **Added:** HTTP Cache headers on API endpoints (60s/300s)
 - **Added:** Game metadata endpoint (`/api/games/{id}/meta`)
+- **Added:** Dynamic sitemap.xml for SEO
+- **Added:** robots.txt for search engines
+- **Added:** Pull-to-refresh on game feed (TikTok-style)
 - **Improved:** File structure with separate layout files for SEO
+
+### January 18, 2025 (Session 3 - SUPABASE MIGRATION)
+- **MAJOR:** Migrated database from MongoDB to PostgreSQL/Supabase
+- **Added:** SQLAlchemy ORM with async support
+- **Added:** Alembic for database migrations
+- **Created:** New database schema (users, games, play_sessions, app_settings)
+- **Updated:** All backend endpoints to use PostgreSQL
+- **Tested:** Full authentication flow with new database
+- **Seeded:** Sample games in Supabase
 
 ### Previous Session
 - Created Flappy Frenzy game with pixel art style
