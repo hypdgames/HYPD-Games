@@ -14,6 +14,10 @@ import {
   BarChart3,
   Image as ImageIcon,
   Video,
+  Globe,
+  Plus,
+  Check,
+  Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,7 +29,18 @@ import type { Game } from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
-const CATEGORIES = ["Action", "Puzzle", "Arcade", "Racing", "Sports"];
+const CATEGORIES = ["Action", "Puzzle", "Arcade", "Racing", "Sports", "Strategy"];
+
+interface GDGame {
+  gd_game_id: string;
+  title: string;
+  description: string;
+  category: string;
+  thumbnail_url: string;
+  embed_url: string;
+  instructions?: string;
+  mobile?: boolean;
+}
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -35,6 +50,14 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  
+  // GameDistribution state
+  const [gdGames, setGdGames] = useState<GDGame[]>([]);
+  const [gdLoading, setGdLoading] = useState(false);
+  const [gdCategory, setGdCategory] = useState<string>("");
+  const [gdSearch, setGdSearch] = useState("");
+  const [selectedGdGames, setSelectedGdGames] = useState<Set<string>>(new Set());
+  const [importing, setImporting] = useState(false);
   
   const gameFileRef = useRef<HTMLInputElement>(null);
   const thumbnailRef = useRef<HTMLInputElement>(null);
