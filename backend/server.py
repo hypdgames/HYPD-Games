@@ -1625,7 +1625,6 @@ async def get_analytics_overview(
     now = datetime.now(timezone.utc)
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     week_start = today_start - timedelta(days=now.weekday())
-    month_start = today_start.replace(day=1)
     
     # Total stats
     total_users = await db.execute(select(func.count(User.id)))
