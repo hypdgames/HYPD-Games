@@ -244,6 +244,18 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleFaviconFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setFaviconFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setFaviconPreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const saveSettings = async () => {
     setSavingSettings(true);
     try {
