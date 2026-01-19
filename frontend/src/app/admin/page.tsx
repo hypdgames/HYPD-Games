@@ -218,12 +218,6 @@ export default function AdminDashboard() {
         if (data.primary_color) {
           setPrimaryColor(data.primary_color);
         }
-        if (data.accent_color) {
-          setAccentColor(data.accent_color);
-        }
-        if (data.background_color) {
-          setBackgroundColor(data.background_color);
-        }
       }
     } catch (error) {
       console.error("Error fetching settings:", error);
