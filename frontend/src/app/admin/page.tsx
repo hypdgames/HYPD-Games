@@ -151,8 +151,6 @@ export default function AdminDashboard() {
   const [faviconFile, setFaviconFile] = useState<File | null>(null);
   const [faviconPreview, setFaviconPreview] = useState<string>("");
   const [primaryColor, setPrimaryColor] = useState<string>("#CCFF00");
-  const [accentColor, setAccentColor] = useState<string>("#8B5CF6");
-  const [backgroundColor, setBackgroundColor] = useState<string>("#0a0a0a");
   const [savingSettings, setSavingSettings] = useState(false);
   
   const gameFileRef = useRef<HTMLInputElement>(null);
