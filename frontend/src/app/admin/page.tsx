@@ -131,6 +131,7 @@ export default function AdminDashboard() {
   const [categoryStats, setCategoryStats] = useState<CategoryStats[]>([]);
   const [topGames, setTopGames] = useState<TopGame[]>([]);
   const [retention, setRetention] = useState<RetentionData | null>(null);
+  const [regionData, setRegionData] = useState<RegionData[]>([]);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   
   const gameFileRef = useRef<HTMLInputElement>(null);
