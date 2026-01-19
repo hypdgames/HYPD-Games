@@ -88,12 +88,14 @@ export default function RootLayout({
       </head>
       <body className={`${chivo.variable} ${manrope.variable} font-sans antialiased`}>
         <Providers>
-          <ServiceWorkerRegistration />
-          <main className="min-h-screen bg-background transition-colors duration-300">
-            {children}
-          </main>
-          <BottomNav />
-          <ToastProvider />
+          <SettingsProvider>
+            <ServiceWorkerRegistration />
+            <main className="min-h-screen bg-background transition-colors duration-300">
+              {children}
+            </main>
+            <BottomNav />
+            <ToastProvider />
+          </SettingsProvider>
         </Providers>
       </body>
     </html>
