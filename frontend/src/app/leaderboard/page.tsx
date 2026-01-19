@@ -156,7 +156,7 @@ export default function LeaderboardPage() {
   return (
     <div className="min-h-screen bg-background pb-24" data-testid="leaderboard-page">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border">
+      <div className="sticky top-0 z-10 bg-background border-b border-border">
         <div className="p-4">
           <h1 className="text-2xl font-black text-foreground flex items-center gap-2">
             <Trophy className="w-7 h-7 text-lime" />
