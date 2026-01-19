@@ -935,6 +935,46 @@ async def update_settings(
     await db.commit()
     return {"success": True}
 
+@api_router.post("/admin/upload-logo")
+async def upload_logo(
+    file: UploadFile = File(...),
+    user: User = Depends(require_admin),
+):
+    """Upload a logo image"""
+    try:
+        # Read file content
+        content = await file.read()
+        
+        # Generate unique filename
+        file_ext = file.filename.split(".")[-1] if file.filename else "png"
+        filename = f"logo_{uuid.uuid4().hex[:8]}.{file_ext}"
+        
+        # Upload to Supabase storage
+        if supabase:
+            # Try to delete old logo first
+            try:
+                supabase.storage.from_("game-thumbnails").remove([f"logos/{filename}"])
+            except:
+                pass
+            
+            # Upload new logo
+            result = supabase.storage.from_("game-thumbnails").upload(
+                f"logos/{filename}",
+                content,
+                {"content-type": file.content_type or "image/png"}
+            )
+            
+            # Get public URL
+            public_url = supabase.storage.from_("game-thumbnails").get_public_url(f"logos/{filename}")
+            
+            return {"success": True, "url": public_url}
+        else:
+            raise HTTPException(status_code=500, detail="Storage not configured")
+            
+    except Exception as e:
+        logger.error(f"Error uploading logo: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # ==================== GAMEDISTRIBUTION INTEGRATION ====================
 
 class GDGameImport(BaseModel):
