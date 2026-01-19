@@ -231,26 +231,6 @@ export default function AdminDashboard() {
     setAnalyticsLoading(false);
   };
 
-  // Fetch GameDistribution games
-  const fetchGdGames = async (category?: string, search?: string) => {
-    setGdLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (category) params.append("category", category);
-      if (search) params.append("search", search);
-      
-      const res = await fetch(`${API_URL}/api/gamedistribution/browse?${params}`);
-      if (res.ok) {
-        const data = await res.json();
-        setGdGames(data.games || []);
-      }
-    } catch (error) {
-      console.error("Error fetching GD games:", error);
-      toast.error("Failed to load games from GameDistribution");
-    }
-    setGdLoading(false);
-  };
-
   // Fetch GamePix games
   const fetchGpxGames = async (category?: string, page: number = 1, append: boolean = false) => {
     setGpxLoading(true);
@@ -291,30 +271,12 @@ export default function AdminDashboard() {
     }
   };
 
-  // Load GD games on tab switch
-  useEffect(() => {
-    if (gdGames.length === 0) {
-      fetchGdGames();
-    }
-  }, []);
-
   // Load GamePix games and categories on mount
   useEffect(() => {
     fetchGpxCategories();
     fetchGpxGames();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const toggleGdGameSelection = (gdGameId: string) => {
-    setSelectedGdGames(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(gdGameId)) {
-        newSet.delete(gdGameId);
-      } else {
-        newSet.add(gdGameId);
-      }
-      return newSet;
-    });
-  };
 
   const toggleGpxGameSelection = (namespace: string) => {
     setSelectedGpxGames(prev => {
