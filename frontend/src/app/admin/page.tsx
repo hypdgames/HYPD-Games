@@ -1095,7 +1095,7 @@ export default function AdminDashboard() {
                                 borderRadius: '8px',
                                 color: '#fff'
                               }}
-                              formatter={(value: number) => [`${value.toFixed(1)}%`, "Retention"]}
+                              formatter={(value) => [`${Number(value).toFixed(1)}%`, "Retention"]}
                             />
                             <Bar dataKey="value" fill="#CCFF00" radius={[4, 4, 0, 0]} />
                           </BarChart>
