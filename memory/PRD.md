@@ -167,6 +167,13 @@
 
 ## Changelog
 
+### January 19, 2026 - Client-Side Navigation Bug Fix
+- **FIXED:** Critical client-side crash when switching tabs (P0)
+  - Root cause: DOM manipulation in SettingsProvider conflicting with React's virtual DOM
+  - Fixed SettingsProvider to use React refs instead of direct DOM removal
+  - Simplified Providers component to use Zustand getState() pattern
+- **TESTED:** All 5 tabs (Feed, Explore, Challenges, Leaders, Profile) navigate successfully without errors
+
 ### January 19, 2025 - Social Features & Analytics UI
 - **ADDED:** Leaderboard page with Global and Per-Game tabs
 - **ADDED:** Friends system on Profile page (search, request, accept, list)
