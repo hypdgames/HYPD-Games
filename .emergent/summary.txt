@@ -18,44 +18,44 @@ Feature Specifications:
 **User's preferred language**: English
 
 **what currently exists?**
-The application is a full-stack gaming platform with a Next.js frontend and a FastAPI backend, using Supabase for the database and storage. The frontend is deployed on Vercel and the backend on Railway.
+The application is a full-stack gaming platform (Hypd Games) with a Next.js frontend and FastAPI backend. It's fully integrated with GamePix to fetch and display real HTML5 games. The placeholder games (GameDistribution, custom) have been removed from the database, leaving only real GamePix games.
 
-The core UI for social and analytics features is now complete. This includes pages for Leaderboards, Challenges, a Friends system within the Profile page, and a comprehensive Analytics dashboard for the admin. The bottom navigation has been updated to reflect these changes.
+The admin dashboard has been significantly enhanced. It now features a Settings tab allowing the admin to customize the site's appearance by changing the site name, uploading a header logo, setting the logo's height, uploading a favicon, and defining a primary brand color.
 
-Backend functionality has been extended to include a user search endpoint and an analytics endpoint for geographic data, which is tracked automatically from request headers.
-
-The user has begun setting up ad monetization, first with Google AdSense (site ownership verified via meta tag) and now pivoting to GamePix. The immediate task is to get the GamePix  file correctly configured and verified.
+The site-wide theme system was recently refactored to remove the auto mode, now only supporting manual light and dark modes. However, this change introduced a client-side exception that occurs when the user switches between tabs, which is the current priority to fix.
 
 **Last working item**:
-- Last item agent was working: The user is facing issues with GamePix  verification, suspecting that line breaks are not being preserved correctly. The agent requested the user to paste the raw  content into the chat to ensure an exact copy. The user has just provided the raw text, and the agent's next step is to create the file with this exact content.
+- Last item agent was working: The agent was debugging a client-side exception (Application error: a client-side exception has occurred) that started after refactoring the theme system. The agent hypothesized that the issue might be due to a state hydration mismatch in the Zustand theme store () after removing the  property. A migration function was added to the store to handle and reset legacy state structures on rehydration.
 - Status: IN PROGRESS
 - Agent Testing Done: N
-- Which testing method agent to use? The user will manually verify on the GamePix website after the changes are deployed to production.
-- User Testing Done: N
+- Which testing method agent to use? Frontend testing agent to automate tab switching and capture console logs, or manual testing with screenshot tool to verify the fix and check the browser console.
+- User Testing Done: Y (User reported the bug)
 
 **All Pending/In progress Issue list**:
-  - Issue 1: GamePix  verification is failing (P0)
+  - Issue 1: Client-side exception occurs when switching tabs (P0)
   - Issue 2: Frontend ESLint configuration is not set up for TypeScript (P2)
 
   Issues Detail:
   - Issue 1: 
-     - Attempted fixes: The agent has tried updating the  file multiple times, including cleaning it up and overwriting it. The verification on the GamePix platform keeps failing. The user suspects it's a formatting/line break issue. The user has now provided the exact raw text to be used.
+     - Attempted fixes: The agent added a state migration function to  to clear out old state structures during Zustand store rehydration. The agent was about to test if this resolved the issue.
      - Next debug checklist: 
-        1. Use the  tool to overwrite  with the exact raw text provided by the user in the last message.
-        2. Re-run the frontend build and restart the service.
-        3. Instruct the user to push the changes to GitHub, wait for Vercel deployment, and try verifying on GamePix again.
-     - Why fix this issue and what will be achieved with the fix? This is a critical blocker for the user to proceed with GamePix integration and ad monetization.
+        1. Restart the frontend server to ensure the latest code is running.
+        2. Use the screenshot tool or testing agent to navigate between different pages (e.g., Feed -> Explore -> Challenges -> Profile).
+        3. Check the browser console output from the testing tool for the specific client-side error.
+        4. If the error persists, review the  component () and how the stores are initialized, as there might be a dependency issue during hydration.
+     - Why fix this issue and what will be achieved with the fix? This is a critical bug that breaks the user experience and prevents navigation across the site.
      - Status:  IN PROGRESS
-     - Is recurring issue? Y
-     - Should Test frontend/backend/both after fix? Frontend (manual verification by user).
+     - Is recurring issue? N
+     - Should Test frontend/backend/both after fix? Frontend
      - Blocked on other issue: None
   - Issue 2: 
-     - Attempted fixes: The agent fixed several individual linting errors during the build process but did not fix the underlying ESLint configuration issue.
+     - Attempted fixes: None in this session. Agent has been fixing linting errors as they appear during builds but has not addressed the root configuration issue.
      - Next debug checklist: 
         1. Inspect .
         2. Install and configure  and .
-        3. Run yarn run v1.22.22
-info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command. to confirm the configuration is working and fix any outstanding errors.
+        3. Update the  file to use the new parser and rules.
+        4. Run yarn run v1.22.22
+info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command. to confirm the configuration works.
      - Why fix this issue and what will be achieved with this? A clean linting setup improves code quality, catches potential bugs early, and ensures maintainability.
      - Status:  NOT STARTED
      - Is recurring issue? Y
@@ -67,34 +67,29 @@ info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this comm
 
 **Upcoming and Future Tasks**
 - **Upcoming Tasks:**
-    - **P0: Real GamePix API Integration**: Once  is verified, replace the current mock GameDistribution integration with the real GamePix API to fetch and display live games. This will involve updating backend logic in  and potentially the admin import UI in .
+    - P1: Implement a Featured Games section on the home feed that highlights top-quality GamePix games (based on ).
 - **Future Tasks:**
-    - **P1: Video Previews**: Implement video previews for games in the feed.
-    - **P1: Full Ad Monetization**: Once the GamePix account is approved, fully integrate their SDK to display ads.
-    - **P2: Social Feature Enhancements**: Implement friend-to-friend challenges and game sharing capabilities.
-    - **P2: User Notifications**: Add notifications for friend requests and new challenges.
+    - P1: Video Previews for games in the feed.
+    - P1: Full Ad Monetization (user needs to confirm if revenue is being generated in GamePix dashboard).
+    - P2: Social Feature Enhancements (friend-to-friend challenges, game sharing).
+    - P2: User Notifications.
+    - P2: Custom fonts.
+    - P2: SEO meta tags customization.
+    - P2: Social sharing features.
 
 **Completed work in this session**
-- **Social & Analytics Frontend UI**:
-  - Implemented the Leaderboard page ().
-  - Created a dedicated Challenges page ().
-  - Added a Friends system (search, requests, list) to the Profile page.
-  - Built out the Admin Analytics Stats tab with charts for overview, daily activity, retention, and top games.
-- **Backend Enhancements**:
-  - Added  endpoint for the friends system.
-  - Added  to provide geographic data.
-  - Modified  to automatically capture user's region from request headers.
-- **UI/UX & Navigation Rework**:
-  - Reorganized the bottom navigation to a 5-tab layout: **Feed | Explore | Challenges | Leaders | Profile**.
-  - Moved the PRO upsell content from its own page into a tab on the Profile page.
-  - Made the PRO tab visible to logged-out users.
-- **Ad Monetization Setup**:
-  - Successfully verified site ownership with Google AdSense by adding a meta tag to .
-  - Attempted to configure  for GamePix integration.
-- **Testing and Bug Fixes**:
-  - Fixed multiple frontend build errors related to TypeScript types and component imports.
-  - Resolved an infinite loading spinner on the Admin Analytics tab.
-  - Successfully used the testing agent to verify all new social and analytics features.
+- **GamePix Integration**: Replaced mock games with a full GamePix integration. This included backend endpoints for browsing and importing games, and a frontend UI in the admin panel. The integration was verified by the testing agent.
+- **Database Cleanup**: Created a backend endpoint to remove all non-GamePix games and cleaned the database of placeholder content.
+- **Admin Settings Feature**: Built a new Settings tab in the admin dashboard to allow customization of:
+    - Site Name
+    - Header Logo (with upload and height adjustment)
+    - Favicon (with upload)
+    - Primary Brand Color
+- **Logo Upload Bug Fix**: Debugged and fixed a server-side error where the logo upload failed due to an incorrect variable name ( vs ).
+- **Theme System Refactor & Fix**:
+    - Removed the auto theme option, restricting the choice to light and dark modes.
+    - Corrected CSS variable handling in the  which was breaking the theme-switching mechanism.
+    - Fixed the theme toggle button icon to correctly represent the next state (e.g., show moon in light mode).
 
 **Earlier issues found/mentioned but not fixed**
    - **Issue 1**: The frontend ESLint configuration is not correctly set up for TypeScript. The agent worked around this by fixing specific errors reported by the build tool but didn't address the root configuration problem in .
@@ -106,87 +101,90 @@ info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this comm
      - Is recurring issue? Y
 
 **Known issue recurrence from previous fork**
-  - **ESLint Configuration**: The issue of ESLint not being configured for TypeScript was noted in the previous fork and remains unfixed.
+  - **ESLint Configuration**: The issue of ESLint not being configured for TypeScript was noted in a previous fork and remains unfixed.
+  - Recurrence count: 2
+  - Status: NOT STARTED
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- **Frontend**: Next.js 14, TypeScript, Tailwind CSS, Zustand, Recharts (for charts).
-- **Backend**: FastAPI, PostgreSQL, SQLAlchemy, Alembic, Supabase-py, Redis.
-- **Deployment**: Vercel (Frontend), Railway (Backend + Redis).
-- **Ad Monetization**: Google AdSense, GamePix ().
+- **Frontend**: Next.js 14, TypeScript, Tailwind CSS, Zustand (for state management), .
+- **Backend**: FastAPI, PostgreSQL (via Supabase), SQLAlchemy, Redis (for caching).
+- **Storage**: Supabase Storage for user-uploaded assets (logos, favicons).
+- **Ad Monetization**: GamePix (via  and SID tracking in iframes).
 
 **key DB schema**
-- No changes to the DB schema in this session.
+- **app_settings**: A key-value table used to store site-wide settings like , , , , .
 
 **changes in tech stack**
--  was added to the frontend for data visualization.
+- No new technologies were added.
 
 **All files of reference**
-- : The main file for the current blocking issue.
-- : Modified to add  and .
-- : Modified to add the Google AdSense meta tag.
-- : Heavily modified to implement the full analytics dashboard UI.
-- : Heavily modified to implement the friends system and move the PRO section here.
-- : New page created from the old  page content.
-- : Modified to implement the leaderboard UI.
-- : Modified for the new 5-tab navigation structure.
-- : Updated to reflect completed work.
+- : Location of the current bug. Contains the theme logic and the attempted fix.
+- : Contains the UI for all new admin features.
+- : Contains all new backend endpoints for GamePix, settings, and cleanup.
+- : New component responsible for applying dynamic settings.
+- : The UI component for switching themes.
 
 **Areas that need refactoring**:
-- The frontend ESLint configuration needs to be fixed to properly parse TypeScript.
-- The  file contains entries for GameDistribution, Google AdSense, and GamePix. Once GamePix is confirmed working, the other entries should be reviewed and potentially removed to keep the file clean.
+- The frontend ESLint configuration must be fixed to properly parse and lint TypeScript files.
+- The bulk-delete endpoint () in  should be reviewed. It was useful for a one-time cleanup but might pose a security risk if left open without proper admin role enforcement on the backend route itself.
 
 **key api endpoints**
-- : **NEW**. Searches for users by username.
-- : **NEW**. Returns geographic distribution of analytics events.
-- : **NEW**. Tracks an event and automatically includes the user's region.
-- All other social and analytics endpoints created previously were utilized and tested.
+- : Fetches a paginated list of games from the GamePix RSS feed.
+- : Fetches game categories from GamePix.
+- : Imports selected GamePix games into the database.
+- : Uploads a new logo image to Supabase storage.
+- : Uploads a new favicon to Supabase storage.
+- : Retrieves all application settings.
+- : Updates application settings.
+- : Deletes all games from a specific source (e.g., 'gamedistribution', 'custom').
 
 **Critical Info for New Agent**
-- **The immediate blocker is GamePix  verification.** The user has provided the exact raw text that needs to be written to . Your first action should be to create this file with the provided content, preserving line breaks exactly.
-- **The user has pivoted from GameDistribution to GamePix.** All future work related to game providers should focus on GamePix.
-- **Google AdSense is verified**, but the primary ad provider is now GamePix.
-- The application is live and the user deploys manually by pushing to GitHub.
+- **The immediate priority is fixing the client-side crash when switching tabs.** This bug was introduced after the theme system was refactored. The last agent's attempt to fix this was by adding a migration function to . You must verify if this fix worked and, if not, continue debugging.
+- The  issue is resolved.
+- The GamePix integration is complete and working.
+- The database has been cleaned of all placeholder games.
+- A comprehensive settings panel now exists in the admin dashboard.
 
 **documents and test reports created in this job**
-- 
+-  (for GamePix integration)
 -  (updated)
 
 **Last 10 User Messages and any pending HUMAN messages** 
-1. **User**: Decides to use GamePix instead of GameDistribution and provides the  snippet. (IN PROGRESS)
-2. **User**: Reports that GamePix verification failed. (IN PROGRESS)
-3. **User**: Asks how to provide the  text with correct formatting. (RESOLVED)
-4. **User**: Provides the raw text for  to ensure formatting is preserved. (PENDING IMPLEMENTATION)
-5. **User**: States the PRO tab should be visible to logged-out users. (DONE)
-6. **User**: Requests adding region data to the stats page. (DONE)
-7. **User**: Proposes a new 5-tab navigation layout and moving the PRO section to the Profile page. (DONE)
-8. **User**: Suggests that the challenges section should have its own tab instead of being in the PRO section. (DONE)
-9. **User**: Reports that Google AdSense is in the Getting ready stage. (ACKNOWLEDGED)
-10. **User**: Reports that the AdSense verification via meta tag was successful and asks for the next step regarding GDPR consent. (DONE)
+1. **User**: Reports that the theme colors are weird after the settings were added and asks to remove the auto theme option. (IN PROGRESS)
+2. **User**: Provides their logo file and asks the agent to make the upload work. (DONE)
+3. **User**: Reports that uploading a logo image failed. (RESOLVED)
+4. **User**: Asks to add more site settings: site name, favicon, and colors. (DONE)
+5. **User**: Asks for an admin option to adjust the header logo image and its height. (DONE)
+6. **User**: Is confused about GamePix SDK integration and asks for clarification. (RESOLVED)
+7. **User**: Asks to remove all non-GamePix games from the website and backend. (DONE)
+8. **User**: Approves the GamePix integration and wants to add the games to the site. (DONE)
+9. **User**: Provides the GamePix RSS feed URL and API documentation. (DONE)
+10. **User**: Confirms that the  fix worked. (DONE)
+11. **User**: Reports the client-side error when switching tabs. (PENDING)
 
 **Project Health Check:**
-- **Broken**: GamePix  verification.
-- **Mocked**:
-    - **Game API**: The integration for fetching games is still based on the mock GameDistribution API. This needs to be replaced with a real GamePix API integration.
+- **Broken**: Client-side navigation due to an exception when switching tabs/pages.
+- **Mocked**: None.
 
 **3rd Party Integrations**
 - **Vercel**: Hosts the Next.js frontend.
-- **Railway**: Hosts the FastAPI backend and the Redis instance.
-- **Supabase**: Used for the PostgreSQL database and file storage.
-- **Redis**: Used for backend caching.
-- **Google AdSense**: Verified site ownership. Awaiting full approval.
-- **GamePix**: The new, preferred game/ad provider.  setup is IN PROGRESS and is the current blocker.
+- **Railway**: Hosts the FastAPI backend and Redis.
+- **Supabase**: PostgreSQL database and file storage.
+- **Redis**: Caching.
+- **GamePix**: Integrated for game content and monetization.
+- **Google AdSense**: Site ownership verified, but GamePix is the primary monetization partner.
 
 **Testing status**
-  - Testing agent used after significant changes: YES. The testing agent was successfully used to validate the new social and analytics frontend features.
+  - Testing agent used after significant changes: YES (For GamePix integration).
   - Troubleshoot agent used after agent stuck in loop: NO
-  - Test files created: None in this session.
-  - Known regressions: None.
+  - Test files created: None.
+  - Known regressions: A major regression was introduced where tab switching causes a client-side exception.
 
 **Credentials to test flow:**
 - **Admin User**:  / 
 
 **What agent forgot to execute**
-- The agent did not fix the root ESLint configuration issue for TypeScript, instead only fixing the individual errors that the build process reported.</analysis>
+- The agent has consistently postponed fixing the root ESLint configuration issue for TypeScript, opting to fix individual build errors as they arise. This remains a piece of technical debt.</analysis>
