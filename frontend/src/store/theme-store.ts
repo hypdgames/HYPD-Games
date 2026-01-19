@@ -18,12 +18,14 @@ export const useThemeStore = create<ThemeStore>()(
       theme: "dark",
 
       setTheme: (theme) => {
-        set({ theme });
+        // Ensure theme is valid (migrate old "auto" to "dark")
+        const validTheme = theme === "light" ? "light" : "dark";
+        set({ theme: validTheme });
         
         // Apply to document
         if (typeof document !== "undefined") {
           const root = document.documentElement;
-          if (theme === "light") {
+          if (validTheme === "light") {
             root.classList.add("light");
             root.classList.remove("dark");
           } else {
@@ -40,12 +42,23 @@ export const useThemeStore = create<ThemeStore>()(
 
       initTheme: () => {
         const { theme, setTheme } = get();
-        setTheme(theme); // Re-apply theme on init
+        // Migrate old "auto" value to "dark"
+        const validTheme = theme === "light" ? "light" : "dark";
+        setTheme(validTheme);
       },
     }),
     {
       name: "hypd-theme",
       partialize: (state) => ({ theme: state.theme }),
+      // Handle migration from old store structure
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          // If theme is not valid, default to dark
+          if (state.theme !== "light" && state.theme !== "dark") {
+            state.theme = "dark";
+          }
+        }
+      },
     }
   )
 );
