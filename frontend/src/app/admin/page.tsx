@@ -84,6 +84,7 @@ interface DailyStats {
 interface CategoryStats {
   category: string;
   plays: number;
+  [key: string]: string | number;
 }
 
 interface TopGame {
