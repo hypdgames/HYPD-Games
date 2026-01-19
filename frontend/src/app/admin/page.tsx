@@ -1696,99 +1696,50 @@ export default function AdminDashboard() {
               <div className="bg-card border border-border rounded-xl p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-semibold text-foreground flex items-center gap-2">
-                    <div className="w-5 h-5 rounded-full" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${accentColor})` }} />
-                    Brand Colors
+                    <div className="w-5 h-5 rounded-full" style={{ backgroundColor: primaryColor }} />
+                    Brand Color
                   </h3>
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
-                    onClick={resetColors}
+                    onClick={resetPrimaryColor}
                     className="text-xs text-muted-foreground hover:text-foreground"
                   >
                     Reset to Default
                   </Button>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {/* Primary Color */}
-                  <div>
-                    <label className="text-sm text-muted-foreground mb-2 block">Primary Color</label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={primaryColor}
-                        onChange={(e) => setPrimaryColor(e.target.value)}
-                        className="w-12 h-10 rounded cursor-pointer border-0"
-                        data-testid="primary-color-picker"
-                      />
-                      <Input
-                        value={primaryColor}
-                        onChange={(e) => setPrimaryColor(e.target.value)}
-                        className="font-mono text-sm flex-1"
-                        placeholder="#CCFF00"
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">Buttons, accents, highlights</p>
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">Primary Color</label>
+                  <div className="flex items-center gap-2 max-w-xs">
+                    <input
+                      type="color"
+                      value={primaryColor}
+                      onChange={(e) => setPrimaryColor(e.target.value)}
+                      className="w-12 h-10 rounded cursor-pointer border-0"
+                      data-testid="primary-color-picker"
+                    />
+                    <Input
+                      value={primaryColor}
+                      onChange={(e) => setPrimaryColor(e.target.value)}
+                      className="font-mono text-sm flex-1"
+                      placeholder="#CCFF00"
+                    />
                   </div>
-
-                  {/* Accent Color */}
-                  <div>
-                    <label className="text-sm text-muted-foreground mb-2 block">Accent Color</label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={accentColor}
-                        onChange={(e) => setAccentColor(e.target.value)}
-                        className="w-12 h-10 rounded cursor-pointer border-0"
-                        data-testid="accent-color-picker"
-                      />
-                      <Input
-                        value={accentColor}
-                        onChange={(e) => setAccentColor(e.target.value)}
-                        className="font-mono text-sm flex-1"
-                        placeholder="#8B5CF6"
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">Secondary highlights</p>
-                  </div>
-
-                  {/* Background Color */}
-                  <div>
-                    <label className="text-sm text-muted-foreground mb-2 block">Background Color</label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={backgroundColor}
-                        onChange={(e) => setBackgroundColor(e.target.value)}
-                        className="w-12 h-10 rounded cursor-pointer border-0"
-                        data-testid="background-color-picker"
-                      />
-                      <Input
-                        value={backgroundColor}
-                        onChange={(e) => setBackgroundColor(e.target.value)}
-                        className="font-mono text-sm flex-1"
-                        placeholder="#0a0a0a"
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">Main background</p>
-                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Used for buttons, accents, and highlights. Light/dark mode backgrounds are automatic.
+                  </p>
                 </div>
 
                 {/* Color Preview */}
-                <div className="mt-4 p-4 rounded-lg border border-border" style={{ backgroundColor }}>
-                  <div className="flex items-center gap-3">
+                <div className="mt-4 p-4 rounded-lg border border-border bg-background">
+                  <div className="flex items-center gap-3 flex-wrap">
                     <button 
                       className="px-4 py-2 rounded-lg font-semibold text-sm"
                       style={{ backgroundColor: primaryColor, color: '#000' }}
                     >
                       Primary Button
-                    </button>
-                    <button 
-                      className="px-4 py-2 rounded-lg font-semibold text-sm"
-                      style={{ backgroundColor: accentColor, color: '#fff' }}
-                    >
-                      Accent Button
                     </button>
                     <span style={{ color: primaryColor }} className="text-sm font-semibold">
                       Highlighted Text
