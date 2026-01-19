@@ -1168,6 +1168,81 @@ export default function AdminDashboard() {
                     </div>
                   )}
                 </motion.div>
+
+                {/* Region Distribution */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="bg-card border border-border rounded-xl p-4"
+                >
+                  <h3 className="font-bold text-foreground mb-4 flex items-center gap-2">
+                    <Globe className="w-5 h-5 text-lime" />
+                    Geographic Distribution
+                  </h3>
+                  {regionData.length === 0 ? (
+                    <div className="text-center py-6">
+                      <Globe className="w-10 h-10 text-muted-foreground mx-auto mb-3 opacity-50" />
+                      <p className="text-muted-foreground text-sm">No region data yet</p>
+                      <p className="text-xs text-muted-foreground/70 mt-1">
+                        Region tracking will begin once users start playing
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="h-48 mb-4">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart 
+                            data={regionData.slice(0, 8)} 
+                            layout="vertical"
+                            margin={{ left: 0, right: 20 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" stroke="#333" horizontal={false} />
+                            <XAxis type="number" stroke="#666" fontSize={11} />
+                            <YAxis 
+                              type="category" 
+                              dataKey="region" 
+                              stroke="#666" 
+                              fontSize={10}
+                              width={80}
+                              tickFormatter={(value) => value.length > 12 ? value.slice(0, 10) + '...' : value}
+                            />
+                            <Tooltip 
+                              contentStyle={{ 
+                                backgroundColor: '#1a1a1a', 
+                                border: '1px solid #333',
+                                borderRadius: '8px',
+                                color: '#fff'
+                              }}
+                              formatter={(value) => [value, "Events"]}
+                            />
+                            <Bar dataKey="events" fill="#CCFF00" radius={[0, 4, 4, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {regionData.slice(0, 6).map((region, i) => (
+                          <div 
+                            key={region.region}
+                            className="flex items-center justify-between text-xs p-2 bg-muted/30 rounded-lg"
+                          >
+                            <span className="text-foreground truncate flex-1 mr-2">
+                              {region.region}
+                            </span>
+                            <span className={`font-bold ${
+                              i === 0 ? "text-lime" : "text-muted-foreground"
+                            }`}>
+                              {region.events}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-xs text-muted-foreground text-center mt-3">
+                        Last 30 days • {regionData.reduce((acc, r) => acc + r.events, 0)} total events
+                      </p>
+                    </>
+                  )}
+                </motion.div>
               </div>
             )}
           </TabsContent>
