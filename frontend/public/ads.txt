@@ -1,3 +1,6 @@
+# Google AdSense - Your Publisher ID
+google.com, pub-9316102142280167, DIRECT, f08c47fec0942fa0
+
 headerlift.com, 34137, DIRECT
 improvedigital.com, 545_34137, DIRECT
 improvedigital.com, 545, RESELLER
