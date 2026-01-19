@@ -5,18 +5,55 @@ import { AppSettings } from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
+// Convert hex to HSL string for CSS variables
+function hexToHSL(hex: string): string {
+  // Remove # if present
+  hex = hex.replace(/^#/, '');
+  
+  // Parse hex
+  const r = parseInt(hex.substring(0, 2), 16) / 255;
+  const g = parseInt(hex.substring(2, 4), 16) / 255;
+  const b = parseInt(hex.substring(4, 6), 16) / 255;
+
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h = 0;
+  let s = 0;
+  const l = (max + min) / 2;
+
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    
+    switch (max) {
+      case r:
+        h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+        break;
+      case g:
+        h = ((b - r) / d + 2) / 6;
+        break;
+      case b:
+        h = ((r - g) / d + 4) / 6;
+        break;
+    }
+  }
+
+  // Return HSL values without hsl() wrapper for CSS variable
+  return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
+}
+
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const applySettings = useCallback((settings: AppSettings) => {
-    // Apply colors to CSS variables
-    if (settings.primary_color) {
-      document.documentElement.style.setProperty('--lime', settings.primary_color);
+    // Apply primary color (lime) - converts hex to HSL for CSS variables
+    if (settings.primary_color && settings.primary_color.startsWith('#')) {
+      const hsl = hexToHSL(settings.primary_color);
+      document.documentElement.style.setProperty('--primary', hsl);
+      document.documentElement.style.setProperty('--accent', hsl);
+      document.documentElement.style.setProperty('--ring', hsl);
     }
-    if (settings.accent_color) {
-      document.documentElement.style.setProperty('--accent', settings.accent_color);
-    }
-    if (settings.background_color) {
-      document.documentElement.style.setProperty('--background', settings.background_color);
-    }
+
+    // Note: We do NOT override --background as that would break light/dark theme switching
+    // The background is controlled by the theme system in globals.css
 
     // Update favicon dynamically
     if (settings.favicon_url) {
@@ -62,8 +99,8 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
     fetchSettings();
     
-    // Re-fetch settings every 30 seconds to pick up changes
-    const interval = setInterval(fetchSettings, 30000);
+    // Re-fetch settings every 60 seconds to pick up changes
+    const interval = setInterval(fetchSettings, 60000);
     return () => clearInterval(interval);
   }, [applySettings]);
 
