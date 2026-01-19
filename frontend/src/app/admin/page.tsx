@@ -322,6 +322,18 @@ export default function AdminDashboard() {
     });
   };
 
+  const toggleGpxGameSelection = (namespace: string) => {
+    setSelectedGpxGames(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(namespace)) {
+        newSet.delete(namespace);
+      } else {
+        newSet.add(namespace);
+      }
+      return newSet;
+    });
+  };
+
   const importSelectedGames = async () => {
     if (selectedGdGames.size === 0) {
       toast.error("Please select at least one game to import");
