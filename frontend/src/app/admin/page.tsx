@@ -260,6 +260,7 @@ export default function AdminDashboard() {
     setSavingSettings(true);
     try {
       let finalLogoUrl = logoUrl;
+      let finalFaviconUrl = faviconUrl;
 
       // Upload logo if a new file was selected
       if (logoFile) {
@@ -283,7 +284,29 @@ export default function AdminDashboard() {
         }
       }
 
-      // Save settings
+      // Upload favicon if a new file was selected
+      if (faviconFile) {
+        const formData = new FormData();
+        formData.append("file", faviconFile);
+        
+        const uploadRes = await fetch(`${API_URL}/api/admin/upload-favicon`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+        
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json();
+          finalFaviconUrl = uploadData.url;
+          setFaviconUrl(finalFaviconUrl);
+        } else {
+          toast.error("Failed to upload favicon");
+          setSavingSettings(false);
+          return;
+        }
+      }
+
+      // Save all settings
       const res = await fetch(`${API_URL}/api/admin/settings`, {
         method: "POST",
         headers: {
@@ -293,12 +316,22 @@ export default function AdminDashboard() {
         body: JSON.stringify({
           logo_url: finalLogoUrl,
           logo_height: String(logoHeight),
+          site_name: siteName,
+          favicon_url: finalFaviconUrl,
+          primary_color: primaryColor,
+          accent_color: accentColor,
+          background_color: backgroundColor,
         }),
       });
 
       if (res.ok) {
         toast.success("Settings saved!");
         setLogoFile(null);
+        setFaviconFile(null);
+        
+        // Apply colors immediately
+        document.documentElement.style.setProperty('--lime', primaryColor);
+        document.documentElement.style.setProperty('--accent', accentColor);
       } else {
         toast.error("Failed to save settings");
       }
