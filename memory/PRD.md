@@ -17,6 +17,7 @@
 - **Feed Virtualization:** TanStack Virtual + react-use-gesture
 - **State Management:** Zustand
 - **UI Components:** Radix UI + shadcn/ui
+- **Charts:** Recharts (for analytics)
 - **PWA:** Service Worker + Web App Manifest
 
 ### Backend (Railway)
@@ -26,9 +27,11 @@
 - **Migrations:** Alembic
 - **Auth:** JWT (PyJWT)
 - **File Storage:** Supabase Storage
+- **Caching:** Redis (Railway)
 
 ### Integrations
 - ✅ **Supabase:** Database + Storage
+- ✅ **Redis:** Caching (hosted on Railway)
 - ✅ **GameDistribution:** Mock integration ready (awaiting API approval)
 - ⏳ **Cloudinary:** For video previews (planned)
 
@@ -49,7 +52,29 @@
 - [x] Game visibility toggle
 - [x] Game deletion
 - [x] GameDistribution import (mock)
-- [x] Basic analytics
+- [x] **Enhanced Analytics Dashboard with charts:**
+  - Overview cards (Total Users, Games, Plays, Active 24h)
+  - Daily Activity Area Chart (14 days)
+  - Plays by Category Pie Chart
+  - User Retention Bar Chart
+  - Top Games by Plays List
+
+### Social Features ✅ (NEW - January 19, 2025)
+- [x] **Leaderboard Page** (`/leaderboard`)
+  - Global leaderboard with user rankings
+  - Per-game leaderboards with game selector
+  - Shows games played and play time
+- [x] **Friends System** (`/profile` Friends tab)
+  - User search with debouncing
+  - Send friend requests
+  - Accept/decline friend requests
+  - View friends list with stats
+  - Remove friends
+- [x] **Challenges UI** (`/pro` Challenges tab)
+  - Active challenges list
+  - Challenge progress tracking
+  - Join challenge functionality
+  - Points/rewards display
 
 ### SEO & Performance ✅
 - [x] Dynamic sitemap.xml
@@ -64,28 +89,29 @@
 
 ---
 
-## Test Results (January 18, 2025)
+## Test Results (January 19, 2025)
 
 | Category | Result |
 |----------|--------|
-| Backend API | 34/34 tests passed (100%) |
-| Frontend UI | All features verified |
-| SEO Endpoints | All accessible |
+| Backend API | 15/15 social feature tests passed (100%) |
+| Frontend UI | All new features verified |
+| Previous Tests | 34/34 tests passed (100%) |
 
 ---
 
 ## Upcoming Tasks
 
 ### P0 - Awaiting External
-1. **Real GameDistribution Integration** - Waiting for publisher approval
+1. **Real GameDistribution Integration** - Waiting for publisher approval (Publisher ID/API Key)
 
 ### P1 - High Priority
-2. **Video Previews** - Cloudinary integration
-3. **Ad System** - Feed interstitial ads
+2. **Video Previews** - Cloudinary integration for game preview videos
+3. **Ad System** - Feed interstitial ads with GameDistribution SDK
 
 ### P2 - Medium Priority
-4. **Redis Caching** - For scalability
-5. **Social Features** - Leaderboards, challenges
+4. **ESLint TypeScript Configuration** - Fix parsing for .tsx files
+5. **Friend-to-Friend Challenges** - Challenge friends to beat their scores
+6. **Game Sharing** - Share games with friends via link
 
 ---
 
@@ -94,7 +120,45 @@
 
 ---
 
+## Key API Endpoints
+
+### Social Features
+- `GET /api/leaderboard/global` - Global user rankings
+- `GET /api/leaderboard/game/{game_id}` - Per-game leaderboard
+- `POST /api/leaderboard/submit` - Submit a score
+- `GET /api/users/search?q={query}` - Search users (auth required)
+- `GET /api/friends` - Get friends list
+- `GET /api/friends/requests` - Get pending friend requests
+- `POST /api/friends/request` - Send friend request
+- `POST /api/friends/accept/{request_id}` - Accept friend request
+- `POST /api/friends/decline/{request_id}` - Decline friend request
+- `DELETE /api/friends/{friend_id}` - Remove friend
+- `GET /api/challenges` - Get active challenges
+- `POST /api/challenges/{id}/join` - Join a challenge
+
+### Admin Analytics
+- `GET /api/admin/analytics/overview` - Stats overview with categories and top games
+- `GET /api/admin/analytics/daily?days=14` - Daily activity stats
+- `GET /api/admin/analytics/retention` - User retention data (Day 1, 3, 7)
+
+---
+
 ## Changelog
+
+### January 19, 2025 - Social Features & Analytics UI
+- **ADDED:** Leaderboard page with Global and Per-Game tabs
+- **ADDED:** Friends system on Profile page (search, request, accept, list)
+- **ADDED:** Challenges UI on PRO page
+- **ADDED:** Enhanced Admin Analytics dashboard with Recharts:
+  - Daily Activity Area Chart
+  - Plays by Category Pie Chart
+  - User Retention Bar Chart
+  - Top Games List
+- **ADDED:** User search API endpoint (`/api/users/search`)
+- **ADDED:** Progress UI component
+- **INSTALLED:** recharts, @radix-ui/react-progress
+- **TESTED:** 15/15 social feature tests passing
+- **TESTED:** All frontend features verified
 
 ### January 18, 2025 - Production Deployment & Optimization
 - **DEPLOYED:** Site live at https://hypd.games
@@ -112,3 +176,4 @@
 - GameDistribution mock integration
 - Supabase Storage for game files
 - PWA and Service Worker implementation
+- Redis caching on Railway
