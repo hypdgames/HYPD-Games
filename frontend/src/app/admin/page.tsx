@@ -257,6 +257,46 @@ export default function AdminDashboard() {
     setGdLoading(false);
   };
 
+  // Fetch GamePix games
+  const fetchGpxGames = async (category?: string, page: number = 1, append: boolean = false) => {
+    setGpxLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (category && category !== "all") params.append("category", category);
+      params.append("page", String(page));
+      params.append("limit", "12");
+      
+      const res = await fetch(`${API_URL}/api/gamepix/browse?${params}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (append) {
+          setGpxGames(prev => [...prev, ...(data.games || [])]);
+        } else {
+          setGpxGames(data.games || []);
+        }
+        setGpxHasMore(data.has_more || false);
+        setGpxPage(page);
+      }
+    } catch (error) {
+      console.error("Error fetching GamePix games:", error);
+      toast.error("Failed to load games from GamePix");
+    }
+    setGpxLoading(false);
+  };
+
+  // Fetch GamePix categories
+  const fetchGpxCategories = async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/gamepix/categories`);
+      if (res.ok) {
+        const data = await res.json();
+        setGpxCategories(data.categories || []);
+      }
+    } catch (error) {
+      console.error("Error fetching GamePix categories:", error);
+    }
+  };
+
   // Load GD games on tab switch
   useEffect(() => {
     if (gdGames.length === 0) {
