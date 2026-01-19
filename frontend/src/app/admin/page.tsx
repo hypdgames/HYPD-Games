@@ -64,6 +64,20 @@ interface GDGame {
   mobile?: boolean;
 }
 
+interface GPXGame {
+  gpx_game_id: string;
+  title: string;
+  namespace: string;
+  description: string;
+  category: string;
+  thumbnail_url: string;
+  icon_url: string;
+  play_url: string;
+  orientation?: string;
+  quality_score?: number;
+  date_published?: string;
+}
+
 interface AnalyticsOverview {
   total_users: number;
   total_games: number;
