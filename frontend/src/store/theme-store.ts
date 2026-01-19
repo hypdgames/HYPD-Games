@@ -3,38 +3,27 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-type Theme = "light" | "dark" | "auto";
-type ResolvedTheme = "light" | "dark";
+type Theme = "light" | "dark";
 
 interface ThemeStore {
   theme: Theme;
-  resolvedTheme: ResolvedTheme;
   setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
   initTheme: () => void;
 }
 
-const getSystemTheme = (): ResolvedTheme => {
-  if (typeof window !== "undefined" && window.matchMedia) {
-    return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
-  }
-  return "dark";
-};
-
 export const useThemeStore = create<ThemeStore>()(
   persist(
     (set, get) => ({
-      theme: "auto",
-      resolvedTheme: "dark",
+      theme: "dark",
 
       setTheme: (theme) => {
-        const resolvedTheme = theme === "auto" ? getSystemTheme() : theme;
-        set({ theme, resolvedTheme });
+        set({ theme });
         
         // Apply to document
         if (typeof document !== "undefined") {
           const root = document.documentElement;
-          if (resolvedTheme === "light") {
+          if (theme === "light") {
             root.classList.add("light");
             root.classList.remove("dark");
           } else {
@@ -46,35 +35,12 @@ export const useThemeStore = create<ThemeStore>()(
 
       toggleTheme: () => {
         const { theme, setTheme } = get();
-        if (theme === "auto") setTheme("light");
-        else if (theme === "light") setTheme("dark");
-        else setTheme("auto");
+        setTheme(theme === "light" ? "dark" : "light");
       },
 
       initTheme: () => {
         const { theme, setTheme } = get();
         setTheme(theme); // Re-apply theme on init
-        
-        // Listen for system theme changes
-        if (typeof window !== "undefined" && theme === "auto") {
-          const mediaQuery = window.matchMedia("(prefers-color-scheme: light)");
-          const handleChange = () => {
-            const { theme } = get();
-            if (theme === "auto") {
-              set({ resolvedTheme: getSystemTheme() });
-              // Re-apply classes
-              const root = document.documentElement;
-              if (getSystemTheme() === "light") {
-                root.classList.add("light");
-                root.classList.remove("dark");
-              } else {
-                root.classList.add("dark");
-                root.classList.remove("light");
-              }
-            }
-          };
-          mediaQuery.addEventListener("change", handleChange);
-        }
       },
     }),
     {
