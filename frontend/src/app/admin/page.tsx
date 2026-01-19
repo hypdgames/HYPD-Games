@@ -606,7 +606,7 @@ export default function AdminDashboard() {
 
       <div className="p-6 max-w-4xl mx-auto">
         <Tabs defaultValue="games" className="w-full" onValueChange={(v) => v === "analytics" && fetchAnalytics()}>
-          <TabsList className="grid w-full grid-cols-4 mb-6">
+          <TabsList className="grid w-full grid-cols-5 mb-6">
             <TabsTrigger value="games" className="flex items-center gap-2">
               <Gamepad2 className="w-4 h-4" />
               Games
