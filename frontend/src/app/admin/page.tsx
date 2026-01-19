@@ -103,6 +103,11 @@ interface RetentionData {
   total_new_users: number;
 }
 
+interface RegionData {
+  region: string;
+  events: number;
+}
+
 export default function AdminDashboard() {
   const router = useRouter();
   const { user, token } = useAuthStore();
