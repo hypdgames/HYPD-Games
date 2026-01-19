@@ -313,8 +313,6 @@ export default function AdminDashboard() {
           site_name: siteName,
           favicon_url: finalFaviconUrl,
           primary_color: primaryColor,
-          accent_color: accentColor,
-          background_color: backgroundColor,
         }),
       });
 
@@ -322,10 +320,6 @@ export default function AdminDashboard() {
         toast.success("Settings saved!");
         setLogoFile(null);
         setFaviconFile(null);
-        
-        // Apply colors immediately
-        document.documentElement.style.setProperty('--lime', primaryColor);
-        document.documentElement.style.setProperty('--accent', accentColor);
       } else {
         toast.error("Failed to save settings");
       }
