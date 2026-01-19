@@ -290,54 +290,6 @@ export default function AdminDashboard() {
     });
   };
 
-  const importSelectedGames = async () => {
-    if (selectedGdGames.size === 0) {
-      toast.error("Please select at least one game to import");
-      return;
-    }
-
-    setImporting(true);
-    try {
-      const gamesToImport = gdGames
-        .filter(g => selectedGdGames.has(g.gd_game_id))
-        .map(g => ({
-          gd_game_id: g.gd_game_id,
-          title: g.title,
-          description: g.description,
-          category: g.category,
-          thumbnail_url: g.thumbnail_url,
-          embed_url: g.embed_url,
-          instructions: g.instructions
-        }));
-
-      const res = await fetch(`${API_URL}/api/admin/gamedistribution/bulk-import`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(gamesToImport),
-      });
-
-      if (res.ok) {
-        const result = await res.json();
-        toast.success(`Imported ${result.imported} games!`);
-        if (result.skipped > 0) {
-          toast.info(`${result.skipped} games were already imported`);
-        }
-        setSelectedGdGames(new Set());
-        fetchGames();
-      } else {
-        const error = await res.json();
-        toast.error(error.detail || "Failed to import games");
-      }
-    } catch (error) {
-      console.error("Import error:", error);
-      toast.error("Failed to import games");
-    }
-    setImporting(false);
-  };
-
   const importSelectedGpxGames = async () => {
     if (selectedGpxGames.size === 0) {
       toast.error("Please select at least one game to import");
@@ -387,10 +339,6 @@ export default function AdminDashboard() {
       toast.error("Failed to import games");
     }
     setImporting(false);
-  };
-
-  const isGameImported = (gdGameId: string) => {
-    return games.some(g => g.gd_game_id === gdGameId);
   };
 
   const isGpxGameImported = (namespace: string) => {
