@@ -161,7 +161,7 @@ export default function ProfilePage() {
         const error = await res.json();
         toast.error(error.detail || "Failed to send request");
       }
-    } catch (e) {
+    } catch {
       toast.error("Failed to send friend request");
     }
   };
@@ -178,7 +178,7 @@ export default function ProfilePage() {
       } else {
         toast.error("Failed to accept request");
       }
-    } catch (e) {
+    } catch {
       toast.error("Failed to accept request");
     }
   };
@@ -195,7 +195,7 @@ export default function ProfilePage() {
       } else {
         toast.error("Failed to decline request");
       }
-    } catch (e) {
+    } catch {
       toast.error("Failed to decline request");
     }
   };
@@ -213,7 +213,7 @@ export default function ProfilePage() {
       } else {
         toast.error("Failed to remove friend");
       }
-    } catch (e) {
+    } catch {
       toast.error("Failed to remove friend");
     }
   };
