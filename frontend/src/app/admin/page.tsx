@@ -52,17 +52,6 @@ const CATEGORIES = ["Action", "Puzzle", "Arcade", "Racing", "Sports", "Strategy"
 
 const CHART_COLORS = ["#CCFF00", "#8B5CF6", "#EC4899", "#06B6D4", "#F59E0B", "#10B981"];
 
-interface GDGame {
-  gd_game_id: string;
-  title: string;
-  description: string;
-  category: string;
-  thumbnail_url: string;
-  embed_url: string;
-  instructions?: string;
-  mobile?: boolean;
-}
-
 interface GPXGame {
   gpx_game_id: string;
   title: string;
