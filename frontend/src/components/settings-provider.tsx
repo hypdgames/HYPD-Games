@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AppSettings } from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
@@ -43,7 +43,14 @@ function hexToHSL(hex: string): string {
 }
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
-  const applySettings = useCallback((settings: AppSettings) => {
+  const [mounted, setMounted] = useState(false);
+  const faviconLinkRef = useRef<HTMLLinkElement | null>(null);
+  const appleLinkRef = useRef<HTMLLinkElement | null>(null);
+
+  // Apply CSS custom properties (safe during render)
+  const applyColorSettings = (settings: AppSettings) => {
+    if (typeof document === "undefined") return;
+    
     // Apply primary color (lime) - converts hex to HSL for CSS variables
     if (settings.primary_color && settings.primary_color.startsWith('#')) {
       const hsl = hexToHSL(settings.primary_color);
@@ -52,45 +59,60 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       document.documentElement.style.setProperty('--ring', hsl);
     }
 
-    // Note: We do NOT override --background as that would break light/dark theme switching
-    // The background is controlled by the theme system in globals.css
-
-    // Update favicon dynamically
-    if (settings.favicon_url) {
-      updateFavicon(settings.favicon_url);
-    }
-
     // Update page title
     if (settings.site_name) {
       document.title = `${settings.site_name} - Play Instant Games`;
     }
-  }, []);
+  };
 
+  // Safely update favicon using refs instead of DOM manipulation
   const updateFavicon = (url: string) => {
-    // Remove existing favicon links
-    const existingLinks = document.querySelectorAll("link[rel*='icon']");
-    existingLinks.forEach(link => link.remove());
+    if (typeof document === "undefined") return;
+    
+    // Update or create favicon link
+    if (!faviconLinkRef.current) {
+      // Try to find existing favicon first
+      const existing = document.querySelector("link[rel='icon']") as HTMLLinkElement;
+      if (existing) {
+        faviconLinkRef.current = existing;
+      } else {
+        faviconLinkRef.current = document.createElement('link');
+        faviconLinkRef.current.rel = 'icon';
+        document.head.appendChild(faviconLinkRef.current);
+      }
+    }
+    faviconLinkRef.current.href = url;
 
-    // Add new favicon
-    const link = document.createElement('link');
-    link.rel = 'icon';
-    link.href = url;
-    document.head.appendChild(link);
-
-    // Also add apple-touch-icon
-    const appleLink = document.createElement('link');
-    appleLink.rel = 'apple-touch-icon';
-    appleLink.href = url;
-    document.head.appendChild(appleLink);
+    // Update or create apple-touch-icon
+    if (!appleLinkRef.current) {
+      const existing = document.querySelector("link[rel='apple-touch-icon']") as HTMLLinkElement;
+      if (existing) {
+        appleLinkRef.current = existing;
+      } else {
+        appleLinkRef.current = document.createElement('link');
+        appleLinkRef.current.rel = 'apple-touch-icon';
+        document.head.appendChild(appleLinkRef.current);
+      }
+    }
+    appleLinkRef.current.href = url;
   };
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+
     const fetchSettings = async () => {
       try {
         const res = await fetch(`${API_URL}/api/settings`);
         if (res.ok) {
           const data = await res.json();
-          applySettings(data);
+          applyColorSettings(data);
+          if (data.favicon_url) {
+            updateFavicon(data.favicon_url);
+          }
         }
       } catch (error) {
         console.error("Error fetching settings:", error);
@@ -102,7 +124,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     // Re-fetch settings every 60 seconds to pick up changes
     const interval = setInterval(fetchSettings, 60000);
     return () => clearInterval(interval);
-  }, [applySettings]);
+  }, [mounted]);
 
   return <>{children}</>;
 }
