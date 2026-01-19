@@ -88,18 +88,14 @@
   scroll-snap-stop: always;
 }
 
-/* Glass effect - adapts to theme */
+/* Solid backgrounds - no transparency */
 .glass {
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: #0a0a0a;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .light .glass {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: #ffffff;
   border-top: 1px solid rgba(0, 0, 0, 0.1);
 }
 
