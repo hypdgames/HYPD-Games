@@ -169,6 +169,10 @@ export default function AdminDashboard() {
   };
 
   const fetchAnalytics = async () => {
+    if (!token) {
+      setAnalyticsLoading(false);
+      return;
+    }
     setAnalyticsLoading(true);
     try {
       const [overviewRes, dailyRes, retentionRes] = await Promise.all([
