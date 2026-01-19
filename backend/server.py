@@ -454,6 +454,41 @@ async def get_game_file(game_id: str, db: AsyncSession = Depends(get_db)):
     await db.execute(update(Game).where(Game.id == game_id).values(play_count=Game.play_count + 1))
     await db.commit()
     
+    # Handle GamePix games - return embed wrapper with their play URL
+    if game.source == "gamepix" and game.embed_url:
+        gpx_html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+            <title>{game.title}</title>
+            <style>
+                * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+                html, body {{ 
+                    width: 100%; 
+                    height: 100%; 
+                    overflow: hidden;
+                    background: #0a0a0a;
+                }}
+                iframe {{
+                    width: 100%;
+                    height: 100%;
+                    border: none;
+                }}
+            </style>
+        </head>
+        <body>
+            <iframe 
+                src="{game.embed_url}"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen; payment"
+                allowfullscreen
+            ></iframe>
+        </body>
+        </html>
+        """
+        return HTMLResponse(content=gpx_html, media_type="text/html")
+    
     # Handle GameDistribution games - return embed wrapper
     if game.source == "gamedistribution" and game.embed_url:
         gd_html = f"""
