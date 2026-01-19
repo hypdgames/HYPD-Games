@@ -318,12 +318,14 @@ export default function GameFeed() {
         {settings?.logo_url ? (
           <img 
             src={settings.logo_url} 
-            alt="Logo" 
+            alt={settings?.site_name || "Logo"}
             style={{ height: settings.logo_height ? `${settings.logo_height}px` : '32px' }}
             className="object-contain"
           />
         ) : (
-          <h1 className="font-heading text-xl text-lime tracking-tight">HYPD</h1>
+          <h1 className="font-heading text-xl text-lime tracking-tight">
+            {settings?.site_name || "HYPD"}
+          </h1>
         )}
         <div className="flex items-center gap-2">
           <ThemeToggle />
