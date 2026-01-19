@@ -623,6 +623,10 @@ export default function AdminDashboard() {
               <BarChart3 className="w-4 h-4" />
               Stats
             </TabsTrigger>
+            <TabsTrigger value="settings" className="flex items-center gap-2">
+              <Settings className="w-4 h-4" />
+              Settings
+            </TabsTrigger>
           </TabsList>
 
           {/* Games Tab */}
