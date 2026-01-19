@@ -53,6 +53,7 @@ export interface RegisterCredentials {
 // Settings types
 export interface AppSettings {
   logo_url?: string;
+  logo_height?: number;
   site_name?: string;
 }
 
