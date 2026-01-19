@@ -1811,6 +1811,117 @@ async def get_retention_analytics(
     
     return {"retention": retention_data}
 
+
+@api_router.get("/admin/analytics/regions")
+async def get_region_analytics(
+    days: int = 30,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get geographic distribution of users/plays"""
+    if not user.is_admin:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    # Get region data from analytics events
+    since_date = datetime.now(timezone.utc) - timedelta(days=days)
+    
+    # Query events with region data
+    result = await db.execute(
+        select(AnalyticsEvent)
+        .where(AnalyticsEvent.timestamp >= since_date)
+        .where(AnalyticsEvent.event_data['region'].isnot(None))
+    )
+    events = result.scalars().all()
+    
+    # Aggregate by region
+    region_counts = {}
+    for event in events:
+        region = event.event_data.get('region') or event.event_data.get('country')
+        if region:
+            region_counts[region] = region_counts.get(region, 0) + 1
+    
+    # Also get user registration regions from User table if available
+    user_result = await db.execute(select(User))
+    users = user_result.scalars().all()
+    
+    user_regions = {}
+    for u in users:
+        # Check if user has region in their data
+        region = None
+        if hasattr(u, 'region') and u.region:
+            region = u.region
+        if region:
+            user_regions[region] = user_regions.get(region, 0) + 1
+    
+    # Sort regions by count
+    sorted_regions = sorted(region_counts.items(), key=lambda x: x[1], reverse=True)
+    
+    # Format for frontend
+    regions_data = [
+        {"region": region, "events": count}
+        for region, count in sorted_regions[:20]  # Top 20 regions
+    ]
+    
+    # If no region data from events, return sample/demo data
+    if not regions_data:
+        # Return demo data to show the chart works
+        regions_data = [
+            {"region": "United States", "events": 0},
+            {"region": "United Kingdom", "events": 0},
+            {"region": "Germany", "events": 0},
+            {"region": "France", "events": 0},
+            {"region": "Canada", "events": 0},
+        ]
+    
+    return {
+        "regions": regions_data,
+        "total_events_with_region": sum(r["events"] for r in regions_data),
+        "period_days": days
+    }
+
+
+@api_router.post("/analytics/track")
+async def track_analytics_with_region(
+    request: Request,
+    event_type: str = Form(...),
+    game_id: Optional[str] = Form(None),
+    region: Optional[str] = Form(None),
+    country: Optional[str] = Form(None),
+    user: Optional[User] = Depends(get_optional_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Track an analytics event with optional region data"""
+    event_data = {}
+    
+    # Try to get region from form data or headers
+    if region:
+        event_data['region'] = region
+    if country:
+        event_data['country'] = country
+    
+    # Try to get country from Cloudflare/Vercel headers if available
+    cf_country = request.headers.get('CF-IPCountry')
+    vercel_country = request.headers.get('X-Vercel-IP-Country')
+    
+    if cf_country and not event_data.get('country'):
+        event_data['country'] = cf_country
+        event_data['region'] = cf_country
+    elif vercel_country and not event_data.get('country'):
+        event_data['country'] = vercel_country
+        event_data['region'] = vercel_country
+    
+    event = AnalyticsEvent(
+        event_type=event_type,
+        user_id=user.id if user else None,
+        game_id=game_id,
+        event_data=event_data
+    )
+    db.add(event)
+    await db.commit()
+    
+    return {"success": True}
+
+
 @api_router.post("/analytics/event")
 async def track_event(
     event_type: str,
