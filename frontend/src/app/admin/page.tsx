@@ -278,7 +278,9 @@ export default function AdminDashboard() {
           finalLogoUrl = uploadData.url;
           setLogoUrl(finalLogoUrl);
         } else {
-          toast.error("Failed to upload logo");
+          const errorData = await uploadRes.text();
+          console.error("Logo upload failed:", uploadRes.status, errorData);
+          toast.error(`Failed to upload logo: ${uploadRes.status}`);
           setSavingSettings(false);
           return;
         }
