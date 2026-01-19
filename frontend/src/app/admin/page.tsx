@@ -146,12 +146,20 @@ export default function AdminDashboard() {
   const [logoHeight, setLogoHeight] = useState<number>(32);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string>("");
+  const [siteName, setSiteName] = useState<string>("HYPD");
+  const [faviconUrl, setFaviconUrl] = useState<string>("");
+  const [faviconFile, setFaviconFile] = useState<File | null>(null);
+  const [faviconPreview, setFaviconPreview] = useState<string>("");
+  const [primaryColor, setPrimaryColor] = useState<string>("#CCFF00");
+  const [accentColor, setAccentColor] = useState<string>("#8B5CF6");
+  const [backgroundColor, setBackgroundColor] = useState<string>("#0a0a0a");
   const [savingSettings, setSavingSettings] = useState(false);
   
   const gameFileRef = useRef<HTMLInputElement>(null);
   const thumbnailRef = useRef<HTMLInputElement>(null);
   const videoPreviewRef = useRef<HTMLInputElement>(null);
   const logoFileRef = useRef<HTMLInputElement>(null);
+  const faviconFileRef = useRef<HTMLInputElement>(null);
 
   // New game form
   const [newGame, setNewGame] = useState({
