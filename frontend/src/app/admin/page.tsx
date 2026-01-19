@@ -437,6 +437,10 @@ export default function AdminDashboard() {
     return games.some(g => g.gd_game_id === gdGameId);
   };
 
+  const isGpxGameImported = (namespace: string) => {
+    return games.some(g => g.gd_game_id === `gpx-${namespace}`);
+  };
+
   const handleCreateGame = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!thumbnailFile || !gameFile) {
