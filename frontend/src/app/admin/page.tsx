@@ -171,6 +171,7 @@ export default function AdminDashboard() {
       return;
     }
     fetchGames();
+    fetchSettings();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
@@ -187,6 +188,120 @@ export default function AdminDashboard() {
       console.error("Error fetching games:", error);
     }
     setLoading(false);
+  };
+
+  const fetchSettings = async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/settings`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.logo_url) {
+          setLogoUrl(data.logo_url);
+          setLogoPreview(data.logo_url);
+        }
+        if (data.logo_height) {
+          setLogoHeight(parseInt(data.logo_height) || 32);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching settings:", error);
+    }
+  };
+
+  const handleLogoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setLogoFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setLogoPreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const saveSettings = async () => {
+    setSavingSettings(true);
+    try {
+      let finalLogoUrl = logoUrl;
+
+      // Upload logo if a new file was selected
+      if (logoFile) {
+        const formData = new FormData();
+        formData.append("file", logoFile);
+        
+        const uploadRes = await fetch(`${API_URL}/api/admin/upload-logo`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+        
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json();
+          finalLogoUrl = uploadData.url;
+          setLogoUrl(finalLogoUrl);
+        } else {
+          toast.error("Failed to upload logo");
+          setSavingSettings(false);
+          return;
+        }
+      }
+
+      // Save settings
+      const res = await fetch(`${API_URL}/api/admin/settings`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          logo_url: finalLogoUrl,
+          logo_height: String(logoHeight),
+        }),
+      });
+
+      if (res.ok) {
+        toast.success("Settings saved!");
+        setLogoFile(null);
+      } else {
+        toast.error("Failed to save settings");
+      }
+    } catch (error) {
+      console.error("Error saving settings:", error);
+      toast.error("Failed to save settings");
+    }
+    setSavingSettings(false);
+  };
+
+  const removeLogo = async () => {
+    setSavingSettings(true);
+    try {
+      const res = await fetch(`${API_URL}/api/admin/settings`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          logo_url: "",
+          logo_height: "32",
+        }),
+      });
+
+      if (res.ok) {
+        setLogoUrl("");
+        setLogoPreview("");
+        setLogoFile(null);
+        setLogoHeight(32);
+        toast.success("Logo removed!");
+      } else {
+        toast.error("Failed to remove logo");
+      }
+    } catch (error) {
+      console.error("Error removing logo:", error);
+      toast.error("Failed to remove logo");
+    }
+    setSavingSettings(false);
   };
 
   const fetchAnalytics = async () => {
