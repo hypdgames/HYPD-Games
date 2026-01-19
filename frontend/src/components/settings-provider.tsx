@@ -1,35 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useCallback } from "react";
 import { AppSettings } from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
-  const [settings, setSettings] = useState<AppSettings | null>(null);
-
-  useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const res = await fetch(`${API_URL}/api/settings`);
-        if (res.ok) {
-          const data = await res.json();
-          setSettings(data);
-          applySettings(data);
-        }
-      } catch (error) {
-        console.error("Error fetching settings:", error);
-      }
-    };
-
-    fetchSettings();
-    
-    // Re-fetch settings every 30 seconds to pick up changes
-    const interval = setInterval(fetchSettings, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const applySettings = (settings: AppSettings) => {
+  const applySettings = useCallback((settings: AppSettings) => {
     // Apply colors to CSS variables
     if (settings.primary_color) {
       document.documentElement.style.setProperty('--lime', settings.primary_color);
@@ -50,7 +27,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     if (settings.site_name) {
       document.title = `${settings.site_name} - Play Instant Games`;
     }
-  };
+  }, []);
 
   const updateFavicon = (url: string) => {
     // Remove existing favicon links
@@ -69,6 +46,26 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     appleLink.href = url;
     document.head.appendChild(appleLink);
   };
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/settings`);
+        if (res.ok) {
+          const data = await res.json();
+          applySettings(data);
+        }
+      } catch (error) {
+        console.error("Error fetching settings:", error);
+      }
+    };
+
+    fetchSettings();
+    
+    // Re-fetch settings every 30 seconds to pick up changes
+    const interval = setInterval(fetchSettings, 30000);
+    return () => clearInterval(interval);
+  }, [applySettings]);
 
   return <>{children}</>;
 }
