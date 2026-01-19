@@ -68,13 +68,14 @@ export default function GameFeed() {
     }
   }, []);
 
-  // Initial fetch
+  // Initial fetch - only on mount
   useEffect(() => {
     const init = async () => {
       await fetchGames();
       setLoading(false);
     };
     init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Sync saved games from user
