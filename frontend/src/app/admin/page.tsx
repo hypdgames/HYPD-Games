@@ -304,6 +304,12 @@ export default function AdminDashboard() {
     }
   }, []);
 
+  // Load GamePix games and categories on mount
+  useEffect(() => {
+    fetchGpxCategories();
+    fetchGpxGames();
+  }, []);
+
   const toggleGdGameSelection = (gdGameId: string) => {
     setSelectedGdGames(prev => {
       const newSet = new Set(prev);
