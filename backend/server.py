@@ -756,6 +756,87 @@ async def admin_delete_game(
     
     return {"success": True, "deleted_id": game_id}
 
+@api_router.delete("/admin/games/cleanup/by-source")
+async def admin_cleanup_games_by_source(
+    source: str,
+    user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Delete all games from a specific source (gamedistribution, custom, gamepix)"""
+    valid_sources = ["gamedistribution", "custom", "gamepix"]
+    if source not in valid_sources:
+        raise HTTPException(status_code=400, detail=f"Invalid source. Must be one of: {valid_sources}")
+    
+    # Get games to delete
+    if source == "custom":
+        # Custom games have source=None or source='custom'
+        result = await db.execute(
+            select(Game).where(
+                (Game.source == None) | (Game.source == "custom")
+            )
+        )
+    else:
+        result = await db.execute(select(Game).where(Game.source == source))
+    
+    games_to_delete = result.scalars().all()
+    deleted_ids = [g.id for g in games_to_delete]
+    deleted_titles = [g.title for g in games_to_delete]
+    
+    # Clear from cache
+    for game_id in deleted_ids:
+        if game_id in game_files_cache:
+            del game_files_cache[game_id]
+    
+    # Delete from database
+    if source == "custom":
+        await db.execute(
+            delete(Game).where(
+                (Game.source == None) | (Game.source == "custom")
+            )
+        )
+    else:
+        await db.execute(delete(Game).where(Game.source == source))
+    
+    await db.commit()
+    
+    logger.info(f"Deleted {len(deleted_ids)} games from source: {source}")
+    return {
+        "success": True,
+        "source": source,
+        "deleted_count": len(deleted_ids),
+        "deleted_games": deleted_titles
+    }
+
+@api_router.delete("/admin/games/cleanup/test-games")
+async def admin_cleanup_test_games(
+    user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Delete all test games (titles containing 'Test' or 'test')"""
+    result = await db.execute(
+        select(Game).where(Game.title.ilike("%test%"))
+    )
+    
+    games_to_delete = result.scalars().all()
+    deleted_ids = [g.id for g in games_to_delete]
+    deleted_titles = [g.title for g in games_to_delete]
+    
+    # Clear from cache
+    for game_id in deleted_ids:
+        if game_id in game_files_cache:
+            del game_files_cache[game_id]
+    
+    # Delete from database
+    await db.execute(delete(Game).where(Game.title.ilike("%test%")))
+    await db.commit()
+    
+    logger.info(f"Deleted {len(deleted_ids)} test games")
+    return {
+        "success": True,
+        "deleted_count": len(deleted_ids),
+        "deleted_games": deleted_titles
+    }
+
 @api_router.post("/admin/seed")
 async def admin_seed_games(user: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
     """Seed sample games"""
