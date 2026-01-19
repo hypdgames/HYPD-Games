@@ -382,6 +382,57 @@ export default function AdminDashboard() {
     setImporting(false);
   };
 
+  const importSelectedGpxGames = async () => {
+    if (selectedGpxGames.size === 0) {
+      toast.error("Please select at least one game to import");
+      return;
+    }
+
+    setImporting(true);
+    try {
+      const gamesToImport = gpxGames
+        .filter(g => selectedGpxGames.has(g.namespace))
+        .map(g => ({
+          gpx_game_id: g.gpx_game_id,
+          title: g.title,
+          namespace: g.namespace,
+          description: g.description,
+          category: g.category,
+          thumbnail_url: g.thumbnail_url,
+          icon_url: g.icon_url,
+          play_url: g.play_url,
+          orientation: g.orientation,
+          quality_score: g.quality_score
+        }));
+
+      const res = await fetch(`${API_URL}/api/admin/gamepix/bulk-import`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(gamesToImport),
+      });
+
+      if (res.ok) {
+        const result = await res.json();
+        toast.success(`Imported ${result.imported} games!`);
+        if (result.skipped > 0) {
+          toast.info(`${result.skipped} games were already imported`);
+        }
+        setSelectedGpxGames(new Set());
+        fetchGames();
+      } else {
+        const error = await res.json();
+        toast.error(error.detail || "Failed to import games");
+      }
+    } catch (error) {
+      console.error("Import error:", error);
+      toast.error("Failed to import games");
+    }
+    setImporting(false);
+  };
+
   const isGameImported = (gdGameId: string) => {
     return games.some(g => g.gd_game_id === gdGameId);
   };
