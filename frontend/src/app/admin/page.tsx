@@ -139,6 +139,15 @@ export default function AdminDashboard() {
   const [selectedGdGames, setSelectedGdGames] = useState<Set<string>>(new Set());
   const [importing, setImporting] = useState(false);
 
+  // GamePix state
+  const [gpxGames, setGpxGames] = useState<GPXGame[]>([]);
+  const [gpxLoading, setGpxLoading] = useState(false);
+  const [gpxCategory, setGpxCategory] = useState<string>("");
+  const [gpxPage, setGpxPage] = useState(1);
+  const [gpxHasMore, setGpxHasMore] = useState(false);
+  const [selectedGpxGames, setSelectedGpxGames] = useState<Set<string>>(new Set());
+  const [gpxCategories, setGpxCategories] = useState<{id: string; name: string; icon: string}[]>([]);
+
   // Analytics state
   const [analyticsOverview, setAnalyticsOverview] = useState<AnalyticsOverview | null>(null);
   const [dailyStats, setDailyStats] = useState<DailyStats[]>([]);
