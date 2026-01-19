@@ -77,7 +77,7 @@ const plans = [
 ];
 
 export default function ProPage() {
-  const { user, token, settings } = useAuthStore();
+  const { token, settings } = useAuthStore();
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [loading, setLoading] = useState(false);
 
