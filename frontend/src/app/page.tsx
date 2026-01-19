@@ -316,7 +316,12 @@ export default function GameFeed() {
       {/* Header */}
       <div className="fixed top-0 left-0 right-0 z-40 p-4 flex justify-between items-center">
         {settings?.logo_url ? (
-          <img src={settings.logo_url} alt="Logo" className="h-8" />
+          <img 
+            src={settings.logo_url} 
+            alt="Logo" 
+            style={{ height: settings.logo_height ? `${settings.logo_height}px` : '32px' }}
+            className="object-contain"
+          />
         ) : (
           <h1 className="font-heading text-xl text-lime tracking-tight">HYPD</h1>
         )}
