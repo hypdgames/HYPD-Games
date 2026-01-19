@@ -5,6 +5,7 @@ import BottomNav from "@/components/bottom-nav";
 import { Providers } from "@/components/providers";
 import { ToastProvider } from "@/components/toast-provider";
 import { ServiceWorkerRegistration } from "@/components/service-worker";
+import { SettingsProvider } from "@/components/settings-provider";
 
 const chivo = Chivo({
   subsets: ["latin"],
