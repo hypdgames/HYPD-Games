@@ -1,17 +1,26 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuthStore, useThemeStore } from "@/store";
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  const { fetchUser, fetchSettings } = useAuthStore();
-  const { initTheme } = useThemeStore();
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    initTheme();
-    fetchUser();
-    fetchSettings();
-  }, [initTheme, fetchUser, fetchSettings]);
+    setMounted(true);
+    
+    // Initialize theme
+    useThemeStore.getState().initTheme();
+    
+    // Fetch user and settings
+    useAuthStore.getState().fetchUser();
+    useAuthStore.getState().fetchSettings();
+  }, []);
+
+  // Prevent hydration mismatch by not rendering theme-dependent content until mounted
+  if (!mounted) {
+    return null;
+  }
 
   return <>{children}</>;
 }
