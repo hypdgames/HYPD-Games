@@ -18,169 +18,166 @@ Feature Specifications:
 **User's preferred language**: English
 
 **what currently exists?**
-The application has undergone a major architectural migration based on user-approved recommendations. The original stack (React SPA + FastAPI + MongoDB) has been completely replaced.
+The application is a full-stack gaming platform built with a Next.js frontend and a FastAPI backend, using Supabase for the PostgreSQL database and file storage. The entire application has been successfully deployed and is live, with the frontend hosted on Vercel and the backend on Railway. A custom domain is configured and functional.
 
-The current stack is:
-- **Frontend**: **Next.js 14** with **TypeScript**, using the App Router. The UI/design has been preserved.
-- **State Management**: **Zustand** (replaced Context API).
-- **Feed Mechanics**: A TikTok-style swipeable feed implemented with **TanStack Virtual** (for performance) and **react-use-gesture** (for swipe physics).
-- **Backend**: **FastAPI** connected to a **Supabase PostgreSQL** database.
-- **Database**: **Supabase PostgreSQL**, with schema managed by **Alembic** migrations.
-- **File Storage**: In the process of migrating from MongoDB GridFS to **Supabase Storage**.
-- **PWA**: The application is configured as a Progressive Web App.
-- **SEO**: Dynamic , , and server-side generated meta tags for game pages are implemented.
+Key implemented features include:
+- A TikTok-style swipeable game feed.
+- User authentication and an admin dashboard.
+- Game uploads are handled via Supabase Storage.
+- A mock integration with GameDistribution to populate the game list.
+- An  file has been added to the public directory for ad monetization.
+- Backend infrastructure for Redis caching, leaderboards, challenges, a friend system, and advanced analytics has been built.
+- Redis has been successfully configured and connected in the live production environment on Railway.
 
 **Last working item**:
-- Last item agent was working: Migrating game file handling from the old MongoDB/GridFS system to **Supabase Storage**. The agent installed the  client and updated  to include the Supabase client and helper functions for file uploads. The agent was in the middle of rewriting the game creation endpoint () to upload game assets to Supabase Storage.
+- Last item agent was working: Building the frontend UI for the new backend features: Leaderboards, Challenges, Friends system, and enhanced Analytics. The agent created a new page for Leaderboards () and started modifying the PRO page to include challenges.
 - Status: IN PROGRESS
 - Agent Testing Done: N
-- Which testing method agent to use? backend testing agent or manual  to test the game upload endpoint.
+- Which testing method agent to use? frontend testing agent
 - User Testing Done: N
 
 **All Pending/In progress Issue list**:
-  - Issue 1: Bottom navbar content may not be vertically centered (P1)
+  - Issue 1: Build Frontend for Social & Analytics Features (P0)
 
   Issues Detail:
-  - Issue 1:
-     - Attempted fixes: This was a recurring issue in the old React SPA. The frontend has been completely rewritten in Next.js, including the  component. However, it has not been explicitly verified if the alignment is now correct according to the user's standards.
-     - Next debug checklist:
-        1.  Take a screenshot of the main page, focusing on the bottom navigation bar.
-        2.  Analyze the screenshot to see if the icons and text are perfectly centered vertically.
-        3.  If not, inspect  and adjust the flexbox and padding properties (, , etc.) to achieve perfect alignment.
-     - Why fix this issue and what will be achieved with the fix? To resolve a long-standing user-reported UI bug and improve the application's professional polish.
-     - Status: TESTING PENDING
-     - Is recurring issue? Y
-     - Should Test frontend/backend/both after fix? Frontend
-     - Blocked on other issue: none
+  - Issue 1: 
+     - Attempted fixes: The agent created the necessary backend models, migrations, and API endpoints. For the frontend, a new leaderboard page was created and the PRO page was modified, but the full UI implementation is pending.
+     - Next debug checklist: 
+        1. Fully implement  to fetch and display global and per-game leaderboards.
+        2. Implement the Challenges UI within .
+        3. Update the Profile page () to include a Friends system (search users, send/accept requests, view friends list).
+        4. Enhance the Admin dashboard () with a new analytics tab that visualizes data from the new, more detailed analytics endpoints using charts.
+     - Why fix this issue and what will be achieved with the fix? This will provide users with the engaging social and competitive features that were requested and give the admin powerful new insights.
+     - Status:  IN PROGRESS
+     - Is recurring issue? N
+     - Should Test frontend/backend/both after fix? Both
+     - Blocked on other issue: None
 
 **In progress Task List**:
-  - Task 1: Complete Supabase Storage Integration (P0)
-
- Task Detail:
-  - Task 1: 
-     - Where to resume: The  endpoint in  needs to be completed. The current implementation still contains parts of the old GridFS logic. The next steps are:
-        1.  Finish rewriting the  endpoint to upload the game ZIP file and thumbnail to Supabase Storage buckets.
-        2.  Ensure the public URLs returned by Supabase are saved in the  table in the PostgreSQL database.
-        3.  Update the  endpoint to return the game's public URL from Supabase Storage, rather than trying to stream the file.
-        4.  Update the frontend  component to use this URL in the iframe .
-        5.  Thoroughly test the game upload and play functionality.
-     - What will be achieved with this? This will complete the database and storage migration, resolving a major performance bottleneck and enabling persistent, scalable file storage for games.
-     - Status: IN PROGRESS
-     - Should Test frontend/backend/both after fix? Both
-     - Blocked on something: None
+- This is covered by the  above.
 
 **Upcoming and Future Tasks**
 - **Upcoming Tasks:**
-    - **P1: GameDistribution Integration**: Integrate the GameDistribution SDK to populate the platform with games and implement ad monetization, as requested by the user.
+    - **P0: Real GameDistribution API Integration**: The user is waiting for approval from GameDistribution. Once they provide the Publisher ID/API Key, the current mock integration must be replaced with the real API to fetch and display thousands of live games.
 - **Future Tasks:**
-    - **P2: Video Previews**: Implement video previews for the game feed, using a service like Cloudinary for optimization. The UI should support showing videos, GIFs, or static images based on what is available for a game.
-    - **P2: Redis Caching**: Integrate Redis to cache the game feed API responses, reducing database load and improving feed-scrolling performance at scale.
-    - **P2: Social Features**: Implement social features like friend challenges or game sharing.
+    - **P1: Video Previews**: Implement video previews for games in the feed, potentially using a service like Cloudinary for optimization.
+    - **P1: Ad Monetization**: Once the GD account is approved, fully integrate the GameDistribution SDK to display ads and generate revenue.
+    - **P2: Social Feature Enhancements**: Implement friend-to-friend challenges and game sharing capabilities.
 
 **Completed work in this session**
-- **Full-Stack Architectural Migration**:
-    - **Frontend**: Migrated from a React SPA to a **Next.js 14 + TypeScript** application.
-    - **Backend**: Migrated from **MongoDB** to **Supabase (PostgreSQL)** using SQLAlchemy and Alembic.
-    - **State Management**: Replaced Context API with **Zustand**.
-- **Core Feature Implementation (TikTok-Style Feed)**:
-    - Implemented a virtualized infinite scroll feed using **TanStack Virtual**.
-    - Added physics-based swipe gestures and snap-scrolling using **react-use-gesture**.
-    - Added Pull to Refresh functionality to the feed.
-- **SEO & Performance Enhancements**:
-    - Implemented server-side rendered meta tags for dynamic game pages.
-    - Created dynamic  and  files.
-    - Added  headers to backend API endpoints for browser caching.
-    - Implemented a **Service Worker** to pre-cache game assets for the next game in the feed.
-- **Authentication**: Migrated user authentication from custom JWT on Mongo to work with PostgreSQL.
-- **Testing**: Performed extensive manual testing (screenshots, curl) to verify the UI and functionality after the migration.
+- **Full Stack Deployment**: Successfully guided the user to deploy the frontend to Vercel and the backend to Railway. Resolved numerous deployment issues related to environment variables, dependencies (), CORS, and port configurations.
+- **Custom Domain Setup**: Configured the user's custom domain on Vercel and updated backend CORS policies to allow requests from both  and non- subdomains.
+- **Supabase Storage Migration**: Completed the migration for game file handling, fixing bugs related to CSP and ensuring game uploads and playback function correctly.
+- **GameDistribution Integration (Mock)**: Implemented backend endpoints and a frontend admin UI to browse and import games from a mock GameDistribution API, populating the database and feed.
+- ** Implementation**: Created and deployed the  file required for ad network authorization.
+- **Backend Feature Expansion**:
+    - **Models & DB**: Created SQLAlchemy models and ran Alembic migrations for leaderboards, challenges, friendships, and analytics.
+    - **APIs**: Built all corresponding FastAPI endpoints for these new features.
+    - **Redis Caching**: Integrated Redis for caching API responses. Guided the user to provision and connect a Redis instance on Railway, and verified its functionality.
+- **Code Review & Optimization**: Refactored backend code to fix linting errors, and enhanced the frontend with improved SEO metadata, a dynamic sitemap, and an OG image for social sharing.
+- **Testing**: Used the testing agent multiple times to verify backend and frontend functionality after major changes.
 
 **Earlier issues found/mentioned but not fixed**
-   - **Issue 1**: The vertical alignment of the bottom navbar. This was a persistent issue in the previous stack. It needs to be re-verified in the new Next.js frontend.
+   - **Issue 1**: The frontend codebase has ESLint parsing errors. The agent identified this as a configuration issue (ESLint not set up for TypeScript) but did not fix it. This should be addressed to ensure code quality and prevent future bugs.
+     - Debug checklist:
+        1. Inspect .
+        2. Install and configure  and .
+        3. Run yarn run v1.22.22
+info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command. and fix any outstanding errors.
+     - Why to solve this issue and what will be achieved with this? A clean linting setup improves code quality, catches potential bugs early, and ensures maintainability.
+     - Should Test frontend/backend/both after fix: Frontend
+     - Is recurring issue? Y
 
 **Known issue recurrence from previous fork**
-  - None in this session, but the navbar issue is a holdover from a previous one.
+  - The bottom navbar alignment issue was re-verified and appears to be resolved in the new Next.js implementation.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- **Frontend**: Next.js (App Router), React, TypeScript, Tailwind CSS, Framer Motion, **TanStack Virtual**, **react-use-gesture**, **Zustand**.
-- **Backend**: FastAPI, **PostgreSQL**, **SQLAlchemy**, **Alembic**, **Supabase-py**.
+- **Frontend**: Next.js 14, TypeScript, Tailwind CSS, Zustand, TanStack Virtual, react-use-gesture.
+- **Backend**: FastAPI, PostgreSQL, SQLAlchemy, Alembic, Supabase-py.
 - **Database**: Supabase (PostgreSQL).
-- **File Storage**: Supabase Storage (in progress).
-- **Deployment**: Docker, Supervisor (running ).
+- **File Storage**: Supabase Storage.
+- **Caching**: **Redis**.
+- **Deployment**: **Vercel** (Frontend), **Railway** (Backend + Redis).
 
 **key DB schema**
-Defined in  via SQLAlchemy:
-- **users**: 
-- **games**: 
-- **play_sessions**: 
-- **settings**: 
+Defined in . New models added:
+- ****: 
+- ****: 
+- ****: 
+- ****: 
 
 **changes in tech stack**
-- **Frontend Framework**: React (Create React App) -> **Next.js 14 (App Router) + TypeScript**.
-- **Database**: MongoDB -> **Supabase (PostgreSQL)**.
-- **Backend ORM**: Motor -> **SQLAlchemy**.
-- **State Management**: React Context -> **Zustand**.
-- **File Storage**: MongoDB GridFS -> **Supabase Storage** (Migration in progress).
-- **Feed Implementation**: Basic scroll -> **TanStack Virtual + react-use-gesture**.
+- **Caching**: Added **Redis** to the stack, hosted on Railway.
 
 **All files of reference**
-- : The main FastAPI application file, rewritten for PostgreSQL. **Currently being edited for Supabase Storage.**
-- : The main TikTok-style game feed page.
-- : Defines the new PostgreSQL database schema.
-- : Handles database connection and sessions.
-- : The new bottom navigation component.
-- : The service worker for pre-caching.
+- : Heavily modified with new endpoints for social features, analytics, and Redis integration.
+- : Updated with new tables for social features and analytics.
+- : New file for Redis caching logic.
+- : Updated with the GameDistribution import UI.
+- : New file containing a detailed guide for deploying to Vercel and Railway.
+- : New file for ad network authorization.
+- : New (skeleton) page for the leaderboards feature.
 
 **Areas that need refactoring**:
-- The  endpoint in  is mid-refactor and must be completed.
-- The  endpoint for games also needs updating to serve from Supabase Storage.
+- The frontend ESLint configuration needs to be fixed to properly parse TypeScript, and any resulting errors should be addressed.
 
 **key api endpoints**
-- : (In Progress) Endpoint for uploading games. Being updated for Supabase Storage.
-- : Returns the list of games for the feed. Cache headers have been added.
-- : New endpoint to provide metadata for SEO tags on game pages.
-- : Dynamically generated sitemap.
-- Auth endpoints (, ) now use the PostgreSQL user table.
+- : Imports a game from the (mock) GameDistribution service.
+- : Imports multiple games.
+- : Gets the leaderboard for a specific game.
+- : Gets active challenges for the current user.
+- : Sends a friend request.
+- : Lists friends and pending requests.
+- : Gets detailed analytics data for the admin dashboard.
 
 **Critical Info for New Agent**
-- The entire stack has been migrated. **Do not refer to the initial handoff summary for technical implementation details**. The source of truth is the new code in  (Next.js) and  (FastAPI + SQLAlchemy).
-- Your immediate priority is to **complete the Supabase Storage migration**. The game upload and play functionality is currently broken.
-- User has provided all necessary Supabase credentials (Project URL, API Keys, DB Password), which have been configured in .
-- The user has explicitly decided **not** to migrate existing games and will instead use GameDistribution. Your task is to ensure the *upload functionality* for future games works with Supabase.
+- **The application is live.** The frontend is on Vercel, and the backend/Redis is on Railway. Any changes to the codebase in the  branch will trigger a production deployment, so proceed with caution. The user pushes changes to GitHub manually.
+- **Your immediate task is to build the frontend UI** for the existing backend features: Leaderboards, Challenges, Friends system, and the enhanced Admin Analytics dashboard.
+- The user is waiting for approval from **GameDistribution**. Be prepared to switch from the mock API to the real one once the user provides credentials (Publisher ID/API Key).
+- All necessary credentials (Supabase, Railway) are configured as environment variables in the respective platforms. You do not need to ask the user for them again.
 
 **documents and test reports created in this job**
--  (Significantly updated to reflect the new architecture and completed tasks).
+- 
+- 
+- 
+- 
+- 
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User**: Agrees to migrate to Next.js, TanStack Virtual, Supabase, and Cloudinary. (Completed)
-2.  **User**: Confirms a fresh start is okay but wants the UI to look identical. Asks for confirmation on Supabase/Cloudinary. Decides not to migrate old games. (Completed)
-3.  **User**: Gives the green light to start the migration. (Completed)
-4.  **User**: Asks to continue with enhancements after the main migration. (Completed)
-5.  **User**: Asks to continue after SEO/Service worker enhancements are done. (Completed)
-6.  **User**: Provides Supabase project URL and API keys. (Completed)
-7.  **User**: Provides the Supabase database connection string (with a password placeholder). (Completed)
-8.  **User**: Provides the actual database password. (Completed)
-9.  **User**: Asks to continue with the next steps after the Supabase DB migration is complete. (Completed)
-10. **User**: No pending messages. The last instruction was to continue with the next steps (Supabase Storage and GameDistribution).
+1.  **User**: Asks to start work on Redis caching, social features (leaderboards, challenges), and analytics improvements. (IN PROGRESS)
+2.  **User**: Confirms priorities for the new features. (DONE)
+3.  **User**: Gives instructions on how to add Redis on Railway. (DONE)
+4.  **User**: Confirms Redis has been added. (DONE)
+5.  **User**: Confirms they have pushed the latest backend code to GitHub. (DONE)
+6.  **User**: Asks to check if Redis is working. (DONE)
+7.  **User**: Confirms they have updated the Redis URL to the public one. (DONE)
+8.  **User**: Asks to check the Redis connection again. (DONE)
+9.  **User**: Acknowledges the backend is complete and asks to continue with the frontend UI. (IN PROGRESS)
+10. **(No pending user messages)**
 
 **Project Health Check:**
-- **Broken**:
-    - **Game Upload and Play**: This core functionality is non-operational due to the ongoing migration from GridFS to Supabase Storage. This is the highest priority fix.
-- **Mocked**: None.
+- **Broken**: None.
+- **Mocked**:
+    - **GameDistribution API**: The backend service for fetching games from GameDistribution currently returns static, mock data. This needs to be replaced with a real API call once the user provides credentials.
 
 **3rd Party Integrations**
-- **Supabase**: Integrated for PostgreSQL database and Authentication. Storage integration is in progress.
-- **GameDistribution**: Planned for next integration.
-- **Cloudinary**: Discussed and approved by user for video previews, but not yet implemented.
+- **Vercel**: Hosts the Next.js frontend.
+- **Railway**: Hosts the FastAPI backend and the Redis instance.
+- **Supabase**: Used for the PostgreSQL database and file storage.
+- **GameDistribution**: Planned for game catalog and ad monetization (currently mocked).
+- **Redis**: Used for backend caching.
 
 **Testing status**
-  - Testing agent used after significant changes: NO (Agent performed extensive manual testing via screenshots and curl).
+  - Testing agent used after significant changes: YES. The testing agent was used multiple times to validate the Supabase migration, GameDistribution integration, and post-optimization changes.
   - Troubleshoot agent used after agent stuck in loop: NO
-  - Test files created: []
-  - Known regressions: Game upload/play functionality is intentionally broken during migration.
+  - Test files created: The testing agent added several pytest files under .
+  - Known regressions: None.
 
 **Credentials to test flow:**
 - **Admin User**:  / 
-- **Supabase Credentials**: Are configured in .</analysis>
+
+**What agent forgot to execute**
+- The agent identified but did not fix the ESLint configuration for TypeScript in the frontend project. This means the linting process is currently broken and not providing accurate feedback on code quality for  files.</analysis>
