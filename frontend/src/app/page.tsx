@@ -296,7 +296,7 @@ export default function GameFeed() {
               className={`w-10 h-10 rounded-full flex items-center justify-center ${
                 pullDistance >= PULL_THRESHOLD || refreshing
                   ? "bg-lime text-black"
-                  : "bg-card/80 backdrop-blur-sm text-foreground border border-border"
+                  : "bg-card text-foreground border border-border"
               }`}
             >
               <RefreshCw className="w-5 h-5" />
