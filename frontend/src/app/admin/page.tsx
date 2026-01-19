@@ -140,10 +140,18 @@ export default function AdminDashboard() {
   const [retention, setRetention] = useState<RetentionData | null>(null);
   const [regionData, setRegionData] = useState<RegionData[]>([]);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
+
+  // Settings state
+  const [logoUrl, setLogoUrl] = useState<string>("");
+  const [logoHeight, setLogoHeight] = useState<number>(32);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string>("");
+  const [savingSettings, setSavingSettings] = useState(false);
   
   const gameFileRef = useRef<HTMLInputElement>(null);
   const thumbnailRef = useRef<HTMLInputElement>(null);
   const videoPreviewRef = useRef<HTMLInputElement>(null);
+  const logoFileRef = useRef<HTMLInputElement>(null);
 
   // New game form
   const [newGame, setNewGame] = useState({
