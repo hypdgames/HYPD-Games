@@ -116,7 +116,7 @@ export default function ProPage() {
         const error = await res.json();
         toast.error(error.detail || "Failed to join challenge");
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to join challenge");
     }
   };
