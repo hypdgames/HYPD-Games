@@ -18,6 +18,12 @@ import {
   Plus,
   Check,
   Search,
+  Users,
+  Clock,
+  TrendingUp,
+  Calendar,
+  Activity,
+  Target,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,10 +32,26 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuthStore } from "@/store";
 import { toast } from "sonner";
 import type { Game } from "@/types";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 const CATEGORIES = ["Action", "Puzzle", "Arcade", "Racing", "Sports", "Strategy"];
+
+const CHART_COLORS = ["#CCFF00", "#8B5CF6", "#EC4899", "#06B6D4", "#F59E0B", "#10B981"];
 
 interface GDGame {
   gd_game_id: string;
@@ -40,6 +62,44 @@ interface GDGame {
   embed_url: string;
   instructions?: string;
   mobile?: boolean;
+}
+
+interface AnalyticsOverview {
+  total_users: number;
+  total_games: number;
+  total_plays: number;
+  new_users_today: number;
+  plays_today: number;
+  active_users_24h: number;
+  plays_this_week: number;
+}
+
+interface DailyStats {
+  date: string;
+  plays: number;
+  unique_players: number;
+  new_users: number;
+}
+
+interface CategoryStats {
+  category: string;
+  plays: number;
+}
+
+interface TopGame {
+  id: string;
+  title: string;
+  plays: number;
+}
+
+interface RetentionData {
+  day_1: number;
+  day_1_pct?: number;
+  day_3: number;
+  day_3_pct?: number;
+  day_7: number;
+  day_7_pct?: number;
+  total_new_users: number;
 }
 
 export default function AdminDashboard() {
@@ -58,6 +118,14 @@ export default function AdminDashboard() {
   const [gdSearch, setGdSearch] = useState("");
   const [selectedGdGames, setSelectedGdGames] = useState<Set<string>>(new Set());
   const [importing, setImporting] = useState(false);
+
+  // Analytics state
+  const [analyticsOverview, setAnalyticsOverview] = useState<AnalyticsOverview | null>(null);
+  const [dailyStats, setDailyStats] = useState<DailyStats[]>([]);
+  const [categoryStats, setCategoryStats] = useState<CategoryStats[]>([]);
+  const [topGames, setTopGames] = useState<TopGame[]>([]);
+  const [retention, setRetention] = useState<RetentionData | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
   
   const gameFileRef = useRef<HTMLInputElement>(null);
   const thumbnailRef = useRef<HTMLInputElement>(null);
@@ -97,6 +165,41 @@ export default function AdminDashboard() {
       console.error("Error fetching games:", error);
     }
     setLoading(false);
+  };
+
+  const fetchAnalytics = async () => {
+    setAnalyticsLoading(true);
+    try {
+      const [overviewRes, dailyRes, retentionRes] = await Promise.all([
+        fetch(`${API_URL}/api/admin/analytics/overview`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`${API_URL}/api/admin/analytics/daily?days=14`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`${API_URL}/api/admin/analytics/retention`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+
+      if (overviewRes.ok) {
+        const data = await overviewRes.json();
+        setAnalyticsOverview(data.overview);
+        setCategoryStats(data.categories || []);
+        setTopGames(data.top_games || []);
+      }
+      if (dailyRes.ok) {
+        const data = await dailyRes.json();
+        setDailyStats(data.daily_stats || []);
+      }
+      if (retentionRes.ok) {
+        const data = await retentionRes.json();
+        setRetention(data.retention);
+      }
+    } catch (error) {
+      console.error("Error fetching analytics:", error);
+    }
+    setAnalyticsLoading(false);
   };
 
   // Fetch GameDistribution games
@@ -301,6 +404,11 @@ export default function AdminDashboard() {
     }
   };
 
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  };
+
   if (!user?.is_admin) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -332,7 +440,7 @@ export default function AdminDashboard() {
       </div>
 
       <div className="p-6 max-w-4xl mx-auto">
-        <Tabs defaultValue="games" className="w-full">
+        <Tabs defaultValue="games" className="w-full" onValueChange={(v) => v === "analytics" && fetchAnalytics()}>
           <TabsList className="grid w-full grid-cols-4 mb-6">
             <TabsTrigger value="games" className="flex items-center gap-2">
               <Gamepad2 className="w-4 h-4" />
@@ -755,61 +863,301 @@ export default function AdminDashboard() {
             </form>
           </TabsContent>
 
-          {/* Analytics Tab */}
+          {/* Enhanced Analytics Tab */}
           <TabsContent value="analytics">
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-card border border-border rounded-xl p-4 text-center">
-                  <p className="text-3xl font-heading text-lime">
-                    {games.length}
-                  </p>
-                  <p className="text-sm text-muted-foreground">Total Games</p>
-                </div>
-                <div className="bg-card border border-border rounded-xl p-4 text-center">
-                  <p className="text-3xl font-heading text-lime">
-                    {games
-                      .reduce((acc, g) => acc + (g.play_count || 0), 0)
-                      .toLocaleString()}
-                  </p>
-                  <p className="text-sm text-muted-foreground">Total Plays</p>
-                </div>
+            {analyticsLoading ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="w-8 h-8 text-lime animate-spin" />
               </div>
+            ) : (
+              <div className="space-y-6">
+                {/* Overview Cards */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-card border border-border rounded-xl p-4"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <Users className="w-4 h-4 text-blue-400" />
+                      <span className="text-xs text-muted-foreground">Total Users</span>
+                    </div>
+                    <p className="text-2xl font-heading text-foreground">
+                      {analyticsOverview?.total_users?.toLocaleString() || 0}
+                    </p>
+                    {analyticsOverview?.new_users_today ? (
+                      <p className="text-xs text-lime flex items-center gap-1 mt-1">
+                        <TrendingUp className="w-3 h-3" />
+                        +{analyticsOverview.new_users_today} today
+                      </p>
+                    ) : null}
+                  </motion.div>
 
-              <div className="bg-card border border-border rounded-xl p-6">
-                <h3 className="font-bold text-foreground mb-4">
-                  Top Games by Plays
-                </h3>
-                {games.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-4">
-                    No data yet
-                  </p>
-                ) : (
-                  <div className="space-y-3">
-                    {[...games]
-                      .sort((a, b) => (b.play_count || 0) - (a.play_count || 0))
-                      .slice(0, 5)
-                      .map((game, i) => (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.05 }}
+                    className="bg-card border border-border rounded-xl p-4"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <Gamepad2 className="w-4 h-4 text-lime" />
+                      <span className="text-xs text-muted-foreground">Total Games</span>
+                    </div>
+                    <p className="text-2xl font-heading text-foreground">
+                      {analyticsOverview?.total_games || games.length}
+                    </p>
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="bg-card border border-border rounded-xl p-4"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <Activity className="w-4 h-4 text-violet" />
+                      <span className="text-xs text-muted-foreground">Total Plays</span>
+                    </div>
+                    <p className="text-2xl font-heading text-foreground">
+                      {analyticsOverview?.total_plays?.toLocaleString() || 
+                       games.reduce((acc, g) => acc + (g.play_count || 0), 0).toLocaleString()}
+                    </p>
+                    {analyticsOverview?.plays_today ? (
+                      <p className="text-xs text-lime flex items-center gap-1 mt-1">
+                        <TrendingUp className="w-3 h-3" />
+                        +{analyticsOverview.plays_today} today
+                      </p>
+                    ) : null}
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.15 }}
+                    className="bg-card border border-border rounded-xl p-4"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <Clock className="w-4 h-4 text-orange-400" />
+                      <span className="text-xs text-muted-foreground">Active (24h)</span>
+                    </div>
+                    <p className="text-2xl font-heading text-foreground">
+                      {analyticsOverview?.active_users_24h || 0}
+                    </p>
+                  </motion.div>
+                </div>
+
+                {/* Daily Activity Chart */}
+                {dailyStats.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="bg-card border border-border rounded-xl p-4"
+                  >
+                    <h3 className="font-bold text-foreground mb-4 flex items-center gap-2">
+                      <Calendar className="w-5 h-5 text-lime" />
+                      Daily Activity (Last 14 Days)
+                    </h3>
+                    <div className="h-64">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={dailyStats}>
+                          <defs>
+                            <linearGradient id="colorPlays" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#CCFF00" stopOpacity={0.3}/>
+                              <stop offset="95%" stopColor="#CCFF00" stopOpacity={0}/>
+                            </linearGradient>
+                            <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.3}/>
+                              <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0}/>
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                          <XAxis 
+                            dataKey="date" 
+                            tickFormatter={formatDate}
+                            stroke="#666"
+                            fontSize={11}
+                          />
+                          <YAxis stroke="#666" fontSize={11} />
+                          <Tooltip 
+                            contentStyle={{ 
+                              backgroundColor: '#1a1a1a', 
+                              border: '1px solid #333',
+                              borderRadius: '8px',
+                              color: '#fff'
+                            }}
+                            labelFormatter={formatDate}
+                          />
+                          <Area 
+                            type="monotone" 
+                            dataKey="plays" 
+                            stroke="#CCFF00" 
+                            fillOpacity={1} 
+                            fill="url(#colorPlays)"
+                            name="Plays"
+                          />
+                          <Area 
+                            type="monotone" 
+                            dataKey="unique_players" 
+                            stroke="#8B5CF6" 
+                            fillOpacity={1} 
+                            fill="url(#colorUsers)"
+                            name="Unique Players"
+                          />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </motion.div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Category Breakdown */}
+                  {categoryStats.length > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.25 }}
+                      className="bg-card border border-border rounded-xl p-4"
+                    >
+                      <h3 className="font-bold text-foreground mb-4 flex items-center gap-2">
+                        <Target className="w-5 h-5 text-lime" />
+                        Plays by Category
+                      </h3>
+                      <div className="h-48">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={categoryStats}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={40}
+                              outerRadius={70}
+                              paddingAngle={2}
+                              dataKey="plays"
+                              nameKey="category"
+                            >
+                              {categoryStats.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                              ))}
+                            </Pie>
+                            <Tooltip
+                              contentStyle={{ 
+                                backgroundColor: '#1a1a1a', 
+                                border: '1px solid #333',
+                                borderRadius: '8px',
+                                color: '#fff'
+                              }}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                      <div className="flex flex-wrap gap-2 mt-2 justify-center">
+                        {categoryStats.map((cat, index) => (
+                          <div key={cat.category} className="flex items-center gap-1 text-xs">
+                            <div 
+                              className="w-2 h-2 rounded-full" 
+                              style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }}
+                            />
+                            <span className="text-muted-foreground">{cat.category}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* User Retention */}
+                  {retention && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 }}
+                      className="bg-card border border-border rounded-xl p-4"
+                    >
+                      <h3 className="font-bold text-foreground mb-4 flex items-center gap-2">
+                        <TrendingUp className="w-5 h-5 text-lime" />
+                        User Retention
+                      </h3>
+                      <div className="h-48">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={[
+                            { name: "Day 1", value: retention.day_1_pct || 0 },
+                            { name: "Day 3", value: retention.day_3_pct || 0 },
+                            { name: "Day 7", value: retention.day_7_pct || 0 },
+                          ]}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                            <XAxis dataKey="name" stroke="#666" fontSize={11} />
+                            <YAxis stroke="#666" fontSize={11} unit="%" />
+                            <Tooltip 
+                              contentStyle={{ 
+                                backgroundColor: '#1a1a1a', 
+                                border: '1px solid #333',
+                                borderRadius: '8px',
+                                color: '#fff'
+                              }}
+                              formatter={(value: number) => [`${value.toFixed(1)}%`, "Retention"]}
+                            />
+                            <Bar dataKey="value" fill="#CCFF00" radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                      <p className="text-xs text-muted-foreground text-center mt-2">
+                        Based on {retention.total_new_users} new users (last 7 days)
+                      </p>
+                    </motion.div>
+                  )}
+                </div>
+
+                {/* Top Games */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.35 }}
+                  className="bg-card border border-border rounded-xl p-4"
+                >
+                  <h3 className="font-bold text-foreground mb-4 flex items-center gap-2">
+                    <Gamepad2 className="w-5 h-5 text-lime" />
+                    Top Games by Plays
+                  </h3>
+                  {(topGames.length > 0 ? topGames : [...games]
+                    .sort((a, b) => (b.play_count || 0) - (a.play_count || 0))
+                    .slice(0, 5)
+                    .map(g => ({ id: g.id, title: g.title, plays: g.play_count || 0 }))
+                  ).length === 0 ? (
+                    <p className="text-muted-foreground text-center py-4">
+                      No data yet
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      {(topGames.length > 0 ? topGames : [...games]
+                        .sort((a, b) => (b.play_count || 0) - (a.play_count || 0))
+                        .slice(0, 5)
+                        .map(g => ({ id: g.id, title: g.title, plays: g.play_count || 0 }))
+                      ).map((game, i) => (
                         <div
                           key={game.id}
-                          className="flex items-center justify-between"
+                          className="flex items-center gap-3"
                         >
-                          <div className="flex items-center gap-3">
-                            <span className="w-6 h-6 rounded-full bg-lime/20 flex items-center justify-center text-xs font-bold text-lime">
-                              {i + 1}
-                            </span>
-                            <span className="text-foreground truncate">
-                              {game.title}
-                            </span>
-                          </div>
-                          <span className="text-muted-foreground">
-                            {game.play_count?.toLocaleString() || 0}
+                          <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                            i === 0 ? "bg-lime/20 text-lime" : 
+                            i === 1 ? "bg-violet/20 text-violet" :
+                            i === 2 ? "bg-orange-400/20 text-orange-400" :
+                            "bg-muted text-muted-foreground"
+                          }`}>
+                            {i + 1}
+                          </span>
+                          <span className="text-foreground flex-1 truncate text-sm">
+                            {game.title}
+                          </span>
+                          <span className="text-muted-foreground text-sm">
+                            {game.plays?.toLocaleString() || 0}
                           </span>
                         </div>
                       ))}
-                  </div>
-                )}
+                    </div>
+                  )}
+                </motion.div>
               </div>
-            </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>
