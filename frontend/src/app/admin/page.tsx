@@ -17,7 +17,6 @@ import {
   Globe,
   Plus,
   Check,
-  Search,
   Users,
   Clock,
   TrendingUp,
