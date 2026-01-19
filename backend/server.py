@@ -1112,6 +1112,207 @@ async def bulk_import_gd_games(
         "skipped_games": skipped
     }
 
+# ==================== GAMEPIX INTEGRATION ====================
+
+# GamePix Configuration
+GAMEPIX_SID = "1M9DD"  # Publisher SID for stats tracking
+GAMEPIX_FEED_BASE = "https://feeds.gamepix.com/v2/json"
+
+class GPXGameImport(BaseModel):
+    gpx_game_id: str
+    title: str
+    namespace: str
+    description: Optional[str] = None
+    category: str = "Action"
+    thumbnail_url: Optional[str] = None  # banner_image
+    icon_url: Optional[str] = None  # image
+    play_url: str  # url from feed
+    orientation: Optional[str] = None
+    quality_score: Optional[float] = None
+
+@api_router.get("/gamepix/browse")
+async def browse_gamepix_games(
+    category: Optional[str] = None,
+    page: int = 1,
+    limit: int = 12
+):
+    """Browse games from GamePix RSS feed"""
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            params = {
+                "sid": GAMEPIX_SID,
+                "pagination": limit,
+                "page": page
+            }
+            
+            if category and category.lower() != "all":
+                params["category"] = category.lower()
+            
+            response = await client.get(GAMEPIX_FEED_BASE, params=params)
+            
+            if response.status_code != 200:
+                logger.warning(f"GamePix API returned {response.status_code}")
+                return {"games": [], "total": 0, "page": page, "limit": limit, "error": "Failed to fetch games"}
+            
+            data = response.json()
+            items = data.get("items", [])
+            
+            # Transform to our format
+            transformed_games = []
+            for game in items:
+                transformed_games.append({
+                    "gpx_game_id": game.get("id"),
+                    "title": game.get("title"),
+                    "namespace": game.get("namespace"),
+                    "description": game.get("description"),
+                    "category": game.get("category", "Action"),
+                    "thumbnail_url": game.get("banner_image"),
+                    "icon_url": game.get("image"),
+                    "play_url": game.get("url"),
+                    "orientation": game.get("orientation"),
+                    "quality_score": game.get("quality_score"),
+                    "date_published": game.get("date_published")
+                })
+            
+            return {
+                "games": transformed_games,
+                "total": len(items),  # GamePix doesn't provide total count
+                "page": page,
+                "limit": limit,
+                "next_url": data.get("next_url"),
+                "previous_url": data.get("previous_url"),
+                "has_more": data.get("next_url") is not None
+            }
+            
+    except Exception as e:
+        logger.error(f"Error browsing GamePix games: {e}")
+        return {"games": [], "total": 0, "page": page, "limit": limit, "error": str(e)}
+
+@api_router.get("/gamepix/categories")
+async def get_gamepix_categories():
+    """Get available GamePix game categories"""
+    categories = [
+        {"id": "all", "name": "All Games", "icon": "🎮"},
+        {"id": "action", "name": "Action", "icon": "⚔️"},
+        {"id": "adventure", "name": "Adventure", "icon": "🗺️"},
+        {"id": "arcade", "name": "Arcade", "icon": "🕹️"},
+        {"id": "puzzle", "name": "Puzzle", "icon": "🧩"},
+        {"id": "racing", "name": "Racing", "icon": "🏎️"},
+        {"id": "sports", "name": "Sports", "icon": "⚽"},
+        {"id": "strategy", "name": "Strategy", "icon": "♟️"},
+        {"id": "shooting", "name": "Shooting", "icon": "🎯"},
+        {"id": "board", "name": "Board", "icon": "🎲"},
+        {"id": "cards", "name": "Cards", "icon": "🃏"},
+        {"id": "casino", "name": "Casino", "icon": "🎰"},
+        {"id": "casual", "name": "Casual", "icon": "🎈"},
+        {"id": "educational", "name": "Educational", "icon": "📚"},
+        {"id": "girls", "name": "Girls", "icon": "👗"},
+        {"id": "kids", "name": "Kids", "icon": "🧸"},
+        {"id": "multiplayer", "name": "Multiplayer", "icon": "👥"},
+        {"id": "quiz", "name": "Quiz", "icon": "❓"},
+        {"id": "simulation", "name": "Simulation", "icon": "🏠"},
+        {"id": "word", "name": "Word", "icon": "📝"}
+    ]
+    return {"categories": categories}
+
+@api_router.post("/admin/gamepix/import")
+async def import_gamepix_game(
+    game_data: GPXGameImport,
+    user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Import a game from GamePix into our platform"""
+    try:
+        # Check if game already exists by namespace (unique identifier)
+        result = await db.execute(
+            select(Game).where(Game.gd_game_id == f"gpx-{game_data.namespace}")
+        )
+        existing = result.scalar_one_or_none()
+        
+        if existing:
+            raise HTTPException(status_code=400, detail="Game already imported")
+        
+        # Create new game
+        new_game = Game(
+            id=str(uuid.uuid4()),
+            title=game_data.title,
+            description=game_data.description or "",
+            category=game_data.category.title() if game_data.category else "Action",
+            thumbnail_url=game_data.thumbnail_url or game_data.icon_url,
+            embed_url=game_data.play_url,  # GamePix provides direct play URL
+            gd_game_id=f"gpx-{game_data.namespace}",  # Prefix with gpx- to distinguish
+            source="gamepix",
+            has_game_file=True,  # GamePix games are always playable via URL
+            is_visible=True,
+            play_count=0
+        )
+        
+        db.add(new_game)
+        await db.commit()
+        await db.refresh(new_game)
+        
+        logger.info(f"Imported GamePix game: {new_game.title} ({game_data.namespace})")
+        return GameResponse(**new_game.to_dict())
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error importing GamePix game: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/admin/gamepix/bulk-import")
+async def bulk_import_gamepix_games(
+    games: List[GPXGameImport],
+    user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Bulk import games from GamePix"""
+    imported = []
+    skipped = []
+    
+    for game_data in games:
+        try:
+            # Check if game already exists
+            result = await db.execute(
+                select(Game).where(Game.gd_game_id == f"gpx-{game_data.namespace}")
+            )
+            existing = result.scalar_one_or_none()
+            
+            if existing:
+                skipped.append(game_data.title)
+                continue
+            
+            # Create new game
+            new_game = Game(
+                id=str(uuid.uuid4()),
+                title=game_data.title,
+                description=game_data.description or "",
+                category=game_data.category.title() if game_data.category else "Action",
+                thumbnail_url=game_data.thumbnail_url or game_data.icon_url,
+                embed_url=game_data.play_url,
+                gd_game_id=f"gpx-{game_data.namespace}",
+                source="gamepix",
+                has_game_file=True,
+                is_visible=True,
+                play_count=0
+            )
+            
+            db.add(new_game)
+            imported.append(game_data.title)
+            
+        except Exception as e:
+            logger.error(f"Error importing {game_data.title}: {e}")
+            skipped.append(game_data.title)
+    
+    await db.commit()
+    
+    return {
+        "imported": len(imported),
+        "skipped": len(skipped),
+        "imported_games": imported,
+        "skipped_games": skipped
+    }
+
 # ==================== SOCIAL FEATURES ====================
 
 # Pydantic models for social features
