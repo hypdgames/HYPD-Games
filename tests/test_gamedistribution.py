@@ -7,7 +7,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('NEXT_PUBLIC_API_URL', 'https://playnow-76.preview.emergentagent.com')
+BASE_URL = os.environ.get('NEXT_PUBLIC_API_URL', 'https://instashare-80.preview.emergentagent.com')
 
 # Test credentials
 ADMIN_EMAIL = "admin@hypd.games"
