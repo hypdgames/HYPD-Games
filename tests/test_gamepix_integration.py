@@ -451,13 +451,26 @@ class TestGamePixDataIntegrity:
             assert game["gd_game_id"].startswith("gpx-"), f"Game {game['title']} has invalid gd_game_id format"
     
     def test_gamepix_embed_url_contains_sid(self, api_client):
-        """GamePix embed URLs should contain the publisher SID"""
+        """Real GamePix games (not test data) should have SID in embed URL"""
         response = api_client.get(f"{BASE_URL}/api/games")
         games = response.json()
         
-        gamepix_games = [g for g in games if g.get("source") == "gamepix"]
+        # Filter for real GamePix games (not test data created during tests)
+        # Real games have namespaces like "prism-match-3d", "merge-royal", etc.
+        real_gamepix_games = [
+            g for g in games 
+            if g.get("source") == "gamepix" 
+            and not g.get("title", "").startswith("Test")
+            and not g.get("title", "").startswith("Bulk Test")
+            and not g.get("title", "").startswith("Skip Test")
+            and not g.get("title", "").startswith("New Test")
+            and not g.get("title", "").startswith("Duplicate Test")
+        ]
         
-        for game in gamepix_games:
+        if not real_gamepix_games:
+            pytest.skip("No real GamePix games available for SID verification")
+        
+        for game in real_gamepix_games:
             embed_url = game.get("embed_url", "")
             # SID should be in the URL for stats tracking
             assert "sid=" in embed_url or "1M9DD" in embed_url, f"Game {game['title']} missing SID in embed URL"
