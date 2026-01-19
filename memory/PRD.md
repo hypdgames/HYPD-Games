@@ -132,12 +132,11 @@
 4. **Ad System** - Feed interstitial ads with GamePix SDK (pending approval)
 
 ### P2 - Medium Priority
-5. **ESLint TypeScript Configuration** - Fix parsing for .tsx files
-6. **Friend-to-Friend Challenges** - Challenge friends to beat their scores
-7. **Game Sharing** - Share games with friends via link
-8. **User Notifications** - In-app notifications system
-9. **Custom Fonts** - Admin font customization
-10. **SEO Meta Tags** - Admin-configurable SEO settings
+5. **Friend-to-Friend Challenges** - Challenge friends to beat their scores
+6. **Game Sharing** - Share games with friends via link
+7. **User Notifications** - In-app notifications system
+8. **Custom Fonts** - Admin font customization
+9. **SEO Meta Tags** - Admin-configurable SEO settings
 
 ---
 
