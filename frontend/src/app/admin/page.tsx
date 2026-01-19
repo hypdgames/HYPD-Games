@@ -170,40 +170,45 @@ export default function AdminDashboard() {
 
   const fetchAnalytics = async () => {
     if (!token) {
+      console.log("No token available for analytics");
       setAnalyticsLoading(false);
       return;
     }
+    console.log("Fetching analytics...");
     setAnalyticsLoading(true);
     try {
+      const headers = { Authorization: `Bearer ${token}` };
+      console.log("Headers:", headers);
+      
       const [overviewRes, dailyRes, retentionRes] = await Promise.all([
-        fetch(`${API_URL}/api/admin/analytics/overview`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch(`${API_URL}/api/admin/analytics/daily?days=14`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch(`${API_URL}/api/admin/analytics/retention`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
+        fetch(`${API_URL}/api/admin/analytics/overview`, { headers }),
+        fetch(`${API_URL}/api/admin/analytics/daily?days=14`, { headers }),
+        fetch(`${API_URL}/api/admin/analytics/retention`, { headers }),
       ]);
+
+      console.log("Analytics responses:", overviewRes.status, dailyRes.status, retentionRes.status);
 
       if (overviewRes.ok) {
         const data = await overviewRes.json();
+        console.log("Overview data:", data);
         setAnalyticsOverview(data.overview);
         setCategoryStats(data.categories || []);
         setTopGames(data.top_games || []);
       }
       if (dailyRes.ok) {
         const data = await dailyRes.json();
+        console.log("Daily data length:", data.daily_stats?.length);
         setDailyStats(data.daily_stats || []);
       }
       if (retentionRes.ok) {
         const data = await retentionRes.json();
+        console.log("Retention data:", data);
         setRetention(data.retention);
       }
     } catch (error) {
       console.error("Error fetching analytics:", error);
     }
+    console.log("Analytics fetch complete");
     setAnalyticsLoading(false);
   };
 
