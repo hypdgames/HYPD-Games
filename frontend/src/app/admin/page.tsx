@@ -690,57 +690,45 @@ export default function AdminDashboard() {
             )}
           </TabsContent>
 
-          {/* GameDistribution Import Tab */}
-          <TabsContent value="gamedistribution">
+          {/* GamePix Import Tab */}
+          <TabsContent value="gamepix">
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row gap-3">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search games..."
-                    value={gdSearch}
-                    onChange={(e) => setGdSearch(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && fetchGdGames(gdCategory, gdSearch)}
-                    className="pl-10"
-                    data-testid="gd-search-input"
-                  />
-                </div>
                 <select
-                  value={gdCategory}
+                  value={gpxCategory}
                   onChange={(e) => {
-                    setGdCategory(e.target.value);
-                    fetchGdGames(e.target.value, gdSearch);
+                    setGpxCategory(e.target.value);
+                    fetchGpxGames(e.target.value, 1, false);
                   }}
-                  className="h-10 px-4 rounded-lg bg-card border border-border text-foreground"
-                  data-testid="gd-category-select"
+                  className="h-10 px-4 rounded-lg bg-card border border-border text-foreground flex-1"
+                  data-testid="gpx-category-select"
                 >
-                  <option value="">All Categories</option>
-                  {CATEGORIES.map((cat) => (
-                    <option key={cat} value={cat.toLowerCase()}>
-                      {cat}
+                  {gpxCategories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.icon} {cat.name}
                     </option>
                   ))}
                 </select>
                 <Button
                   variant="outline"
-                  onClick={() => fetchGdGames(gdCategory, gdSearch)}
-                  disabled={gdLoading}
+                  onClick={() => fetchGpxGames(gpxCategory, 1, false)}
+                  disabled={gpxLoading}
                 >
-                  {gdLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Search"}
+                  {gpxLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Refresh"}
                 </Button>
               </div>
 
-              {selectedGdGames.size > 0 && (
+              {selectedGpxGames.size > 0 && (
                 <div className="flex items-center justify-between bg-lime/10 border border-lime/30 rounded-lg p-3">
                   <span className="text-sm text-foreground">
-                    <span className="font-bold text-lime">{selectedGdGames.size}</span> games selected
+                    <span className="font-bold text-lime">{selectedGpxGames.size}</span> games selected
                   </span>
                   <Button
-                    onClick={importSelectedGames}
+                    onClick={importSelectedGpxGames}
                     disabled={importing}
                     size="sm"
                     className="bg-lime text-black hover:bg-lime/90"
-                    data-testid="import-selected-button"
+                    data-testid="import-gpx-selected-button"
                   >
                     {importing ? (
                       <Loader2 className="w-4 h-4 animate-spin mr-2" />
@@ -752,73 +740,96 @@ export default function AdminDashboard() {
                 </div>
               )}
 
-              {gdLoading ? (
+              {gpxLoading && gpxGames.length === 0 ? (
                 <div className="flex justify-center py-12">
                   <Loader2 className="w-8 h-8 text-lime animate-spin" />
                 </div>
-              ) : gdGames.length === 0 ? (
+              ) : gpxGames.length === 0 ? (
                 <div className="text-center py-12 bg-card rounded-xl border border-border">
                   <Globe className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                   <p className="text-muted-foreground">No games found</p>
                   <p className="text-sm text-muted-foreground/70">
-                    Try a different search or category
+                    Try a different category
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                  {gdGames.map((game) => {
-                    const imported = isGameImported(game.gd_game_id);
-                    const selected = selectedGdGames.has(game.gd_game_id);
-                    
-                    return (
-                      <motion.div
-                        key={game.gd_game_id}
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className={`relative bg-card border rounded-xl overflow-hidden cursor-pointer transition-all ${
-                          imported
-                            ? "border-lime/50 opacity-60"
-                            : selected
-                            ? "border-lime ring-2 ring-lime/30"
-                            : "border-border hover:border-lime/50"
-                        }`}
-                        onClick={() => !imported && toggleGdGameSelection(game.gd_game_id)}
-                        data-testid={`gd-game-${game.gd_game_id}`}
-                      >
-                        <div className="aspect-square relative">
-                          <img
-                            src={game.thumbnail_url || "https://via.placeholder.com/200?text=Game"}
-                            alt={game.title}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1637734373619-af1e76434bec?w=200&q=80";
-                            }}
-                          />
-                          {imported && (
-                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                              <div className="bg-lime text-black px-3 py-1 rounded-full text-xs font-bold">
-                                Already Added
+                <>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    {gpxGames.map((game) => {
+                      const imported = isGpxGameImported(game.namespace);
+                      const selected = selectedGpxGames.has(game.namespace);
+                      
+                      return (
+                        <motion.div
+                          key={game.namespace}
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          className={`relative bg-card border rounded-xl overflow-hidden cursor-pointer transition-all ${
+                            imported
+                              ? "border-lime/50 opacity-60"
+                              : selected
+                              ? "border-lime ring-2 ring-lime/30"
+                              : "border-border hover:border-lime/50"
+                          }`}
+                          onClick={() => !imported && toggleGpxGameSelection(game.namespace)}
+                          data-testid={`gpx-game-${game.namespace}`}
+                        >
+                          <div className="aspect-video relative">
+                            <img
+                              src={game.thumbnail_url || game.icon_url || "https://via.placeholder.com/200?text=Game"}
+                              alt={game.title}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1637734373619-af1e76434bec?w=200&q=80";
+                              }}
+                            />
+                            {imported && (
+                              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                <div className="bg-lime text-black px-3 py-1 rounded-full text-xs font-bold">
+                                  Already Added
+                                </div>
                               </div>
-                            </div>
-                          )}
-                          {selected && !imported && (
-                            <div className="absolute top-2 right-2 w-6 h-6 bg-lime rounded-full flex items-center justify-center">
-                              <Check className="w-4 h-4 text-black" />
-                            </div>
-                          )}
-                        </div>
-                        <div className="p-3">
-                          <h3 className="font-bold text-sm text-foreground truncate">
-                            {game.title}
-                          </h3>
-                          <p className="text-xs text-muted-foreground">
-                            {game.category}
-                          </p>
-                        </div>
-                      </motion.div>
-                    );
-                  })}
-                </div>
+                            )}
+                            {selected && !imported && (
+                              <div className="absolute top-2 right-2 w-6 h-6 bg-lime rounded-full flex items-center justify-center">
+                                <Check className="w-4 h-4 text-black" />
+                              </div>
+                            )}
+                            {game.quality_score && (
+                              <div className="absolute bottom-2 left-2 bg-black/70 text-white px-2 py-0.5 rounded text-xs">
+                                ⭐ {Math.round(game.quality_score * 100)}%
+                              </div>
+                            )}
+                          </div>
+                          <div className="p-3">
+                            <h3 className="font-bold text-sm text-foreground truncate">
+                              {game.title}
+                            </h3>
+                            <p className="text-xs text-muted-foreground capitalize">
+                              {game.category}
+                            </p>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Load More Button */}
+                  {gpxHasMore && (
+                    <div className="flex justify-center pt-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => fetchGpxGames(gpxCategory, gpxPage + 1, true)}
+                        disabled={gpxLoading}
+                      >
+                        {gpxLoading ? (
+                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        ) : null}
+                        Load More Games
+                      </Button>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </TabsContent>
