@@ -390,10 +390,8 @@ export default function AdminDashboard() {
     setSavingSettings(false);
   };
 
-  const resetColors = () => {
+  const resetPrimaryColor = () => {
     setPrimaryColor("#CCFF00");
-    setAccentColor("#8B5CF6");
-    setBackgroundColor("#0a0a0a");
   };
 
   const fetchAnalytics = async () => {
