@@ -170,8 +170,8 @@ export default function ExplorePage() {
                   className="group cursor-pointer game-card-hover"
                   data-testid={`explore-game-${index}`}
                 >
+                  {/* Image Container */}
                   <div className="aspect-square relative overflow-hidden rounded-2xl bg-card border border-border group-hover:border-lime/50 transition-colors">
-                    {/* Background Image */}
                     <img
                       src={
                         game.thumbnail_url ||
@@ -182,25 +182,22 @@ export default function ExplorePage() {
                       loading="lazy"
                     />
 
-                    {/* Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-
                     {/* Category Badge */}
                     <div className="absolute top-3 left-3">
-                      <span className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-black/60 backdrop-blur-sm text-white rounded-full">
+                      <span className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-lime text-black rounded-full">
                         {game.category}
                       </span>
                     </div>
+                  </div>
 
-                    {/* Title */}
-                    <div className="absolute bottom-0 left-0 right-0 p-3">
-                      <h3 className="font-heading text-sm text-white truncate">
-                        {game.title}
-                      </h3>
-                      <p className="text-xs text-white/50 mt-1">
-                        {game.play_count?.toLocaleString() || 0} plays
-                      </p>
-                    </div>
+                  {/* Title & Play Count - Below Image */}
+                  <div className="pt-3 px-1">
+                    <h3 className="font-heading text-sm text-foreground truncate">
+                      {game.title}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {game.play_count?.toLocaleString() || 0} plays
+                    </p>
                   </div>
                 </motion.div>
               ))}
