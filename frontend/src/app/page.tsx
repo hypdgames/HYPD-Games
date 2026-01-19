@@ -419,7 +419,7 @@ export default function GameFeed() {
                   <div className="flex flex-col items-center gap-4">
                     <button
                       onClick={(e) => toggleSave(game.id, e)}
-                      className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center touch-target transition-transform active:scale-90"
+                      className="w-12 h-12 rounded-full bg-black flex items-center justify-center touch-target transition-transform active:scale-90"
                       data-testid={`save-game-${virtualItem.index}`}
                     >
                       <Heart
@@ -432,7 +432,7 @@ export default function GameFeed() {
                     </button>
                     <button
                       onClick={(e) => shareGame(game, e)}
-                      className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center touch-target transition-transform active:scale-90"
+                      className="w-12 h-12 rounded-full bg-black flex items-center justify-center touch-target transition-transform active:scale-90"
                       data-testid={`share-game-${virtualItem.index}`}
                     >
                       <Share2 className="w-6 h-6 text-white" />
