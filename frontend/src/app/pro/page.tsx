@@ -81,13 +81,8 @@ export default function ProPage() {
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (token) {
-      fetchChallenges();
-    }
-  }, [token]);
-
-  const fetchChallenges = async () => {
+  const fetchChallenges = useCallback(async () => {
+    if (!token) return;
     setLoading(true);
     try {
       const res = await fetch(`${API_URL}/api/challenges`, {
@@ -101,7 +96,13 @@ export default function ProPage() {
       console.error("Error fetching challenges:", error);
     }
     setLoading(false);
-  };
+  }, [token]);
+
+  useEffect(() => {
+    if (token) {
+      fetchChallenges();
+    }
+  }, [token, fetchChallenges]);
 
   const joinChallenge = async (challengeId: string) => {
     try {
