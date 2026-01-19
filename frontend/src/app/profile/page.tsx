@@ -592,7 +592,7 @@ export default function ProfilePage() {
         </div>
 
         <Tabs defaultValue="games" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-4">
+          <TabsList className="grid w-full grid-cols-3 mb-4">
             <TabsTrigger value="games" className="flex items-center gap-2">
               <Heart className="w-4 h-4" />
               Games
@@ -605,6 +605,10 @@ export default function ProfilePage() {
                   {friendRequests.length}
                 </span>
               )}
+            </TabsTrigger>
+            <TabsTrigger value="pro" className="flex items-center gap-2">
+              <Crown className="w-4 h-4" />
+              PRO
             </TabsTrigger>
           </TabsList>
 
