@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Compass, Crown, User } from "lucide-react";
+import { Home, Compass, Target, Trophy, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { path: "/", icon: Home, label: "Feed" },
   { path: "/explore", icon: Compass, label: "Explore" },
-  { path: "/pro", icon: Crown, label: "PRO" },
+  { path: "/challenges", icon: Target, label: "Challenges" },
+  { path: "/leaderboard", icon: Trophy, label: "Leaders" },
   { path: "/profile", icon: User, label: "Profile" },
 ];
 
