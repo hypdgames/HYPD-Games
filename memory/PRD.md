@@ -32,7 +32,9 @@
 ### Integrations
 - ✅ **Supabase:** Database + Storage
 - ✅ **Redis:** Caching (hosted on Railway)
-- ✅ **GameDistribution:** Mock integration ready (awaiting API approval)
+- ✅ **GamePix:** Real game integration via RSS feed (sid=1M9DD) - LIVE
+- ✅ **Google AdSense:** Site ownership verified
+- ⏳ **GamePix Ads SDK:** Pending GamePix approval
 - ⏳ **Cloudinary:** For video previews (planned)
 
 ---
@@ -43,23 +45,43 @@
 - [x] TikTok-style vertical game feed with snap scrolling
 - [x] TanStack Virtual for performance
 - [x] Full-screen game player with draggable back button
-- [x] 4-tab navigation: Feed, Explore, PRO, Profile
+- [x] 5-tab navigation: Feed, Explore, Challenges, Leaders, Profile
 - [x] JWT authentication (login/register)
 - [x] Admin Dashboard with game management
+
+### GamePix Integration ✅ (NEW - January 19, 2026)
+- [x] **Browse GamePix Games** via RSS feed
+  - Category filtering (20+ categories)
+  - Pagination support (12, 24, 48, 96 games per page)
+  - Quality score display
+- [x] **Import Games from GamePix**
+  - Single game import from admin dashboard
+  - Bulk import with duplicate detection
+  - Games stored with source='gamepix' and gd_game_id='gpx-{namespace}'
+- [x] **Play GamePix Games**
+  - HTML embed wrapper with iframe
+  - Includes publisher SID for stats tracking
+  - Play count incrementing
+- [x] **Admin Dashboard GamePix Tab**
+  - Browse games by category
+  - Select and import multiple games
+  - Load more pagination
 
 ### Admin Features ✅
 - [x] Game upload (ZIP + thumbnail)
 - [x] Game visibility toggle
 - [x] Game deletion
-- [x] GameDistribution import (mock)
+- [x] GamePix import (LIVE)
+- [x] GameDistribution import (mock - deprecated)
 - [x] **Enhanced Analytics Dashboard with charts:**
   - Overview cards (Total Users, Games, Plays, Active 24h)
   - Daily Activity Area Chart (14 days)
   - Plays by Category Pie Chart
   - User Retention Bar Chart
   - Top Games by Plays List
+  - Geographic Region Distribution
 
-### Social Features ✅ (NEW - January 19, 2025)
+### Social Features ✅ (January 19, 2025)
 - [x] **Leaderboard Page** (`/leaderboard`)
   - Global leaderboard with user rankings
   - Per-game leaderboards with game selector
@@ -70,7 +92,7 @@
   - Accept/decline friend requests
   - View friends list with stats
   - Remove friends
-- [x] **Challenges UI** (`/pro` Challenges tab)
+- [x] **Challenges UI** (`/challenges`)
   - Active challenges list
   - Challenge progress tracking
   - Join challenge functionality
