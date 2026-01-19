@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Chivo, Manrope } from "next/font/google";
 import "./globals.css";
-import { BottomNav } from "@/components/bottom-nav";
+import BottomNav from "@/components/bottom-nav";
 import { Providers } from "@/components/providers";
 import { ToastProvider } from "@/components/toast-provider";
 import { ServiceWorkerRegistration } from "@/components/service-worker";
