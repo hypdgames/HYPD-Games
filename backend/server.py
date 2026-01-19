@@ -1133,6 +1133,58 @@ class ScoreSubmission(BaseModel):
     score: int
     play_time: int = 0  # seconds
 
+# ---- User Search ----
+
+@api_router.get("/users/search")
+async def search_users(
+    q: str,
+    limit: int = 20,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Search for users by username"""
+    if len(q) < 2:
+        return {"users": []}
+    
+    result = await db.execute(
+        select(User)
+        .where(User.username.ilike(f"%{q}%"))
+        .where(User.id != user.id)  # Exclude current user
+        .limit(limit)
+    )
+    users = result.scalars().all()
+    
+    # Get friendship status for each user
+    users_with_status = []
+    for u in users:
+        # Check if there's an existing friendship
+        friendship = await db.execute(
+            select(Friendship).where(
+                or_(
+                    and_(Friendship.requester_id == user.id, Friendship.addressee_id == u.id),
+                    and_(Friendship.requester_id == u.id, Friendship.addressee_id == user.id)
+                )
+            )
+        )
+        f = friendship.scalar_one_or_none()
+        
+        status = "none"
+        if f:
+            if f.status == FriendshipStatus.ACCEPTED:
+                status = "friends"
+            elif f.status == FriendshipStatus.PENDING:
+                if f.requester_id == user.id:
+                    status = "pending_sent"
+                else:
+                    status = "pending_received"
+        
+        users_with_status.append({
+            **u.to_dict(),
+            "friendship_status": status
+        })
+    
+    return {"users": users_with_status}
+
 # ---- Friends ----
 
 @api_router.get("/friends")
