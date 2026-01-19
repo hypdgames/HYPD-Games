@@ -373,6 +373,41 @@ export default function AdminDashboard() {
     setSavingSettings(false);
   };
 
+  const removeFavicon = async () => {
+    setSavingSettings(true);
+    try {
+      const res = await fetch(`${API_URL}/api/admin/settings`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          favicon_url: "",
+        }),
+      });
+
+      if (res.ok) {
+        setFaviconUrl("");
+        setFaviconPreview("");
+        setFaviconFile(null);
+        toast.success("Favicon removed!");
+      } else {
+        toast.error("Failed to remove favicon");
+      }
+    } catch (error) {
+      console.error("Error removing favicon:", error);
+      toast.error("Failed to remove favicon");
+    }
+    setSavingSettings(false);
+  };
+
+  const resetColors = () => {
+    setPrimaryColor("#CCFF00");
+    setAccentColor("#8B5CF6");
+    setBackgroundColor("#0a0a0a");
+  };
+
   const fetchAnalytics = async () => {
     if (!token) {
       setAnalyticsLoading(false);
