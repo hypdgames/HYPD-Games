@@ -12,7 +12,7 @@ const navItems = [
   { path: "/profile", icon: User, label: "Profile" },
 ];
 
-export function BottomNav() {
+export default function BottomNav() {
   const pathname = usePathname();
   
   // Hide on game player pages
