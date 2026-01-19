@@ -950,22 +950,22 @@ async def upload_logo(
         filename = f"logo_{uuid.uuid4().hex[:8]}.{file_ext}"
         
         # Upload to Supabase storage
-        if supabase:
+        if supabase_client:
             # Try to delete old logo first
             try:
-                supabase.storage.from_("game-thumbnails").remove([f"logos/{filename}"])
+                supabase_client.storage.from_("game-thumbnails").remove([f"logos/{filename}"])
             except:
                 pass
             
             # Upload new logo
-            result = supabase.storage.from_("game-thumbnails").upload(
+            result = supabase_client.storage.from_("game-thumbnails").upload(
                 f"logos/{filename}",
                 content,
                 {"content-type": file.content_type or "image/png"}
             )
             
             # Get public URL
-            public_url = supabase.storage.from_("game-thumbnails").get_public_url(f"logos/{filename}")
+            public_url = supabase_client.storage.from_("game-thumbnails").get_public_url(f"logos/{filename}")
             
             return {"success": True, "url": public_url}
         else:
@@ -990,16 +990,16 @@ async def upload_favicon(
         filename = f"favicon_{uuid.uuid4().hex[:8]}.{file_ext}"
         
         # Upload to Supabase storage
-        if supabase:
+        if supabase_client:
             # Upload new favicon
-            result = supabase.storage.from_("game-thumbnails").upload(
+            result = supabase_client.storage.from_("game-thumbnails").upload(
                 f"favicons/{filename}",
                 content,
                 {"content-type": file.content_type or "image/png"}
             )
             
             # Get public URL
-            public_url = supabase.storage.from_("game-thumbnails").get_public_url(f"favicons/{filename}")
+            public_url = supabase_client.storage.from_("game-thumbnails").get_public_url(f"favicons/{filename}")
             
             return {"success": True, "url": public_url}
         else:
