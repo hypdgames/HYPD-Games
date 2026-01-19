@@ -1524,115 +1524,313 @@ export default function AdminDashboard() {
             <div className="space-y-6">
               <h2 className="text-lg font-bold text-foreground">Site Settings</h2>
               
-              {/* Logo Settings */}
-              <div className="bg-card border border-border rounded-xl p-6 space-y-6">
-                <div>
-                  <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-                    <ImageIcon className="w-5 h-5 text-lime" />
-                    Header Logo
-                  </h3>
-                  
-                  {/* Logo Preview */}
-                  <div className="mb-4">
-                    <label className="text-sm text-muted-foreground mb-2 block">Preview</label>
-                    <div className="bg-background border border-border rounded-lg p-4 flex items-center justify-center min-h-[100px]">
-                      {logoPreview ? (
-                        <img 
-                          src={logoPreview} 
-                          alt="Logo preview" 
-                          style={{ height: `${logoHeight}px` }}
-                          className="object-contain max-w-full"
-                        />
-                      ) : (
-                        <div className="text-muted-foreground text-sm">
-                          No logo set - showing default &quot;HYPD&quot; text
-                        </div>
-                      )}
-                    </div>
-                  </div>
+              {/* Site Name */}
+              <div className="bg-card border border-border rounded-xl p-6">
+                <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                  <Globe className="w-5 h-5 text-lime" />
+                  Site Name
+                </h3>
+                <Input
+                  value={siteName}
+                  onChange={(e) => setSiteName(e.target.value)}
+                  placeholder="Enter site name"
+                  className="max-w-md"
+                  data-testid="site-name-input"
+                />
+                <p className="text-xs text-muted-foreground mt-2">
+                  This appears in the browser tab and as fallback when no logo is set
+                </p>
+              </div>
 
-                  {/* Logo Upload */}
-                  <div className="mb-4">
-                    <label className="text-sm text-muted-foreground mb-2 block">Upload Logo Image</label>
-                    <input
-                      type="file"
-                      ref={logoFileRef}
-                      onChange={handleLogoFileChange}
-                      accept="image/*"
-                      className="hidden"
-                    />
-                    <div className="flex gap-2">
+              {/* Logo Settings */}
+              <div className="bg-card border border-border rounded-xl p-6">
+                <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                  <ImageIcon className="w-5 h-5 text-lime" />
+                  Header Logo
+                </h3>
+                
+                {/* Logo Preview */}
+                <div className="mb-4">
+                  <label className="text-sm text-muted-foreground mb-2 block">Preview</label>
+                  <div className="bg-background border border-border rounded-lg p-4 flex items-center justify-center min-h-[100px]">
+                    {logoPreview ? (
+                      <img 
+                        src={logoPreview} 
+                        alt="Logo preview" 
+                        style={{ height: `${logoHeight}px` }}
+                        className="object-contain max-w-full"
+                      />
+                    ) : (
+                      <div className="text-muted-foreground text-sm">
+                        No logo set - showing default &quot;{siteName}&quot; text
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Logo Upload */}
+                <div className="mb-4">
+                  <label className="text-sm text-muted-foreground mb-2 block">Upload Logo Image</label>
+                  <input
+                    type="file"
+                    ref={logoFileRef}
+                    onChange={handleLogoFileChange}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => logoFileRef.current?.click()}
+                      className="flex-1"
+                      data-testid="upload-logo-button"
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      {logoFile ? logoFile.name : "Choose Image"}
+                    </Button>
+                    {(logoPreview || logoUrl) && (
                       <Button
                         type="button"
                         variant="outline"
-                        onClick={() => logoFileRef.current?.click()}
-                        className="flex-1"
-                        data-testid="upload-logo-button"
+                        onClick={removeLogo}
+                        className="text-red-500 hover:text-red-600"
+                        disabled={savingSettings}
                       >
-                        <Upload className="w-4 h-4 mr-2" />
-                        {logoFile ? logoFile.name : "Choose Image"}
+                        <Trash2 className="w-4 h-4" />
                       </Button>
-                      {(logoPreview || logoUrl) && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={removeLogo}
-                          className="text-red-500 hover:text-red-600"
-                          disabled={savingSettings}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      )}
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Recommended: PNG or SVG with transparent background
-                    </p>
-                  </div>
-
-                  {/* Logo Height */}
-                  <div className="mb-4">
-                    <label className="text-sm text-muted-foreground mb-2 block">
-                      Logo Height: <span className="text-lime font-mono">{logoHeight}px</span>
-                    </label>
-                    <input
-                      type="range"
-                      min="20"
-                      max="80"
-                      value={logoHeight}
-                      onChange={(e) => setLogoHeight(parseInt(e.target.value))}
-                      className="w-full h-2 bg-background rounded-lg appearance-none cursor-pointer accent-lime"
-                      data-testid="logo-height-slider"
-                    />
-                    <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                      <span>20px</span>
-                      <span>80px</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      The logo will maintain its aspect ratio at this height
-                    </p>
-                  </div>
-
-                  {/* Save Button */}
-                  <Button
-                    onClick={saveSettings}
-                    disabled={savingSettings}
-                    className="w-full bg-lime text-black hover:bg-lime/90"
-                    data-testid="save-settings-button"
-                  >
-                    {savingSettings ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <Check className="w-4 h-4 mr-2" />
-                        Save Settings
-                      </>
                     )}
-                  </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Recommended: PNG or SVG with transparent background
+                  </p>
+                </div>
+
+                {/* Logo Height */}
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">
+                    Logo Height: <span className="font-mono" style={{ color: primaryColor }}>{logoHeight}px</span>
+                  </label>
+                  <input
+                    type="range"
+                    min="20"
+                    max="80"
+                    value={logoHeight}
+                    onChange={(e) => setLogoHeight(parseInt(e.target.value))}
+                    className="w-full h-2 bg-background rounded-lg appearance-none cursor-pointer"
+                    style={{ accentColor: primaryColor }}
+                    data-testid="logo-height-slider"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                    <span>20px</span>
+                    <span>80px</span>
+                  </div>
                 </div>
               </div>
+
+              {/* Favicon Settings */}
+              <div className="bg-card border border-border rounded-xl p-6">
+                <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                  <ImageIcon className="w-5 h-5 text-lime" />
+                  Favicon
+                </h3>
+                
+                {/* Favicon Preview */}
+                <div className="mb-4">
+                  <label className="text-sm text-muted-foreground mb-2 block">Preview</label>
+                  <div className="bg-background border border-border rounded-lg p-4 flex items-center gap-4">
+                    <div className="w-8 h-8 rounded border border-border flex items-center justify-center overflow-hidden">
+                      {faviconPreview ? (
+                        <img 
+                          src={faviconPreview} 
+                          alt="Favicon preview" 
+                          className="w-full h-full object-contain"
+                        />
+                      ) : (
+                        <span className="text-xs text-muted-foreground">16x</span>
+                      )}
+                    </div>
+                    <div className="w-12 h-12 rounded border border-border flex items-center justify-center overflow-hidden">
+                      {faviconPreview ? (
+                        <img 
+                          src={faviconPreview} 
+                          alt="Favicon preview" 
+                          className="w-full h-full object-contain"
+                        />
+                      ) : (
+                        <span className="text-xs text-muted-foreground">32x</span>
+                      )}
+                    </div>
+                    <span className="text-sm text-muted-foreground">
+                      {faviconPreview ? "Browser tab icon" : "No favicon set"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Favicon Upload */}
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">Upload Favicon</label>
+                  <input
+                    type="file"
+                    ref={faviconFileRef}
+                    onChange={handleFaviconFileChange}
+                    accept="image/png,image/x-icon,image/svg+xml"
+                    className="hidden"
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => faviconFileRef.current?.click()}
+                      className="flex-1"
+                      data-testid="upload-favicon-button"
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      {faviconFile ? faviconFile.name : "Choose Icon"}
+                    </Button>
+                    {(faviconPreview || faviconUrl) && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={removeFavicon}
+                        className="text-red-500 hover:text-red-600"
+                        disabled={savingSettings}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Recommended: 32x32 or 64x64 PNG, ICO, or SVG
+                  </p>
+                </div>
+              </div>
+
+              {/* Color Settings */}
+              <div className="bg-card border border-border rounded-xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-foreground flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-full" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${accentColor})` }} />
+                    Brand Colors
+                  </h3>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={resetColors}
+                    className="text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    Reset to Default
+                  </Button>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Primary Color */}
+                  <div>
+                    <label className="text-sm text-muted-foreground mb-2 block">Primary Color</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={primaryColor}
+                        onChange={(e) => setPrimaryColor(e.target.value)}
+                        className="w-12 h-10 rounded cursor-pointer border-0"
+                        data-testid="primary-color-picker"
+                      />
+                      <Input
+                        value={primaryColor}
+                        onChange={(e) => setPrimaryColor(e.target.value)}
+                        className="font-mono text-sm flex-1"
+                        placeholder="#CCFF00"
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">Buttons, accents, highlights</p>
+                  </div>
+
+                  {/* Accent Color */}
+                  <div>
+                    <label className="text-sm text-muted-foreground mb-2 block">Accent Color</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={accentColor}
+                        onChange={(e) => setAccentColor(e.target.value)}
+                        className="w-12 h-10 rounded cursor-pointer border-0"
+                        data-testid="accent-color-picker"
+                      />
+                      <Input
+                        value={accentColor}
+                        onChange={(e) => setAccentColor(e.target.value)}
+                        className="font-mono text-sm flex-1"
+                        placeholder="#8B5CF6"
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">Secondary highlights</p>
+                  </div>
+
+                  {/* Background Color */}
+                  <div>
+                    <label className="text-sm text-muted-foreground mb-2 block">Background Color</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={backgroundColor}
+                        onChange={(e) => setBackgroundColor(e.target.value)}
+                        className="w-12 h-10 rounded cursor-pointer border-0"
+                        data-testid="background-color-picker"
+                      />
+                      <Input
+                        value={backgroundColor}
+                        onChange={(e) => setBackgroundColor(e.target.value)}
+                        className="font-mono text-sm flex-1"
+                        placeholder="#0a0a0a"
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">Main background</p>
+                  </div>
+                </div>
+
+                {/* Color Preview */}
+                <div className="mt-4 p-4 rounded-lg border border-border" style={{ backgroundColor }}>
+                  <div className="flex items-center gap-3">
+                    <button 
+                      className="px-4 py-2 rounded-lg font-semibold text-sm"
+                      style={{ backgroundColor: primaryColor, color: '#000' }}
+                    >
+                      Primary Button
+                    </button>
+                    <button 
+                      className="px-4 py-2 rounded-lg font-semibold text-sm"
+                      style={{ backgroundColor: accentColor, color: '#fff' }}
+                    >
+                      Accent Button
+                    </button>
+                    <span style={{ color: primaryColor }} className="text-sm font-semibold">
+                      Highlighted Text
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Save Button */}
+              <Button
+                onClick={saveSettings}
+                disabled={savingSettings}
+                className="w-full text-black hover:opacity-90"
+                style={{ backgroundColor: primaryColor }}
+                data-testid="save-settings-button"
+              >
+                {savingSettings ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4 mr-2" />
+                    Save All Settings
+                  </>
+                )}
+              </Button>
             </div>
           </TabsContent>
         </Tabs>
