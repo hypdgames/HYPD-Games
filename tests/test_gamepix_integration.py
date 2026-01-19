@@ -255,9 +255,13 @@ class TestGamePixSingleImport:
 class TestGamePixBulkImport:
     """Tests for /api/admin/gamepix/bulk-import endpoint"""
     
-    def test_bulk_import_requires_authentication(self, api_client):
+    def test_bulk_import_requires_authentication(self):
         """POST /api/admin/gamepix/bulk-import should require authentication"""
-        response = api_client.post(f"{BASE_URL}/api/admin/gamepix/bulk-import", json=[
+        # Use a fresh session without auth headers
+        fresh_session = requests.Session()
+        fresh_session.headers.update({"Content-Type": "application/json"})
+        
+        response = fresh_session.post(f"{BASE_URL}/api/admin/gamepix/bulk-import", json=[
             {
                 "gpx_game_id": "test1",
                 "title": "Test Game 1",
@@ -266,6 +270,7 @@ class TestGamePixBulkImport:
             }
         ])
         
+        # Should return 403 (Forbidden) without auth
         assert response.status_code == 403
     
     def test_bulk_import_success(self, authenticated_admin_client):
