@@ -210,6 +210,22 @@ export default function AdminDashboard() {
         if (data.logo_height) {
           setLogoHeight(parseInt(data.logo_height) || 32);
         }
+        if (data.site_name) {
+          setSiteName(data.site_name);
+        }
+        if (data.favicon_url) {
+          setFaviconUrl(data.favicon_url);
+          setFaviconPreview(data.favicon_url);
+        }
+        if (data.primary_color) {
+          setPrimaryColor(data.primary_color);
+        }
+        if (data.accent_color) {
+          setAccentColor(data.accent_color);
+        }
+        if (data.background_color) {
+          setBackgroundColor(data.background_color);
+        }
       }
     } catch (error) {
       console.error("Error fetching settings:", error);
