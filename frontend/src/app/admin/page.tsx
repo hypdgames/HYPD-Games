@@ -130,12 +130,7 @@ export default function AdminDashboard() {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   
-  // GameDistribution state
-  const [gdGames, setGdGames] = useState<GDGame[]>([]);
-  const [gdLoading, setGdLoading] = useState(false);
-  const [gdCategory, setGdCategory] = useState<string>("");
-  const [gdSearch, setGdSearch] = useState("");
-  const [selectedGdGames, setSelectedGdGames] = useState<Set<string>>(new Set());
+  // Importing state
   const [importing, setImporting] = useState(false);
 
   // GamePix state
