@@ -16,14 +16,13 @@ export function ThemeToggle() {
         "transition-all hover:scale-105 active:scale-95"
       )}
       data-testid="theme-toggle"
-      title={`Theme: ${theme === "light" ? "Light" : "Dark"}`}
+      title={`Switch to ${theme === "light" ? "Dark" : "Light"} mode`}
     >
-      {theme === "light" ? (
+      {theme === "dark" ? (
         <Sun className="w-4 h-4" />
       ) : (
         <Moon className="w-4 h-4" />
       )}
-      <span className="hidden sm:inline">{theme === "light" ? "Light" : "Dark"}</span>
     </button>
   );
 }
