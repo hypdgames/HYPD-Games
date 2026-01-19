@@ -15,6 +15,12 @@ import {
   EyeOff,
   Loader2,
   Shield,
+  Users,
+  UserPlus,
+  UserCheck,
+  UserX,
+  Search,
+  Clock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,10 +28,32 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuthStore } from "@/store";
 import { ThemeToggle } from "@/components/theme-toggle";
+import BottomNav from "@/components/bottom-nav";
 import { toast } from "sonner";
 import type { Game } from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+
+interface Friend {
+  id: string;
+  username: string;
+  email?: string;
+  total_games_played?: number;
+  total_play_time?: number;
+}
+
+interface FriendRequest {
+  request_id: string;
+  user: Friend;
+  created_at: string;
+}
+
+interface SearchUser {
+  id: string;
+  username: string;
+  email?: string;
+  friendship_status: "none" | "friends" | "pending_sent" | "pending_received";
+}
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -34,6 +62,14 @@ export default function ProfilePage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [savedGames, setSavedGames] = useState<Game[]>([]);
+
+  // Friends state
+  const [friends, setFriends] = useState<Friend[]>([]);
+  const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<SearchUser[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [friendsLoading, setFriendsLoading] = useState(false);
 
   // Form states
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
@@ -61,12 +97,144 @@ export default function ProfilePage() {
     }
   };
 
+  const fetchFriends = async () => {
+    if (!token) return;
+    setFriendsLoading(true);
+    try {
+      const [friendsRes, requestsRes] = await Promise.all([
+        fetch(`${API_URL}/api/friends`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`${API_URL}/api/friends/requests`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+
+      if (friendsRes.ok) {
+        const data = await friendsRes.json();
+        setFriends(data.friends || []);
+      }
+      if (requestsRes.ok) {
+        const data = await requestsRes.json();
+        setFriendRequests(data.requests || []);
+      }
+    } catch (e) {
+      console.error("Error fetching friends:", e);
+    }
+    setFriendsLoading(false);
+  };
+
+  const searchUsers = async (query: string) => {
+    if (query.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+    setSearchLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/users/search?q=${encodeURIComponent(query)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSearchResults(data.users || []);
+      }
+    } catch (e) {
+      console.error("Error searching users:", e);
+    }
+    setSearchLoading(false);
+  };
+
+  const sendFriendRequest = async (userId: string) => {
+    try {
+      const res = await fetch(`${API_URL}/api/friends/request`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ user_id: userId }),
+      });
+      if (res.ok) {
+        toast.success("Friend request sent!");
+        searchUsers(searchQuery);
+      } else {
+        const error = await res.json();
+        toast.error(error.detail || "Failed to send request");
+      }
+    } catch (e) {
+      toast.error("Failed to send friend request");
+    }
+  };
+
+  const acceptRequest = async (requestId: string) => {
+    try {
+      const res = await fetch(`${API_URL}/api/friends/accept/${requestId}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        toast.success("Friend request accepted!");
+        fetchFriends();
+      } else {
+        toast.error("Failed to accept request");
+      }
+    } catch (e) {
+      toast.error("Failed to accept request");
+    }
+  };
+
+  const declineRequest = async (requestId: string) => {
+    try {
+      const res = await fetch(`${API_URL}/api/friends/decline/${requestId}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        toast.success("Friend request declined");
+        fetchFriends();
+      } else {
+        toast.error("Failed to decline request");
+      }
+    } catch (e) {
+      toast.error("Failed to decline request");
+    }
+  };
+
+  const removeFriend = async (friendId: string) => {
+    if (!confirm("Are you sure you want to remove this friend?")) return;
+    try {
+      const res = await fetch(`${API_URL}/api/friends/${friendId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        toast.success("Friend removed");
+        fetchFriends();
+      } else {
+        toast.error("Failed to remove friend");
+      }
+    } catch (e) {
+      toast.error("Failed to remove friend");
+    }
+  };
+
   useEffect(() => {
     if (user && token) {
       fetchSavedGames();
+      fetchFriends();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, token]);
+
+  useEffect(() => {
+    const debounce = setTimeout(() => {
+      if (searchQuery && token) {
+        searchUsers(searchQuery);
+      }
+    }, 300);
+    return () => clearTimeout(debounce);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,6 +271,13 @@ export default function ProfilePage() {
   const handleLogout = () => {
     logout();
     toast.success("Logged out successfully");
+  };
+
+  const formatPlayTime = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    if (hours > 0) return `${hours}h ${mins}m`;
+    return `${mins}m`;
   };
 
   // Logged out view
@@ -330,6 +505,7 @@ export default function ProfilePage() {
             </TabsContent>
           </Tabs>
         </div>
+        <BottomNav />
       </div>
     );
   }
@@ -373,7 +549,7 @@ export default function ProfilePage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8"
+          className="text-center mb-6"
         >
           <div className="w-24 h-24 rounded-full bg-gradient-to-br from-lime/20 to-violet/20 border-2 border-lime flex items-center justify-center mx-auto mb-4">
             <span className="font-heading text-3xl text-lime">
@@ -387,93 +563,314 @@ export default function ProfilePage() {
         </motion.div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 gap-4 mb-8">
-          <div className="bg-card border border-border rounded-2xl p-4 text-center">
-            <Heart className="w-6 h-6 text-red-500 mx-auto mb-2" />
-            <p className="text-2xl font-heading text-foreground">
+        <div className="grid grid-cols-3 gap-3 mb-6">
+          <div className="bg-card border border-border rounded-xl p-3 text-center">
+            <Heart className="w-5 h-5 text-red-500 mx-auto mb-1" />
+            <p className="text-xl font-heading text-foreground">
               {user.saved_games?.length || 0}
             </p>
-            <p className="text-xs text-muted-foreground">Saved Games</p>
+            <p className="text-[10px] text-muted-foreground">Saved</p>
           </div>
-          <div className="bg-card border border-border rounded-2xl p-4 text-center">
-            <Trophy className="w-6 h-6 text-yellow-500 mx-auto mb-2" />
-            <p className="text-2xl font-heading text-foreground">
+          <div className="bg-card border border-border rounded-xl p-3 text-center">
+            <Trophy className="w-5 h-5 text-yellow-500 mx-auto mb-1" />
+            <p className="text-xl font-heading text-foreground">
               {Object.keys(user.high_scores || {}).length}
             </p>
-            <p className="text-xs text-muted-foreground">High Scores</p>
+            <p className="text-[10px] text-muted-foreground">Scores</p>
+          </div>
+          <div className="bg-card border border-border rounded-xl p-3 text-center">
+            <Users className="w-5 h-5 text-blue-500 mx-auto mb-1" />
+            <p className="text-xl font-heading text-foreground">
+              {friends.length}
+            </p>
+            <p className="text-[10px] text-muted-foreground">Friends</p>
           </div>
         </div>
 
-        {/* Saved Games */}
-        {savedGames.length > 0 && (
-          <div className="mb-8">
-            <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-              <Heart className="w-5 h-5 text-red-500" />
-              Saved Games
-            </h3>
-            <div className="space-y-3">
-              {savedGames.map((game) => (
-                <motion.div
-                  key={game.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  onClick={() => router.push(`/play/${game.id}`)}
-                  className="flex items-center gap-4 bg-card border border-border rounded-xl p-3 cursor-pointer hover:border-lime/30 transition-colors"
-                  data-testid={`saved-game-${game.id}`}
-                >
-                  <img
-                    src={
-                      game.thumbnail_url ||
-                      "https://images.unsplash.com/photo-1637734373619-af1e76434bec?w=100&q=80"
-                    }
-                    alt={game.title}
-                    className="w-16 h-16 rounded-lg object-cover"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-foreground truncate">
-                      {game.title}
-                    </h4>
-                    <p className="text-xs text-muted-foreground">
-                      {game.category}
-                    </p>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        )}
+        <Tabs defaultValue="games" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-4">
+            <TabsTrigger value="games" className="flex items-center gap-2">
+              <Heart className="w-4 h-4" />
+              Games
+            </TabsTrigger>
+            <TabsTrigger value="friends" className="flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              Friends
+              {friendRequests.length > 0 && (
+                <span className="w-5 h-5 rounded-full bg-lime text-black text-xs flex items-center justify-center font-bold">
+                  {friendRequests.length}
+                </span>
+              )}
+            </TabsTrigger>
+          </TabsList>
 
-        {/* High Scores */}
-        {Object.keys(user.high_scores || {}).length > 0 && (
-          <div className="mb-8">
-            <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-              <Trophy className="w-5 h-5 text-yellow-500" />
-              High Scores
-            </h3>
-            <div className="bg-card border border-border rounded-xl overflow-hidden">
-              {Object.entries(user.high_scores).map(
-                ([gameId, score], index) => (
-                  <div
-                    key={gameId}
-                    className={`flex items-center justify-between p-4 ${
-                      index !== Object.entries(user.high_scores).length - 1
-                        ? "border-b border-border"
-                        : ""
-                    }`}
+          {/* Games Tab */}
+          <TabsContent value="games">
+            {/* Saved Games */}
+            {savedGames.length > 0 ? (
+              <div className="space-y-3 mb-6">
+                <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">
+                  Saved Games
+                </h3>
+                {savedGames.map((game) => (
+                  <motion.div
+                    key={game.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    onClick={() => router.push(`/play/${game.id}`)}
+                    className="flex items-center gap-4 bg-card border border-border rounded-xl p-3 cursor-pointer hover:border-lime/30 transition-colors"
+                    data-testid={`saved-game-${game.id}`}
                   >
-                    <span className="text-foreground">
-                      Game #{gameId.slice(0, 8)}
-                    </span>
-                    <span className="font-heading text-lime">
-                      {score.toLocaleString()}
-                    </span>
-                  </div>
-                )
+                    <img
+                      src={
+                        game.thumbnail_url ||
+                        "https://images.unsplash.com/photo-1637734373619-af1e76434bec?w=100&q=80"
+                      }
+                      alt={game.title}
+                      className="w-14 h-14 rounded-lg object-cover"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-foreground truncate text-sm">
+                        {game.title}
+                      </h4>
+                      <p className="text-xs text-muted-foreground">
+                        {game.category}
+                      </p>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                  </motion.div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 bg-card rounded-xl border border-border mb-6">
+                <Heart className="w-10 h-10 text-muted-foreground mx-auto mb-3 opacity-50" />
+                <p className="text-muted-foreground text-sm">No saved games yet</p>
+                <p className="text-xs text-muted-foreground/70">Tap the heart on any game to save it</p>
+              </div>
+            )}
+
+            {/* High Scores */}
+            {Object.keys(user.high_scores || {}).length > 0 && (
+              <div>
+                <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-3">
+                  High Scores
+                </h3>
+                <div className="bg-card border border-border rounded-xl overflow-hidden">
+                  {Object.entries(user.high_scores).map(
+                    ([gameId, score], index) => (
+                      <div
+                        key={gameId}
+                        className={`flex items-center justify-between p-3 ${
+                          index !== Object.entries(user.high_scores).length - 1
+                            ? "border-b border-border"
+                            : ""
+                        }`}
+                      >
+                        <span className="text-sm text-foreground">
+                          Game #{gameId.slice(0, 8)}
+                        </span>
+                        <span className="font-heading text-lime">
+                          {score.toLocaleString()}
+                        </span>
+                      </div>
+                    )
+                  )}
+                </div>
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Friends Tab */}
+          <TabsContent value="friends">
+            {/* Search Users */}
+            <div className="mb-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search users..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                  data-testid="friend-search-input"
+                />
+              </div>
+
+              {/* Search Results */}
+              {searchQuery.length >= 2 && (
+                <div className="mt-3 space-y-2">
+                  {searchLoading ? (
+                    <div className="flex justify-center py-4">
+                      <Loader2 className="w-5 h-5 text-lime animate-spin" />
+                    </div>
+                  ) : searchResults.length === 0 ? (
+                    <p className="text-center text-muted-foreground text-sm py-4">
+                      No users found
+                    </p>
+                  ) : (
+                    searchResults.map((u) => (
+                      <div
+                        key={u.id}
+                        className="flex items-center gap-3 bg-card border border-border rounded-xl p-3"
+                        data-testid={`search-result-${u.id}`}
+                      >
+                        <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                          <span className="font-bold text-foreground">
+                            {u.username?.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-foreground text-sm truncate">
+                            {u.username}
+                          </p>
+                        </div>
+                        {u.friendship_status === "none" && (
+                          <Button
+                            size="sm"
+                            onClick={() => sendFriendRequest(u.id)}
+                            className="bg-lime text-black hover:bg-lime/90"
+                            data-testid={`add-friend-${u.id}`}
+                          >
+                            <UserPlus className="w-4 h-4" />
+                          </Button>
+                        )}
+                        {u.friendship_status === "friends" && (
+                          <span className="text-xs text-lime flex items-center gap-1">
+                            <UserCheck className="w-4 h-4" />
+                            Friends
+                          </span>
+                        )}
+                        {u.friendship_status === "pending_sent" && (
+                          <span className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Clock className="w-4 h-4" />
+                            Pending
+                          </span>
+                        )}
+                        {u.friendship_status === "pending_received" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              const req = friendRequests.find(r => r.user.id === u.id);
+                              if (req) acceptRequest(req.request_id);
+                            }}
+                          >
+                            Accept
+                          </Button>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
               )}
             </div>
-          </div>
-        )}
+
+            {/* Friend Requests */}
+            {friendRequests.length > 0 && (
+              <div className="mb-4">
+                <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-3">
+                  Friend Requests ({friendRequests.length})
+                </h3>
+                <div className="space-y-2">
+                  {friendRequests.map((req) => (
+                    <motion.div
+                      key={req.request_id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex items-center gap-3 bg-lime/10 border border-lime/30 rounded-xl p-3"
+                      data-testid={`friend-request-${req.request_id}`}
+                    >
+                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                        <span className="font-bold text-foreground">
+                          {req.user.username?.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-foreground text-sm truncate">
+                          {req.user.username}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Wants to be your friend
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => acceptRequest(req.request_id)}
+                          className="bg-lime text-black hover:bg-lime/90"
+                          data-testid={`accept-request-${req.request_id}`}
+                        >
+                          <UserCheck className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => declineRequest(req.request_id)}
+                          data-testid={`decline-request-${req.request_id}`}
+                        >
+                          <UserX className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Friends List */}
+            <div>
+              <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-3">
+                Friends ({friends.length})
+              </h3>
+              {friendsLoading ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="w-6 h-6 text-lime animate-spin" />
+                </div>
+              ) : friends.length === 0 ? (
+                <div className="text-center py-8 bg-card rounded-xl border border-border">
+                  <Users className="w-10 h-10 text-muted-foreground mx-auto mb-3 opacity-50" />
+                  <p className="text-muted-foreground text-sm">No friends yet</p>
+                  <p className="text-xs text-muted-foreground/70">Search for users above to add friends</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {friends.map((friend) => (
+                    <motion.div
+                      key={friend.id}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="flex items-center gap-3 bg-card border border-border rounded-xl p-3"
+                      data-testid={`friend-${friend.id}`}
+                    >
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-lime/20 to-violet/20 flex items-center justify-center">
+                        <span className="font-bold text-foreground">
+                          {friend.username?.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-foreground text-sm truncate">
+                          {friend.username}
+                        </p>
+                        {friend.total_games_played !== undefined && (
+                          <p className="text-xs text-muted-foreground">
+                            {friend.total_games_played} games • {formatPlayTime(friend.total_play_time || 0)} played
+                          </p>
+                        )}
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => removeFriend(friend.id)}
+                        className="text-muted-foreground hover:text-red-500"
+                      >
+                        <UserX className="w-4 h-4" />
+                      </Button>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
 
         {/* Admin Link */}
         {user.is_admin && (
@@ -481,7 +878,7 @@ export default function ProfilePage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             onClick={() => router.push("/admin")}
-            className="w-full flex items-center justify-between bg-violet/20 border border-violet/30 rounded-xl p-4 hover:bg-violet/30 transition-colors"
+            className="w-full flex items-center justify-between bg-violet/20 border border-violet/30 rounded-xl p-4 hover:bg-violet/30 transition-colors mt-6"
             data-testid="admin-link"
           >
             <div className="flex items-center gap-3">
@@ -493,7 +890,7 @@ export default function ProfilePage() {
         )}
 
         {/* Hidden Admin Login Link */}
-        <div className="mt-12 text-center">
+        <div className="mt-8 text-center">
           <button
             onClick={() => router.push("/admin")}
             className="text-xs text-muted-foreground/30 hover:text-muted-foreground transition-colors"
@@ -503,6 +900,7 @@ export default function ProfilePage() {
           </button>
         </div>
       </div>
+      <BottomNav />
     </div>
   );
 }
