@@ -171,12 +171,17 @@
 
 ## Changelog
 
-### January 19, 2026 - Client-Side Navigation Bug Fix
+### January 19, 2026 - Client-Side Navigation Bug Fix & ESLint Config
 - **FIXED:** Critical client-side crash when switching tabs (P0)
   - Root cause: DOM manipulation in SettingsProvider conflicting with React's virtual DOM
   - Fixed SettingsProvider to use React refs instead of direct DOM removal
   - Simplified Providers component to use Zustand getState() pattern
-- **TESTED:** All 5 tabs (Feed, Explore, Challenges, Leaders, Profile) navigate successfully without errors
+- **FIXED:** ESLint TypeScript configuration (P2 - recurring issue)
+  - Updated `.eslintrc.json` with proper rules configuration
+  - Disabled `no-img-element` rule (external game images don't work with next/image)
+  - Fixed React hooks exhaustive-deps warnings in `page.tsx` and `pro/page.tsx`
+  - Added `useCallback` wrappers for fetch functions
+- **TESTED:** All tabs navigate without errors, `yarn lint` passes with 0 warnings
 
 ### January 19, 2025 - Social Features & Analytics UI
 - **ADDED:** Leaderboard page with Global and Per-Game tabs
