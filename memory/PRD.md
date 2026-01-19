@@ -127,13 +127,17 @@
 1. **Real GameDistribution Integration** - Waiting for publisher approval (Publisher ID/API Key)
 
 ### P1 - High Priority
-2. **Video Previews** - Cloudinary integration for game preview videos
-3. **Ad System** - Feed interstitial ads with GameDistribution SDK
+2. **Featured Games Section** - Highlight top-quality GamePix games on home feed (based on quality_score)
+3. **Video Previews** - Cloudinary integration for game preview videos
+4. **Ad System** - Feed interstitial ads with GamePix SDK (pending approval)
 
 ### P2 - Medium Priority
-4. **ESLint TypeScript Configuration** - Fix parsing for .tsx files
-5. **Friend-to-Friend Challenges** - Challenge friends to beat their scores
-6. **Game Sharing** - Share games with friends via link
+5. **ESLint TypeScript Configuration** - Fix parsing for .tsx files
+6. **Friend-to-Friend Challenges** - Challenge friends to beat their scores
+7. **Game Sharing** - Share games with friends via link
+8. **User Notifications** - In-app notifications system
+9. **Custom Fonts** - Admin font customization
+10. **SEO Meta Tags** - Admin-configurable SEO settings
 
 ---
 
