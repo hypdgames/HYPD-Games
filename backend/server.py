@@ -1173,10 +1173,14 @@ async def browse_gamepix_games(
 ):
     """Browse games from GamePix RSS feed"""
     try:
+        # GamePix only allows specific pagination values: 12, 24, 48, 96
+        allowed_limits = [12, 24, 48, 96]
+        gpx_limit = min([l for l in allowed_limits if l >= limit], default=96)
+        
         async with httpx.AsyncClient(timeout=30.0) as client:
             params = {
                 "sid": GAMEPIX_SID,
-                "pagination": limit,
+                "pagination": gpx_limit,
                 "page": page
             }
             
@@ -1186,7 +1190,7 @@ async def browse_gamepix_games(
             response = await client.get(GAMEPIX_FEED_BASE, params=params)
             
             if response.status_code != 200:
-                logger.warning(f"GamePix API returned {response.status_code}")
+                logger.warning(f"GamePix API returned {response.status_code}: {response.text[:200]}")
                 return {"games": [], "total": 0, "page": page, "limit": limit, "error": "Failed to fetch games"}
             
             data = response.json()
