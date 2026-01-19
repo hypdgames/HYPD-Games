@@ -594,9 +594,9 @@ export default function AdminDashboard() {
               <Gamepad2 className="w-4 h-4" />
               Games
             </TabsTrigger>
-            <TabsTrigger value="gamedistribution" className="flex items-center gap-2">
+            <TabsTrigger value="gamepix" className="flex items-center gap-2">
               <Globe className="w-4 h-4" />
-              Import
+              GamePix
             </TabsTrigger>
             <TabsTrigger value="upload" className="flex items-center gap-2">
               <Upload className="w-4 h-4" />
