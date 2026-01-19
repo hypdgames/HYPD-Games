@@ -1414,6 +1414,123 @@ export default function AdminDashboard() {
               </div>
             )}
           </TabsContent>
+
+          {/* Settings Tab */}
+          <TabsContent value="settings">
+            <div className="space-y-6">
+              <h2 className="text-lg font-bold text-foreground">Site Settings</h2>
+              
+              {/* Logo Settings */}
+              <div className="bg-card border border-border rounded-xl p-6 space-y-6">
+                <div>
+                  <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <ImageIcon className="w-5 h-5 text-lime" />
+                    Header Logo
+                  </h3>
+                  
+                  {/* Logo Preview */}
+                  <div className="mb-4">
+                    <label className="text-sm text-muted-foreground mb-2 block">Preview</label>
+                    <div className="bg-background border border-border rounded-lg p-4 flex items-center justify-center min-h-[100px]">
+                      {logoPreview ? (
+                        <img 
+                          src={logoPreview} 
+                          alt="Logo preview" 
+                          style={{ height: `${logoHeight}px` }}
+                          className="object-contain max-w-full"
+                        />
+                      ) : (
+                        <div className="text-muted-foreground text-sm">
+                          No logo set - showing default &quot;HYPD&quot; text
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Logo Upload */}
+                  <div className="mb-4">
+                    <label className="text-sm text-muted-foreground mb-2 block">Upload Logo Image</label>
+                    <input
+                      type="file"
+                      ref={logoFileRef}
+                      onChange={handleLogoFileChange}
+                      accept="image/*"
+                      className="hidden"
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => logoFileRef.current?.click()}
+                        className="flex-1"
+                        data-testid="upload-logo-button"
+                      >
+                        <Upload className="w-4 h-4 mr-2" />
+                        {logoFile ? logoFile.name : "Choose Image"}
+                      </Button>
+                      {(logoPreview || logoUrl) && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={removeLogo}
+                          className="text-red-500 hover:text-red-600"
+                          disabled={savingSettings}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Recommended: PNG or SVG with transparent background
+                    </p>
+                  </div>
+
+                  {/* Logo Height */}
+                  <div className="mb-4">
+                    <label className="text-sm text-muted-foreground mb-2 block">
+                      Logo Height: <span className="text-lime font-mono">{logoHeight}px</span>
+                    </label>
+                    <input
+                      type="range"
+                      min="20"
+                      max="80"
+                      value={logoHeight}
+                      onChange={(e) => setLogoHeight(parseInt(e.target.value))}
+                      className="w-full h-2 bg-background rounded-lg appearance-none cursor-pointer accent-lime"
+                      data-testid="logo-height-slider"
+                    />
+                    <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                      <span>20px</span>
+                      <span>80px</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      The logo will maintain its aspect ratio at this height
+                    </p>
+                  </div>
+
+                  {/* Save Button */}
+                  <Button
+                    onClick={saveSettings}
+                    disabled={savingSettings}
+                    className="w-full bg-lime text-black hover:bg-lime/90"
+                    data-testid="save-settings-button"
+                  >
+                    {savingSettings ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4 mr-2" />
+                        Save Settings
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
         </Tabs>
       </div>
     </div>
