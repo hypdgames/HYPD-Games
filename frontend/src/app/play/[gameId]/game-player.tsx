@@ -143,15 +143,16 @@ export default function GamePlayer() {
         </div>
       )}
 
-      {/* Game iFrame */}
+      {/* Game iFrame - loads eagerly for faster start */}
       {gameUrl && (
         <iframe
           ref={iframeRef}
           src={gameUrl}
           className="w-full h-full border-0"
           title="Game Player"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
           allowFullScreen
+          loading="eager"
           onLoad={() => setLoading(false)}
           onError={() => {
             setError("Failed to load game");
