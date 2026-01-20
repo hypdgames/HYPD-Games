@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useDrag } from "@use-gesture/react";
-import { Play, Volume2, VolumeX, Heart, Share2, Loader2, RefreshCw } from "lucide-react";
+import { Play, Heart, Share2, Loader2, RefreshCw } from "lucide-react";
 import { useAuthStore } from "@/store";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { precacheGame } from "@/components/service-worker";
