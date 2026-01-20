@@ -125,7 +125,7 @@ export default function ExplorePage() {
           {searchResults.length === 0 ? (
             <div className="text-center py-12">
               <Gamepad2 className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">No games found for "{searchQuery}"</p>
+              <p className="text-muted-foreground">No games found for &ldquo;{searchQuery}&rdquo;</p>
             </div>
           ) : (
             <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
