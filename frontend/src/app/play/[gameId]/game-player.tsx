@@ -189,27 +189,27 @@ export default function GamePlayer() {
           }
           setHasDragged(false);
         }}
-        className={`fixed left-4 z-30 w-14 h-14 rounded-full flex items-center justify-center touch-target transition-all cursor-grab active:cursor-grabbing ${
+        className={`fixed left-4 z-30 w-10 h-10 rounded-full flex items-center justify-center touch-target transition-all cursor-grab active:cursor-grabbing ${
           isDragging 
-            ? "scale-110 ring-2 ring-lime bg-lime" 
-            : "bg-black/80 hover:bg-black border border-white/20"
+            ? "scale-110 ring-2 ring-lime bg-lime/90" 
+            : "bg-black/50 hover:bg-black/70 border border-white/10"
         }`}
         style={{ 
           top: `${buttonY}px`,
-          touchAction: 'none',  // Prevents browser handling of touch
+          touchAction: 'none',
         }}
         data-testid="back-button"
       >
-        <ArrowLeft className={`w-6 h-6 ${isDragging ? "text-black" : "text-lime"}`} />
+        <ArrowLeft className={`w-5 h-5 ${isDragging ? "text-black" : "text-lime"}`} />
       </button>
 
       {/* Drag hint - only show initially */}
       {!isDragging && buttonY === 100 && (
         <div
-          className="fixed left-4 z-20 text-xs text-white/60 pointer-events-none animate-pulse"
-          style={{ top: `${buttonY + 60}px` }}
+          className="fixed left-4 z-20 text-[10px] text-white/40 pointer-events-none"
+          style={{ top: `${buttonY + 46}px` }}
         >
-          ↕ Drag to move
+          ↕ drag
         </div>
       )}
     </div>
