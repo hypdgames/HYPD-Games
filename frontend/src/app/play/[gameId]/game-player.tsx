@@ -15,12 +15,14 @@ export default function GamePlayer() {
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const startTimeRef = useRef<number | null>(null);
+  const dragTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [gameUrl, setGameUrl] = useState<string | null>(null);
   const [buttonY, setButtonY] = useState(100);
   const [isDragging, setIsDragging] = useState(false);
+  const [hasDragged, setHasDragged] = useState(false);
   const dragStartY = useRef(0);
   const buttonStartY = useRef(0);
 
