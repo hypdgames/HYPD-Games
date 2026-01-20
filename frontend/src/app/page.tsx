@@ -386,100 +386,126 @@ export default function GameFeed() {
           return (
             <div
               key={game.id}
-              className="snap-item h-[100dvh] w-full absolute top-0 left-0 overflow-hidden"
+              className="snap-item h-[100dvh] w-full absolute top-0 left-0 overflow-hidden bg-background"
               style={{
                 transform: `translateY(${virtualItem.start}px)`,
               }}
               data-testid={`game-card-${virtualItem.index}`}
             >
-              {/* Background - supports video, gif, or image */}
-              <GamePreview game={game} isActive={isActive} muted={muted} />
-
-              {/* Overlay Gradient */}
-              <div className="absolute inset-0 game-overlay" />
-
-              {/* Content */}
-              <div className="absolute inset-0 flex flex-col justify-end p-6 pb-24">
-                <div className="flex items-end justify-between gap-4">
-                  <div className="flex-1">
-                    <span className="inline-block px-3 py-1 text-xs font-bold uppercase tracking-wider bg-lime text-black rounded-full mb-3">
-                      {game.category}
-                    </span>
-                    <h2 className="font-heading text-3xl md:text-4xl text-white mb-2 leading-tight">
-                      {game.title}
-                    </h2>
-                    <p className="text-white/70 text-sm line-clamp-2 mb-4">
-                      {game.description}
-                    </p>
-                  </div>
-
-                  {/* Side Actions */}
-                  <div className="flex flex-col items-center gap-4">
-                    <button
-                      onClick={(e) => toggleSave(game.id, e)}
-                      className="w-12 h-12 rounded-full bg-black flex items-center justify-center touch-target transition-transform active:scale-90"
-                      data-testid={`save-game-${virtualItem.index}`}
-                    >
-                      <Heart
-                        className={`w-6 h-6 transition-colors ${
-                          savedGames.has(game.id)
-                            ? "fill-red-500 text-red-500"
-                            : "text-white"
-                        }`}
-                      />
-                    </button>
-                    <button
-                      onClick={(e) => shareGame(game, e)}
-                      className="w-12 h-12 rounded-full bg-black flex items-center justify-center touch-target transition-transform active:scale-90"
-                      data-testid={`share-game-${virtualItem.index}`}
-                    >
-                      <Share2 className="w-6 h-6 text-white" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Play Button */}
-                <AnimatePresence>
-                  {isActive && (
-                    <motion.button
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 20 }}
-                      onClick={() => playGame(game.id)}
-                      onMouseEnter={() => {
-                        // Prefetch game on hover for faster loading
-                        const link = document.createElement('link');
-                        link.rel = 'prefetch';
-                        link.href = `${API_URL}/api/games/${game.id}/play`;
-                        document.head.appendChild(link);
-                      }}
-                      className="mt-6 w-full py-4 bg-lime text-black font-heading text-lg uppercase tracking-widest rounded-full glow-lime transition-transform active:scale-95"
-                      data-testid={`play-button-${virtualItem.index}`}
-                    >
-                      Play Now
-                    </motion.button>
-                  )}
-                </AnimatePresence>
+              {/* Animated Background Pattern */}
+              <div className="absolute inset-0 overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-lime/5 via-background to-violet/5" />
+                <div 
+                  className="absolute inset-0 opacity-[0.03]"
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ccff00' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+                  }}
+                />
               </div>
 
-              {/* Scroll Indicator (first item only) */}
-              {virtualItem.index === 0 && (
+              {/* Centered Card Content */}
+              <div className="relative h-full flex flex-col items-center justify-center px-6 pb-20 pt-16">
+                {/* Game Image Card */}
                 <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 1 }}
-                  className="absolute bottom-32 left-1/2 -translate-x-1/2 flex flex-col items-center text-white/50"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="w-full max-w-sm"
                 >
-                  <motion.div
-                    animate={{ y: [0, 8, 0] }}
-                    transition={{ repeat: Infinity, duration: 1.5 }}
-                    className="w-6 h-10 rounded-full border-2 border-white/30 flex items-start justify-center p-1"
-                  >
-                    <div className="w-1.5 h-3 bg-white/50 rounded-full" />
-                  </motion.div>
-                  <span className="text-xs mt-2">Swipe for more</span>
+                  <div className="relative rounded-3xl overflow-hidden border border-border bg-card shadow-2xl">
+                    {/* Game Thumbnail */}
+                    <div className="aspect-[4/3] relative">
+                      <img
+                        src={game.thumbnail_url || "https://images.unsplash.com/photo-1637734373619-af1e76434bec?w=800&q=80"}
+                        alt={game.title}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                      {/* Play overlay on hover */}
+                      <div className="absolute inset-0 bg-black/0 hover:bg-black/30 transition-colors flex items-center justify-center group cursor-pointer"
+                           onClick={() => playGame(game.id)}>
+                        <div className="w-16 h-16 rounded-full bg-lime/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity scale-90 group-hover:scale-100">
+                          <Play className="w-8 h-8 text-black ml-1" fill="black" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Game Info */}
+                    <div className="p-5">
+                      <div className="flex items-start justify-between gap-3 mb-3">
+                        <div className="flex-1 min-w-0">
+                          <span className="inline-block px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-lime/10 text-lime rounded-full mb-2">
+                            {game.category}
+                          </span>
+                          <h2 className="font-heading text-xl text-foreground leading-tight truncate">
+                            {game.title}
+                          </h2>
+                        </div>
+                        {/* Action Buttons */}
+                        <div className="flex gap-2">
+                          <button
+                            onClick={(e) => toggleSave(game.id, e)}
+                            className="w-10 h-10 rounded-full bg-muted flex items-center justify-center touch-target transition-all hover:bg-muted/80 active:scale-95"
+                            data-testid={`save-game-${virtualItem.index}`}
+                          >
+                            <Heart
+                              className={`w-5 h-5 transition-colors ${
+                                savedGames.has(game.id)
+                                  ? "fill-red-500 text-red-500"
+                                  : "text-muted-foreground"
+                              }`}
+                            />
+                          </button>
+                          <button
+                            onClick={(e) => shareGame(game, e)}
+                            className="w-10 h-10 rounded-full bg-muted flex items-center justify-center touch-target transition-all hover:bg-muted/80 active:scale-95"
+                            data-testid={`share-game-${virtualItem.index}`}
+                          >
+                            <Share2 className="w-5 h-5 text-muted-foreground" />
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <p className="text-muted-foreground text-sm line-clamp-2 mb-4">
+                        {game.description}
+                      </p>
+
+                      {/* Play Button */}
+                      <button
+                        onClick={() => playGame(game.id)}
+                        onMouseEnter={() => {
+                          const link = document.createElement('link');
+                          link.rel = 'prefetch';
+                          link.href = `${API_URL}/api/games/${game.id}/play`;
+                          document.head.appendChild(link);
+                        }}
+                        className="w-full py-3.5 bg-lime text-black font-heading text-sm uppercase tracking-widest rounded-xl transition-all hover:bg-lime/90 active:scale-[0.98]"
+                        data-testid={`play-button-${virtualItem.index}`}
+                      >
+                        Play Now
+                      </button>
+                    </div>
+                  </div>
                 </motion.div>
-              )}
+
+                {/* Scroll Indicator (first item only) */}
+                {virtualItem.index === 0 && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 1.5 }}
+                    className="absolute bottom-28 left-1/2 -translate-x-1/2 flex flex-col items-center text-muted-foreground"
+                  >
+                    <motion.div
+                      animate={{ y: [0, 6, 0] }}
+                      transition={{ repeat: Infinity, duration: 1.5 }}
+                      className="w-5 h-8 rounded-full border-2 border-muted-foreground/30 flex items-start justify-center p-1"
+                    >
+                      <div className="w-1 h-2 bg-muted-foreground/50 rounded-full" />
+                    </motion.div>
+                    <span className="text-xs mt-2">Swipe for more</span>
+                  </motion.div>
+                )}
+              </div>
             </div>
           );
         })}
