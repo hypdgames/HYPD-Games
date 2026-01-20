@@ -195,9 +195,6 @@ export default function ExplorePage() {
                     <h3 className="font-heading text-sm text-foreground truncate">
                       {game.title}
                     </h3>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {game.play_count?.toLocaleString() || 0} plays
-                    </p>
                   </div>
                 </motion.div>
               ))}
