@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Search, Gamepad2, ChevronRight, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
