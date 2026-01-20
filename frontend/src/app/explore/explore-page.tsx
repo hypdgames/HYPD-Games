@@ -62,13 +62,13 @@ export default function ExplorePage() {
     }
   }, [searchQuery, games]);
 
-  // Group games by category (only categories with 2+ games)
+  // Group games by category (all categories with at least 1 game)
   const categoriesWithGames = categories
     .map(cat => ({
       name: cat,
       games: games.filter(g => g.category === cat)
     }))
-    .filter(c => c.games.length >= 2)
+    .filter(c => c.games.length >= 1)
     .sort((a, b) => b.games.length - a.games.length);
 
   const playGame = (gameId: string) => {
