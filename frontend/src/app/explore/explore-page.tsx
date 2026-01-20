@@ -214,12 +214,12 @@ function CategorySection({
       {/* Category Header */}
       <div className="flex items-center justify-between px-4 mb-3">
         <h2 className="text-base font-bold text-foreground">{title}</h2>
-        {showViewAll && games.length > 4 && (
+        {showViewAll && onViewAll && (
           <button
             onClick={onViewAll}
             className="flex items-center gap-1 text-sm text-lime hover:text-lime/80 transition-colors"
           >
-            View all
+            View more
             <ChevronRight className="w-4 h-4" />
           </button>
         )}
