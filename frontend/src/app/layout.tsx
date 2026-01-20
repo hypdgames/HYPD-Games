@@ -85,6 +85,11 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <head>
         <meta name="google-adsense-account" content="ca-pub-9316102142280167" />
+        {/* Preconnect to game servers for faster loading */}
+        <link rel="preconnect" href="https://games.gamepix.com" />
+        <link rel="dns-prefetch" href="https://games.gamepix.com" />
+        <link rel="preconnect" href="https://html5.gamedistribution.com" />
+        <link rel="dns-prefetch" href="https://html5.gamedistribution.com" />
       </head>
       <body className={`${chivo.variable} ${manrope.variable} font-sans antialiased`}>
         <Providers>
