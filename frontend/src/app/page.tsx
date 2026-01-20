@@ -28,7 +28,6 @@ export default function GameFeed() {
   const [refreshing, setRefreshing] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [muted, setMuted] = useState(true);
   const [savedGames, setSavedGames] = useState<Set<string>>(new Set());
   
   const containerRef = useRef<HTMLDivElement>(null);
