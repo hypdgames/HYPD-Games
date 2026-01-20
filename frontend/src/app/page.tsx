@@ -112,7 +112,7 @@ export default function GameFeed() {
   const handleScroll = useCallback(() => {
     if (!containerRef.current) return;
     
-    // Debounce scroll end detection
+    // Fast debounce for responsive feel
     if (scrollTimeoutRef.current) {
       clearTimeout(scrollTimeoutRef.current);
     }
@@ -125,13 +125,8 @@ export default function GameFeed() {
       
       if (newIndex !== currentIndex && newIndex >= 0 && newIndex < feedItems.length) {
         setCurrentIndex(newIndex);
-        // Snap to exact position
-        containerRef.current.scrollTo({
-          top: newIndex * itemHeight,
-          behavior: "smooth",
-        });
       }
-    }, 100);
+    }, 50);
   }, [currentIndex, feedItems.length]);
 
   // Handle pull-to-refresh
