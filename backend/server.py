@@ -450,7 +450,7 @@ async def get_game_file(game_id: str, db: AsyncSession = Depends(get_db)):
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
     
-    # Increment play count
+    # Increment play count (fire and forget - don't block response)
     await db.execute(update(Game).where(Game.id == game_id).values(play_count=Game.play_count + 1))
     await db.commit()
     
@@ -463,6 +463,8 @@ async def get_game_file(game_id: str, db: AsyncSession = Depends(get_db)):
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
             <title>{game.title}</title>
+            <link rel="preconnect" href="https://games.gamepix.com">
+            <link rel="dns-prefetch" href="https://games.gamepix.com">
             <style>
                 * {{ margin: 0; padding: 0; box-sizing: border-box; }}
                 html, body {{ 
@@ -476,18 +478,31 @@ async def get_game_file(game_id: str, db: AsyncSession = Depends(get_db)):
                     height: 100%;
                     border: none;
                 }}
+                .loader {{
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    color: #ccff00;
+                    font-family: system-ui, sans-serif;
+                    font-size: 16px;
+                }}
             </style>
         </head>
         <body>
+            <div class="loader" id="loader">Loading game...</div>
             <iframe 
                 src="{game.embed_url}"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen; payment"
                 allowfullscreen
+                onload="document.getElementById('loader').style.display='none'"
             ></iframe>
         </body>
         </html>
         """
-        return HTMLResponse(content=gpx_html, media_type="text/html")
+        response = HTMLResponse(content=gpx_html, media_type="text/html")
+        response.headers["Cache-Control"] = "public, max-age=3600"  # Cache for 1 hour
+        return response
     
     # Handle GameDistribution games - return embed wrapper
     if game.source == "gamedistribution" and game.embed_url:
