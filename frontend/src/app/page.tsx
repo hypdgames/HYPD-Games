@@ -449,6 +449,13 @@ export default function GameFeed() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 20 }}
                       onClick={() => playGame(game.id)}
+                      onMouseEnter={() => {
+                        // Prefetch game on hover for faster loading
+                        const link = document.createElement('link');
+                        link.rel = 'prefetch';
+                        link.href = `${API_URL}/api/games/${game.id}/play`;
+                        document.head.appendChild(link);
+                      }}
                       className="mt-6 w-full py-4 bg-lime text-black font-heading text-lg uppercase tracking-widest rounded-full glow-lime transition-transform active:scale-95"
                       data-testid={`play-button-${virtualItem.index}`}
                     >
