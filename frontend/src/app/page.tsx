@@ -411,9 +411,6 @@ export default function GameFeed() {
                     <p className="text-white/70 text-sm line-clamp-2 mb-4">
                       {game.description}
                     </p>
-                    <div className="flex items-center gap-2 text-white/50 text-xs">
-                      <span>{game.play_count?.toLocaleString() || 0} plays</span>
-                    </div>
                   </div>
 
                   {/* Side Actions */}
