@@ -209,8 +209,6 @@ function CategorySection({
   onViewAll?: () => void;
   showViewAll?: boolean;
 }) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-
   return (
     <section className="mb-6">
       {/* Category Header */}
@@ -229,7 +227,6 @@ function CategorySection({
 
       {/* Horizontal Scroll Container */}
       <div
-        ref={scrollRef}
         className="flex gap-3 overflow-x-auto hide-scrollbar px-4 pb-2"
         style={{ scrollSnapType: "x mandatory" }}
       >
