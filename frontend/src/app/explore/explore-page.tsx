@@ -20,6 +20,7 @@ export default function ExplorePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Game[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -61,11 +62,14 @@ export default function ExplorePage() {
     }
   }, [searchQuery, games]);
 
-  // Group games by category
-  const gamesByCategory = categories.reduce((acc, category) => {
-    acc[category] = games.filter((game) => game.category === category);
-    return acc;
-  }, {} as Record<string, Game[]>);
+  // Group games by category (only categories with 2+ games)
+  const categoriesWithGames = categories
+    .map(cat => ({
+      name: cat,
+      games: games.filter(g => g.category === cat)
+    }))
+    .filter(c => c.games.length >= 2)
+    .sort((a, b) => b.games.length - a.games.length);
 
   const playGame = (gameId: string) => {
     router.push(`/play/${gameId}`);
@@ -75,6 +79,35 @@ export default function ExplorePage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="w-10 h-10 text-lime animate-spin" />
+      </div>
+    );
+  }
+
+  // Show all games in a category when selected
+  if (selectedCategory) {
+    const categoryGames = games.filter(g => g.category === selectedCategory);
+    return (
+      <div className="min-h-screen bg-background pb-24" data-testid="explore-page">
+        {/* Header */}
+        <div className="sticky top-0 z-30 bg-background border-b border-border p-4">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setSelectedCategory(null)}
+              className="text-lime hover:text-lime/80"
+            >
+              ← Back
+            </button>
+            <h1 className="font-heading text-lg text-foreground">{selectedCategory}</h1>
+            <span className="text-muted-foreground text-sm">({categoryGames.length})</span>
+          </div>
+        </div>
+        <div className="p-4">
+          <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            {categoryGames.map((game, index) => (
+              <GameCard key={game.id} game={game} onClick={() => playGame(game.id)} index={index} />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -129,8 +162,8 @@ export default function ExplorePage() {
             </div>
           ) : (
             <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-              {searchResults.map((game) => (
-                <GameCard key={game.id} game={game} onClick={() => playGame(game.id)} />
+              {searchResults.map((game, index) => (
+                <GameCard key={game.id} game={game} onClick={() => playGame(game.id)} index={index} />
               ))}
             </div>
           )}
@@ -138,30 +171,24 @@ export default function ExplorePage() {
       ) : (
         /* Category Sections */
         <div className="py-4">
-          {categories.map((category) => {
-            const categoryGames = gamesByCategory[category] || [];
-            if (categoryGames.length === 0) return null;
+          {/* Featured / All Games - horizontal scroll */}
+          <CategorySection
+            title="Featured Games"
+            games={games}
+            onGameClick={playGame}
+            showViewAll={false}
+          />
 
-            return (
-              <CategorySection
-                key={category}
-                title={category}
-                games={categoryGames}
-                onGameClick={playGame}
-                onViewAll={() => setSearchQuery(category)}
-              />
-            );
-          })}
-
-          {/* All Games Section */}
-          {games.length > 0 && (
+          {/* Category rows */}
+          {categoriesWithGames.map(({ name, games: categoryGames }) => (
             <CategorySection
-              title="All Games"
-              games={games}
+              key={name}
+              title={name}
+              games={categoryGames}
               onGameClick={playGame}
-              showViewAll={false}
+              onViewAll={() => setSelectedCategory(name)}
             />
-          )}
+          ))}
         </div>
       )}
     </div>
