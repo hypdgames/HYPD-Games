@@ -76,11 +76,14 @@
   display: none;
 }
 
-/* Snap scroll container */
+/* Snap scroll container - fast and responsive */
 .snap-container {
   scroll-snap-type: y mandatory;
   overflow-y: scroll;
   height: 100dvh;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 }
 
 .snap-item {
