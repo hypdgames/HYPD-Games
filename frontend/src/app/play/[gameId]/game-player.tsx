@@ -181,28 +181,35 @@ export default function GamePlayer() {
       <button
         onMouseDown={handleDragStart}
         onTouchStart={handleDragStart}
-        onClick={() => {
-          // Only navigate if not dragging
-          if (!isDragging) {
+        onClick={(e) => {
+          e.preventDefault();
+          // Only navigate if we didn't drag
+          if (!hasDragged) {
             handleBack();
           }
+          setHasDragged(false);
         }}
-        className={`fixed left-4 z-30 w-12 h-12 rounded-full glass flex items-center justify-center touch-target transition-all ${
-          isDragging ? "scale-110 ring-2 ring-lime" : ""
+        className={`fixed left-4 z-30 w-14 h-14 rounded-full flex items-center justify-center touch-target transition-all cursor-grab active:cursor-grabbing ${
+          isDragging 
+            ? "scale-110 ring-2 ring-lime bg-lime" 
+            : "bg-black/80 hover:bg-black border border-white/20"
         }`}
-        style={{ top: `${buttonY}px` }}
+        style={{ 
+          top: `${buttonY}px`,
+          touchAction: 'none',  // Prevents browser handling of touch
+        }}
         data-testid="back-button"
       >
-        <ArrowLeft className="w-6 h-6 text-white" />
+        <ArrowLeft className={`w-6 h-6 ${isDragging ? "text-black" : "text-lime"}`} />
       </button>
 
-      {/* Drag hint */}
-      {!isDragging && (
+      {/* Drag hint - only show initially */}
+      {!isDragging && buttonY === 100 && (
         <div
-          className="fixed left-4 z-20 text-xs text-white/40 pointer-events-none transition-opacity"
-          style={{ top: `${buttonY + 56}px` }}
+          className="fixed left-4 z-20 text-xs text-white/60 pointer-events-none animate-pulse"
+          style={{ top: `${buttonY + 60}px` }}
         >
-          Drag me
+          ↕ Drag to move
         </div>
       )}
     </div>
