@@ -261,11 +261,11 @@ function GameCard({
   return (
     <div
       onClick={onClick}
-      className="group cursor-pointer w-[130px] md:w-[150px]"
+      className="group cursor-pointer w-[80px] md:w-[120px]"
       data-testid={`game-card-${index}`}
     >
-      {/* Image */}
-      <div className="aspect-[4/3] relative overflow-hidden rounded-xl bg-card border border-border group-hover:border-lime/50 transition-all group-hover:scale-[1.02]">
+      {/* Square Image */}
+      <div className="aspect-square relative overflow-hidden rounded-xl bg-card border border-border group-hover:border-lime/50 transition-all group-hover:scale-[1.02]">
         <img
           src={
             game.thumbnail_url ||
@@ -278,8 +278,8 @@ function GameCard({
       </div>
 
       {/* Title - Below Image */}
-      <div className="pt-2">
-        <h3 className="text-xs font-medium text-foreground line-clamp-2 leading-tight">
+      <div className="pt-1.5">
+        <h3 className="text-[11px] md:text-xs font-medium text-foreground line-clamp-2 leading-tight">
           {game.title}
         </h3>
       </div>
