@@ -171,22 +171,28 @@ export default function GameFeed() {
       // Normal swipe navigation
       if (!last) return;
       
-      const threshold = 0.3;
-      if (Math.abs(vy) > threshold) {
-        const newIndex = dy > 0 
-          ? Math.max(0, currentIndex - 1) 
-          : Math.min(feedItems.length - 1, currentIndex + 1);
+      // Lower threshold = more responsive swipes
+      const velocityThreshold = 0.15;
+      const distanceThreshold = 50;
+      
+      // Trigger on velocity OR sufficient distance
+      if (Math.abs(vy) > velocityThreshold || Math.abs(my) > distanceThreshold) {
+        const direction = my < 0 || (vy > velocityThreshold && my === 0) ? 1 : -1;
+        const newIndex = direction > 0 
+          ? Math.min(feedItems.length - 1, currentIndex + 1)
+          : Math.max(0, currentIndex - 1);
         
         if (newIndex !== currentIndex) {
           setCurrentIndex(newIndex);
+          // Instant scroll - CSS snap handles the animation
           containerRef.current.scrollTo({
             top: newIndex * window.innerHeight,
-            behavior: "smooth",
+            behavior: "instant",
           });
         }
       }
     },
-    { axis: "y", filterTaps: true }
+    { axis: "y", filterTaps: true, threshold: 5 }
   );
 
   const playGame = (gameId: string) => {
