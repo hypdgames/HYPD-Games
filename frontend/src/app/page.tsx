@@ -367,7 +367,6 @@ export default function GameFeed() {
           
           // Game card
           const game = item.data!;
-          const isActive = virtualItem.index === currentIndex;
           
           return (
             <div
