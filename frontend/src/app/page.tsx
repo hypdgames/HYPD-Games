@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useDrag } from "@use-gesture/react";
 import { Play, Heart, Share2, Loader2, RefreshCw } from "lucide-react";
