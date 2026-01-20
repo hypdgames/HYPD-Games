@@ -25,18 +25,12 @@ export default function GamePlayer() {
   const buttonStartY = useRef(0);
 
   useEffect(() => {
-    // Set game URL and start tracking time
+    // Set game URL immediately - no artificial delay
     setGameUrl(`${API_URL}/api/games/${gameId}/play`);
     startTimeRef.current = Date.now();
 
-    // Simulate loading time for iframe
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1500);
-
     // Cleanup: record play session on unmount
     return () => {
-      clearTimeout(timer);
       recordPlaySession();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
