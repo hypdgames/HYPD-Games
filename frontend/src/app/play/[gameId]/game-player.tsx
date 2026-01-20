@@ -69,7 +69,9 @@ export default function GamePlayer() {
   const handleDragStart = useCallback(
     (e: React.MouseEvent | React.TouchEvent) => {
       e.preventDefault();
+      e.stopPropagation();
       setIsDragging(true);
+      setHasDragged(false);
       const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
       dragStartY.current = clientY;
       buttonStartY.current = buttonY;
@@ -83,6 +85,12 @@ export default function GamePlayer() {
       e.preventDefault();
       const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
       const deltaY = clientY - dragStartY.current;
+      
+      // Mark as dragged if moved more than 5px
+      if (Math.abs(deltaY) > 5) {
+        setHasDragged(true);
+      }
+      
       const newY = Math.max(
         50,
         Math.min(window.innerHeight - 150, buttonStartY.current + deltaY)
@@ -93,7 +101,13 @@ export default function GamePlayer() {
   );
 
   const handleDragEnd = useCallback(() => {
-    setIsDragging(false);
+    // Small delay to let click handler check hasDragged state
+    if (dragTimeoutRef.current) {
+      clearTimeout(dragTimeoutRef.current);
+    }
+    dragTimeoutRef.current = setTimeout(() => {
+      setIsDragging(false);
+    }, 50);
   }, []);
 
   useEffect(() => {
