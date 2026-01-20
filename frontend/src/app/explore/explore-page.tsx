@@ -261,7 +261,7 @@ function GameCard({
   return (
     <div
       onClick={onClick}
-      className="group cursor-pointer w-[80px] md:w-[120px]"
+      className="group cursor-pointer w-[88px] md:w-[132px]"
       data-testid={`game-card-${index}`}
     >
       {/* Square Image */}
