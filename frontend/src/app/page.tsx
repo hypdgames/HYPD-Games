@@ -315,7 +315,7 @@ export default function GameFeed() {
       </AnimatePresence>
 
       {/* Header */}
-      <div className="fixed top-0 left-0 right-0 z-40 p-4 flex justify-between items-center">
+      <div className="fixed top-0 left-0 right-0 z-40 p-4 flex justify-between items-center bg-background/80 backdrop-blur-sm">
         {settings?.logo_url ? (
           <img 
             src={settings.logo_url} 
@@ -328,20 +328,7 @@ export default function GameFeed() {
             {settings?.site_name || "HYPD"}
           </h1>
         )}
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-          <button
-            onClick={() => setMuted(!muted)}
-            className="w-10 h-10 rounded-full glass flex items-center justify-center touch-target"
-            data-testid="mute-button"
-          >
-            {muted ? (
-              <VolumeX className="w-5 h-5 text-foreground" />
-            ) : (
-              <Volume2 className="w-5 h-5 text-foreground" />
-            )}
-          </button>
-        </div>
+        <ThemeToggle />
       </div>
 
       {/* Virtual Feed Items */}
