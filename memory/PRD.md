@@ -170,6 +170,25 @@
 
 ## Changelog
 
+### January 21, 2026 - Admin Dashboard Refactoring & Testing
+- **REFACTORED:** Admin Dashboard (`/app/frontend/src/app/admin/page.tsx`)
+  - Reduced from 2,405 lines to 581 lines (76% reduction in main file)
+  - Split into 6 modular components in `/app/frontend/src/app/admin/components/`:
+    - `GamesTab.tsx` (95 lines) - Game list management
+    - `GamePixTab.tsx` (182 lines) - GamePix import functionality
+    - `UploadTab.tsx` (260 lines) - Game upload form
+    - `UsersTab.tsx` (341 lines) - User management with modal
+    - `AnalyticsTab.tsx` (556 lines) - Charts and statistics
+    - `SettingsTab.tsx` (470 lines) - Site settings
+    - `types.ts` (99 lines) - Shared TypeScript interfaces
+    - `index.ts` (7 lines) - Module exports
+- **TESTED:** User Management UI end-to-end
+  - Backend: 100% (18/18 API tests passed)
+  - Frontend: 100% (All UI features verified)
+  - Full CRUD operations, ban/unban, make/remove admin
+  - Search, filters, pagination all working
+- **ADDED:** Comprehensive test file `/app/tests/test_user_management.py`
+
 ### January 19, 2026 - Client-Side Navigation Bug Fix & ESLint Config
 - **FIXED:** Critical client-side crash when switching tabs (P0)
   - Root cause: DOM manipulation in SettingsProvider conflicting with React's virtual DOM
