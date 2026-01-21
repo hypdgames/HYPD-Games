@@ -8,15 +8,15 @@
 | Category | Status | Severity | Notes |
 |----------|--------|----------|-------|
 | 1. Broken Access Control | ✅ PASS | - | Admin checks in place |
-| 2. Security Misconfiguration | ⚠️ NEEDS FIX | HIGH | CORS too permissive |
+| 2. Security Misconfiguration | ✅ FIXED | - | CORS restricted to specific origins |
 | 3. Supply Chain Failures | ✅ PASS | - | Dependencies up to date |
 | 4. Cryptographic Failures | ✅ PASS | - | bcrypt + JWT |
 | 5. Injection | ✅ PASS | - | SQLAlchemy ORM used |
-| 6. Insecure Design | ⚠️ NEEDS FIX | MEDIUM | Rate limiting missing |
-| 7. Authentication Failures | ⚠️ NEEDS FIX | MEDIUM | No password strength validation |
+| 6. Insecure Design | ✅ FIXED | - | Rate limiting added |
+| 7. Authentication Failures | ✅ FIXED | - | Password strength validation |
 | 8. Software/Data Integrity | ✅ PASS | - | N/A for web app |
-| 9. Logging & Alerting | ⚠️ NEEDS FIX | LOW | Insufficient auth logging |
-| 10. Exception Handling | ⚠️ NEEDS FIX | MEDIUM | Detailed errors exposed |
+| 9. Logging & Alerting | ✅ FIXED | - | Security logging added |
+| 10. Exception Handling | ✅ FIXED | - | Error messages sanitized |
 
 ---
 
