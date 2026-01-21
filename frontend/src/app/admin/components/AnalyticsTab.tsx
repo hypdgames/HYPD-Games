@@ -264,7 +264,7 @@ export function AnalyticsTab({
                 <div key={cat.category} className="flex items-center gap-1 text-xs">
                   <div 
                     className="w-2 h-2 rounded-full" 
-                    style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                    style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }}
                   />
                   <span className="text-muted-foreground">{cat.category}</span>
                 </div>
