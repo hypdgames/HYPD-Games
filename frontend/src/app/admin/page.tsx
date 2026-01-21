@@ -111,6 +111,31 @@ interface RegionData {
   events: number;
 }
 
+interface AdminUser {
+  id: string;
+  username: string;
+  email: string;
+  is_admin: boolean;
+  is_banned: boolean;
+  ban_reason?: string;
+  total_play_time: number;
+  total_games_played: number;
+  avatar_url?: string;
+  bio?: string;
+  created_at: string;
+  last_active_at?: string;
+}
+
+interface UserStats {
+  total_users: number;
+  admin_count: number;
+  banned_count: number;
+  new_today: number;
+  new_this_week: number;
+  new_this_month: number;
+  active_24h: number;
+}
+
 export default function AdminDashboard() {
   const router = useRouter();
   const { user, token } = useAuthStore();
@@ -140,6 +165,18 @@ export default function AdminDashboard() {
   const [retention, setRetention] = useState<RetentionData | null>(null);
   const [regionData, setRegionData] = useState<RegionData[]>([]);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
+
+  // User Management state
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [userStats, setUserStats] = useState<UserStats | null>(null);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [userSearch, setUserSearch] = useState("");
+  const [userFilter, setUserFilter] = useState<"all" | "admins" | "banned">("all");
+  const [usersPage, setUsersPage] = useState(1);
+  const [usersTotalPages, setUsersTotalPages] = useState(1);
+  const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [userActionLoading, setUserActionLoading] = useState(false);
 
   // Settings state
   const [logoUrl, setLogoUrl] = useState<string>("");
