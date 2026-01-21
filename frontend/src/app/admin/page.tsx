@@ -431,6 +431,171 @@ export default function AdminDashboard() {
     setPrimaryColor("#CCFF00");
   };
 
+  // Fetch users for management
+  const fetchUsers = async (page: number = 1, search?: string, filter?: string) => {
+    if (!token) return;
+    setUsersLoading(true);
+    try {
+      const params = new URLSearchParams();
+      params.append("page", String(page));
+      params.append("limit", "10");
+      if (search) params.append("search", search);
+      if (filter === "admins") params.append("is_admin", "true");
+      if (filter === "banned") params.append("is_banned", "true");
+      
+      const res = await fetch(`${API_URL}/api/admin/users?${params}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setUsers(data.users || []);
+        setUsersTotalPages(data.total_pages || 1);
+      }
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      toast.error("Failed to load users");
+    }
+    setUsersLoading(false);
+  };
+
+  // Fetch user statistics
+  const fetchUserStats = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_URL}/api/admin/users/stats/overview`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setUserStats(data);
+      }
+    } catch (error) {
+      console.error("Error fetching user stats:", error);
+    }
+  };
+
+  // Ban user
+  const banUser = async (userId: string, reason?: string) => {
+    if (!token) return;
+    setUserActionLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/admin/users/${userId}/ban?reason=${encodeURIComponent(reason || "")}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        toast.success("User banned successfully");
+        fetchUsers(usersPage, userSearch, userFilter);
+        fetchUserStats();
+        setShowUserModal(false);
+      } else {
+        const error = await res.json();
+        toast.error(error.detail || "Failed to ban user");
+      }
+    } catch (error) {
+      toast.error("Failed to ban user");
+    }
+    setUserActionLoading(false);
+  };
+
+  // Unban user
+  const unbanUser = async (userId: string) => {
+    if (!token) return;
+    setUserActionLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/admin/users/${userId}/unban`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        toast.success("User unbanned successfully");
+        fetchUsers(usersPage, userSearch, userFilter);
+        fetchUserStats();
+        setShowUserModal(false);
+      } else {
+        const error = await res.json();
+        toast.error(error.detail || "Failed to unban user");
+      }
+    } catch (error) {
+      toast.error("Failed to unban user");
+    }
+    setUserActionLoading(false);
+  };
+
+  // Make admin
+  const makeAdmin = async (userId: string) => {
+    if (!token) return;
+    setUserActionLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/admin/users/${userId}/make-admin`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        toast.success("User is now an admin");
+        fetchUsers(usersPage, userSearch, userFilter);
+        fetchUserStats();
+        setShowUserModal(false);
+      } else {
+        const error = await res.json();
+        toast.error(error.detail || "Failed to make admin");
+      }
+    } catch (error) {
+      toast.error("Failed to make admin");
+    }
+    setUserActionLoading(false);
+  };
+
+  // Remove admin
+  const removeAdmin = async (userId: string) => {
+    if (!token) return;
+    setUserActionLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/admin/users/${userId}/remove-admin`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        toast.success("Admin status removed");
+        fetchUsers(usersPage, userSearch, userFilter);
+        fetchUserStats();
+        setShowUserModal(false);
+      } else {
+        const error = await res.json();
+        toast.error(error.detail || "Failed to remove admin");
+      }
+    } catch (error) {
+      toast.error("Failed to remove admin");
+    }
+    setUserActionLoading(false);
+  };
+
+  // Delete user
+  const deleteUser = async (userId: string) => {
+    if (!token) return;
+    if (!confirm("Are you sure you want to delete this user? This action cannot be undone.")) return;
+    
+    setUserActionLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/admin/users/${userId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        toast.success("User deleted successfully");
+        fetchUsers(usersPage, userSearch, userFilter);
+        fetchUserStats();
+        setShowUserModal(false);
+      } else {
+        const error = await res.json();
+        toast.error(error.detail || "Failed to delete user");
+      }
+    } catch (error) {
+      toast.error("Failed to delete user");
+    }
+    setUserActionLoading(false);
+  };
+
   const fetchAnalytics = async () => {
     if (!token) {
       setAnalyticsLoading(false);
