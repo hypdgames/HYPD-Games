@@ -13,8 +13,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from supabase import create_client, Client
 import os
 import logging
+import re
 from pathlib import Path
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, Field, EmailStr, field_validator
 from typing import List, Optional
 import uuid
 from datetime import datetime, timezone, timedelta
@@ -25,6 +26,8 @@ import base64
 import zipfile
 from PIL import Image
 import httpx
+from collections import defaultdict
+import time
 
 # Local imports
 from database import get_db, engine, Base
@@ -43,8 +46,15 @@ ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
 # Setup logging (must be early for other initializations)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
+
+# Security logging for auth events
+security_logger = logging.getLogger('security')
+security_logger.setLevel(logging.INFO)
 
 # JWT Configuration
 JWT_SECRET = os.environ.get('JWT_SECRET', 'hypd-games-secret-key-2024')
