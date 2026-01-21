@@ -73,6 +73,9 @@ export default function AdminDashboard() {
 
   // Check admin status
   useEffect(() => {
+    // Wait for auth to hydrate before checking admin status
+    if (authLoading) return;
+    
     if (!user?.is_admin) {
       router.push("/profile");
       return;
