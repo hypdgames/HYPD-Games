@@ -381,7 +381,8 @@ async def health_check(db: AsyncSession = Depends(get_db)):
         await db.execute(select(1))
         return {"status": "healthy", "database": "connected", "type": "postgresql"}
     except Exception as e:
-        return {"status": "unhealthy", "database": "disconnected", "error": str(e)}
+        logger.error(f"Health check failed: {e}")
+        return {"status": "unhealthy", "database": "disconnected"}
 
 # ==================== AUTH ENDPOINTS ====================
 
