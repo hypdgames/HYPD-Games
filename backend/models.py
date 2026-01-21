@@ -45,6 +45,8 @@ class User(Base):
     email = Column(String(255), unique=True, nullable=False, index=True)
     hashed_password = Column(String(255), nullable=False)
     is_admin = Column(Boolean, default=False, index=True)
+    is_banned = Column(Boolean, default=False, index=True)
+    ban_reason = Column(String(500), nullable=True)
     saved_games = Column(JSON, default=list)  # List of game IDs
     high_scores = Column(JSON, default=dict)  # Dict of game_id: score
     total_play_time = Column(Integer, default=0)  # Total seconds played
@@ -65,11 +67,14 @@ class User(Base):
             "id": self.id,
             "username": self.username,
             "is_admin": self.is_admin,
+            "is_banned": self.is_banned or False,
+            "ban_reason": self.ban_reason,
             "total_play_time": self.total_play_time or 0,
             "total_games_played": self.total_games_played or 0,
             "avatar_url": self.avatar_url,
             "bio": self.bio,
-            "created_at": self.created_at.isoformat() if self.created_at else None
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "last_active_at": self.last_active_at.isoformat() if self.last_active_at else None
         }
         if include_private:
             data["email"] = self.email
