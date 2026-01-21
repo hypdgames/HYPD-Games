@@ -30,7 +30,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const { user, token } = useAuthStore();
+  const { user, token, loading: authLoading } = useAuthStore();
   
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
