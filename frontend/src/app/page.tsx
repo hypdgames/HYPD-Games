@@ -138,7 +138,7 @@ export default function GameFeed() {
   const handleRefresh = useCallback(async () => {
     if (refreshing) return;
     setRefreshing(true);
-    await fetchGames(true);
+    await fetchGames(true, true); // Force refresh on manual pull
     setRefreshing(false);
     setPullDistance(0);
     // Reset to top
