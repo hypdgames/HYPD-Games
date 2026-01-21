@@ -897,27 +897,34 @@ export default function AdminDashboard() {
       </div>
 
       <div className="p-6 max-w-4xl mx-auto">
-        <Tabs defaultValue="games" className="w-full" onValueChange={(v) => v === "analytics" && fetchAnalytics()}>
-          <TabsList className="grid w-full grid-cols-5 mb-6">
+        <Tabs defaultValue="games" className="w-full" onValueChange={(v) => {
+          if (v === "analytics") fetchAnalytics();
+          if (v === "users") { fetchUsers(); fetchUserStats(); }
+        }}>
+          <TabsList className="grid w-full grid-cols-6 mb-6">
             <TabsTrigger value="games" className="flex items-center gap-2">
               <Gamepad2 className="w-4 h-4" />
-              Games
+              <span className="hidden sm:inline">Games</span>
             </TabsTrigger>
             <TabsTrigger value="gamepix" className="flex items-center gap-2">
               <Globe className="w-4 h-4" />
-              GamePix
+              <span className="hidden sm:inline">GamePix</span>
             </TabsTrigger>
             <TabsTrigger value="upload" className="flex items-center gap-2">
               <Upload className="w-4 h-4" />
-              Upload
+              <span className="hidden sm:inline">Upload</span>
+            </TabsTrigger>
+            <TabsTrigger value="users" className="flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              <span className="hidden sm:inline">Users</span>
             </TabsTrigger>
             <TabsTrigger value="analytics" className="flex items-center gap-2">
               <BarChart3 className="w-4 h-4" />
-              Stats
+              <span className="hidden sm:inline">Stats</span>
             </TabsTrigger>
             <TabsTrigger value="settings" className="flex items-center gap-2">
               <Settings className="w-4 h-4" />
-              Settings
+              <span className="hidden sm:inline">Settings</span>
             </TabsTrigger>
           </TabsList>
 
