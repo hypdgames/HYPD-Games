@@ -270,14 +270,18 @@ function GameCard({
     >
       {/* Square Image */}
       <div className="aspect-square relative overflow-hidden rounded-xl bg-card border border-border group-hover:border-lime/50 transition-all group-hover:scale-[1.02]">
-        <img
+        <Image
           src={
             game.thumbnail_url ||
             "https://images.unsplash.com/photo-1637734373619-af1e76434bec?w=400&q=80"
           }
           alt={game.title}
-          className="w-full h-full object-cover"
+          fill
+          className="object-cover"
+          sizes="(max-width: 768px) 88px, 132px"
           loading="lazy"
+          placeholder="blur"
+          blurDataURL={BLUR_PLACEHOLDER}
         />
       </div>
 
