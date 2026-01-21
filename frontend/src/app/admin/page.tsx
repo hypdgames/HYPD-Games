@@ -615,11 +615,12 @@ export default function AdminDashboard() {
     try {
       const headers = { Authorization: `Bearer ${token}` };
       
-      const [overviewRes, dailyRes, retentionRes, regionsRes] = await Promise.all([
+      const [overviewRes, dailyRes, retentionRes, regionsRes, devicesRes] = await Promise.all([
         fetch(`${API_URL}/api/admin/analytics/overview`, { headers }),
         fetch(`${API_URL}/api/admin/analytics/daily?days=14`, { headers }),
         fetch(`${API_URL}/api/admin/analytics/retention`, { headers }),
         fetch(`${API_URL}/api/admin/analytics/regions?days=30`, { headers }),
+        fetch(`${API_URL}/api/admin/analytics/devices?days=30`, { headers }),
       ]);
 
       if (overviewRes.ok) {
@@ -639,6 +640,10 @@ export default function AdminDashboard() {
       if (regionsRes.ok) {
         const data = await regionsRes.json();
         setRegionData(data.regions || []);
+      }
+      if (devicesRes.ok) {
+        const data = await devicesRes.json();
+        setDeviceStats(data);
       }
     } catch (error) {
       console.error("Error fetching analytics:", error);
