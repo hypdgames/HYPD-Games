@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useDrag } from "@use-gesture/react";
@@ -17,6 +18,9 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 // Insert ad every N games
 const AD_FREQUENCY = 6;
 const PULL_THRESHOLD = 80; // pixels to pull before refresh triggers
+
+// Blur placeholder for images (tiny base64 placeholder)
+const BLUR_PLACEHOLDER = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMCwsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wAARCAAIAAoDASIAAhEBAxEB/8QAFgABAQEAAAAAAAAAAAAAAAAAAAkH/8QAIhAAAQMDBAMAAAAAAAAAAAAAAQIDBAAFEQYSITEHQVH/xAAVAQEBAAAAAAAAAAAAAAAAAAADBP/EABkRAAIDAQAAAAAAAAAAAAAAAAECAAMRIf/aAAwDAQACEQMRAD8AoNtFwbuUGJcGWnGW5TKHW0O43hKgCAcZHBrRdM+O7Jp2wQLQxKuC2IbKGEKdlOrUQlIGSVKJJ9kk0pU1WTkyTIc2f//Z";
 
 export default function GameFeed() {
   const router = useRouter();
