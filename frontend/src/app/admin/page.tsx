@@ -1831,7 +1831,7 @@ export default function AdminDashboard() {
                   </h3>
                   {deviceStats && deviceStats.screen_sizes.length > 0 ? (
                     <div className="space-y-2">
-                      {deviceStats.screen_sizes.slice(0, 5).map((screen, i) => (
+                      {deviceStats.screen_sizes.slice(0, 5).map((screen) => (
                         <div key={screen.name} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                           <span className="text-sm text-foreground">{screen.name}</span>
                           <span className="text-sm font-medium text-muted-foreground">{screen.count}</span>
