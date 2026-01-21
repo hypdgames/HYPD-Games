@@ -2352,6 +2352,368 @@ async def track_event(
     
     return {"success": True}
 
+
+# ==================== ADMIN USER MANAGEMENT ====================
+
+class UserUpdate(BaseModel):
+    username: Optional[str] = None
+    email: Optional[EmailStr] = None
+    is_admin: Optional[bool] = None
+    is_banned: Optional[bool] = None
+    ban_reason: Optional[str] = None
+    bio: Optional[str] = None
+
+
+@api_router.get("/admin/users")
+async def admin_get_users(
+    search: Optional[str] = None,
+    is_admin: Optional[bool] = None,
+    is_banned: Optional[bool] = None,
+    sort_by: str = "created_at",
+    sort_order: str = "desc",
+    page: int = 1,
+    limit: int = 20,
+    user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get all users with filtering, sorting, and pagination"""
+    query = select(User)
+    
+    # Apply filters
+    if search:
+        search_term = f"%{search}%"
+        query = query.where(
+            or_(
+                User.username.ilike(search_term),
+                User.email.ilike(search_term)
+            )
+        )
+    
+    if is_admin is not None:
+        query = query.where(User.is_admin == is_admin)
+    
+    if is_banned is not None:
+        query = query.where(User.is_banned == is_banned)
+    
+    # Get total count
+    count_query = select(func.count()).select_from(query.subquery())
+    total_result = await db.execute(count_query)
+    total = total_result.scalar() or 0
+    
+    # Apply sorting
+    sort_column = getattr(User, sort_by, User.created_at)
+    if sort_order == "desc":
+        query = query.order_by(desc(sort_column))
+    else:
+        query = query.order_by(sort_column)
+    
+    # Apply pagination
+    offset = (page - 1) * limit
+    query = query.offset(offset).limit(limit)
+    
+    result = await db.execute(query)
+    users = result.scalars().all()
+    
+    return {
+        "users": [u.to_dict(include_private=True) for u in users],
+        "total": total,
+        "page": page,
+        "limit": limit,
+        "total_pages": (total + limit - 1) // limit
+    }
+
+
+@api_router.get("/admin/users/{user_id}")
+async def admin_get_user(
+    user_id: str,
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get detailed user information"""
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Get user's play sessions count
+    sessions_result = await db.execute(
+        select(func.count(PlaySession.id)).where(PlaySession.user_id == user_id)
+    )
+    total_sessions = sessions_result.scalar() or 0
+    
+    # Get user's recent activity
+    recent_activity = await db.execute(
+        select(PlaySession)
+        .where(PlaySession.user_id == user_id)
+        .order_by(desc(PlaySession.played_at))
+        .limit(10)
+    )
+    recent_sessions = recent_activity.scalars().all()
+    
+    # Get games played
+    games_played = await db.execute(
+        select(func.count(func.distinct(PlaySession.game_id)))
+        .where(PlaySession.user_id == user_id)
+    )
+    unique_games = games_played.scalar() or 0
+    
+    user_data = user.to_dict(include_private=True)
+    user_data["stats"] = {
+        "total_sessions": total_sessions,
+        "unique_games_played": unique_games,
+        "recent_activity": [
+            {
+                "game_id": s.game_id,
+                "duration": s.duration_seconds,
+                "score": s.score,
+                "played_at": s.played_at.isoformat() if s.played_at else None
+            }
+            for s in recent_sessions
+        ]
+    }
+    
+    return user_data
+
+
+@api_router.put("/admin/users/{user_id}")
+async def admin_update_user(
+    user_id: str,
+    user_update: UserUpdate,
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Update user information"""
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Prevent admin from demoting themselves
+    if user.id == admin.id and user_update.is_admin is False:
+        raise HTTPException(status_code=400, detail="Cannot remove your own admin status")
+    
+    update_data = user_update.model_dump(exclude_unset=True)
+    
+    # Check for username/email conflicts
+    if user_update.username and user_update.username != user.username:
+        existing = await db.execute(
+            select(User).where(User.username == user_update.username)
+        )
+        if existing.scalar_one_or_none():
+            raise HTTPException(status_code=400, detail="Username already taken")
+    
+    if user_update.email and user_update.email != user.email:
+        existing = await db.execute(
+            select(User).where(User.email == user_update.email)
+        )
+        if existing.scalar_one_or_none():
+            raise HTTPException(status_code=400, detail="Email already in use")
+    
+    # Apply updates
+    if update_data:
+        await db.execute(
+            update(User).where(User.id == user_id).values(**update_data)
+        )
+        await db.commit()
+    
+    # Fetch updated user
+    result = await db.execute(select(User).where(User.id == user_id))
+    updated_user = result.scalar_one()
+    
+    return {"success": True, "user": updated_user.to_dict(include_private=True)}
+
+
+@api_router.post("/admin/users/{user_id}/ban")
+async def admin_ban_user(
+    user_id: str,
+    reason: Optional[str] = None,
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Ban a user"""
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if user.id == admin.id:
+        raise HTTPException(status_code=400, detail="Cannot ban yourself")
+    
+    if user.is_admin:
+        raise HTTPException(status_code=400, detail="Cannot ban an admin user")
+    
+    await db.execute(
+        update(User).where(User.id == user_id).values(
+            is_banned=True,
+            ban_reason=reason
+        )
+    )
+    await db.commit()
+    
+    return {"success": True, "message": f"User {user.username} has been banned"}
+
+
+@api_router.post("/admin/users/{user_id}/unban")
+async def admin_unban_user(
+    user_id: str,
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Unban a user"""
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    await db.execute(
+        update(User).where(User.id == user_id).values(
+            is_banned=False,
+            ban_reason=None
+        )
+    )
+    await db.commit()
+    
+    return {"success": True, "message": f"User {user.username} has been unbanned"}
+
+
+@api_router.post("/admin/users/{user_id}/make-admin")
+async def admin_make_admin(
+    user_id: str,
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Make a user an admin"""
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if user.is_banned:
+        raise HTTPException(status_code=400, detail="Cannot make a banned user an admin")
+    
+    await db.execute(
+        update(User).where(User.id == user_id).values(is_admin=True)
+    )
+    await db.commit()
+    
+    return {"success": True, "message": f"User {user.username} is now an admin"}
+
+
+@api_router.post("/admin/users/{user_id}/remove-admin")
+async def admin_remove_admin(
+    user_id: str,
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Remove admin status from a user"""
+    if user_id == admin.id:
+        raise HTTPException(status_code=400, detail="Cannot remove your own admin status")
+    
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    await db.execute(
+        update(User).where(User.id == user_id).values(is_admin=False)
+    )
+    await db.commit()
+    
+    return {"success": True, "message": f"Admin status removed from {user.username}"}
+
+
+@api_router.delete("/admin/users/{user_id}")
+async def admin_delete_user(
+    user_id: str,
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Delete a user and all their data"""
+    if user_id == admin.id:
+        raise HTTPException(status_code=400, detail="Cannot delete yourself")
+    
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if user.is_admin:
+        raise HTTPException(status_code=400, detail="Cannot delete an admin user")
+    
+    # Delete user (cascades to related records)
+    await db.execute(delete(User).where(User.id == user_id))
+    await db.commit()
+    
+    return {"success": True, "message": f"User {user.username} has been deleted"}
+
+
+@api_router.get("/admin/users/stats/overview")
+async def admin_users_stats(
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get user statistics overview"""
+    now = datetime.now(timezone.utc)
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    week_ago = now - timedelta(days=7)
+    month_ago = now - timedelta(days=30)
+    
+    # Total users
+    total = await db.execute(select(func.count(User.id)))
+    total_users = total.scalar() or 0
+    
+    # Admins
+    admins = await db.execute(select(func.count(User.id)).where(User.is_admin == True))
+    admin_count = admins.scalar() or 0
+    
+    # Banned users
+    banned = await db.execute(select(func.count(User.id)).where(User.is_banned == True))
+    banned_count = banned.scalar() or 0
+    
+    # New users today
+    new_today = await db.execute(
+        select(func.count(User.id)).where(User.created_at >= today_start)
+    )
+    new_today_count = new_today.scalar() or 0
+    
+    # New users this week
+    new_week = await db.execute(
+        select(func.count(User.id)).where(User.created_at >= week_ago)
+    )
+    new_week_count = new_week.scalar() or 0
+    
+    # New users this month
+    new_month = await db.execute(
+        select(func.count(User.id)).where(User.created_at >= month_ago)
+    )
+    new_month_count = new_month.scalar() or 0
+    
+    # Active users (played in last 24 hours)
+    active = await db.execute(
+        select(func.count(func.distinct(PlaySession.user_id))).where(
+            PlaySession.played_at >= now - timedelta(hours=24)
+        )
+    )
+    active_count = active.scalar() or 0
+    
+    return {
+        "total_users": total_users,
+        "admin_count": admin_count,
+        "banned_count": banned_count,
+        "new_today": new_today_count,
+        "new_this_week": new_week_count,
+        "new_this_month": new_month_count,
+        "active_24h": active_count
+    }
+
+
 # ==================== APP SETUP ====================
 
 # Include router
