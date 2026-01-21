@@ -813,7 +813,7 @@ async def admin_create_game_with_files(
         raise
     except Exception as e:
         logger.error(f"Error creating game: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to create game. Please try again.")
 
 @api_router.patch("/admin/games/{game_id}/visibility")
 async def admin_toggle_visibility(
@@ -1075,7 +1075,7 @@ async def upload_logo(
             
     except Exception as e:
         logger.error(f"Error uploading logo: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to upload logo. Please try again.")
 
 @api_router.post("/admin/upload-favicon")
 async def upload_favicon(
@@ -1109,7 +1109,7 @@ async def upload_favicon(
             
     except Exception as e:
         logger.error(f"Error uploading favicon: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to upload favicon. Please try again.")
 
 # ==================== GAMEDISTRIBUTION INTEGRATION ====================
 
@@ -1348,7 +1348,7 @@ async def import_gd_game(
         raise
     except Exception as e:
         logger.error(f"Error importing GD game: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to import game. Please try again.")
 
 @api_router.post("/admin/gamedistribution/bulk-import")
 async def bulk_import_gd_games(
@@ -1554,7 +1554,7 @@ async def import_gamepix_game(
         raise
     except Exception as e:
         logger.error(f"Error importing GamePix game: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to import game. Please try again.")
 
 @api_router.post("/admin/gamepix/bulk-import")
 async def bulk_import_gamepix_games(
