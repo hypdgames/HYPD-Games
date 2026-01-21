@@ -55,32 +55,32 @@ export function UsersTab({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="users-tab">
       {/* User Stats Cards */}
       {userStats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-card border border-border rounded-xl p-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4" data-testid="user-stats-cards">
+          <div className="bg-card border border-border rounded-xl p-4" data-testid="stat-total-users">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
               <Users className="w-4 h-4" />
               <span className="text-xs">Total Users</span>
             </div>
             <p className="text-2xl font-bold text-foreground">{userStats.total_users}</p>
           </div>
-          <div className="bg-card border border-border rounded-xl p-4">
+          <div className="bg-card border border-border rounded-xl p-4" data-testid="stat-active-24h">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
               <Activity className="w-4 h-4" />
               <span className="text-xs">Active (24h)</span>
             </div>
             <p className="text-2xl font-bold text-lime">{userStats.active_24h}</p>
           </div>
-          <div className="bg-card border border-border rounded-xl p-4">
+          <div className="bg-card border border-border rounded-xl p-4" data-testid="stat-new-today">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
               <TrendingUp className="w-4 h-4" />
               <span className="text-xs">New Today</span>
             </div>
             <p className="text-2xl font-bold text-foreground">{userStats.new_today}</p>
           </div>
-          <div className="bg-card border border-border rounded-xl p-4">
+          <div className="bg-card border border-border rounded-xl p-4" data-testid="stat-banned">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
               <Target className="w-4 h-4" />
               <span className="text-xs">Banned</span>
@@ -99,12 +99,14 @@ export function UsersTab({
             onChange={(e) => onSearch(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && onPageChange(1)}
             className="pr-10"
+            data-testid="user-search-input"
           />
           <Button
             size="sm"
             variant="ghost"
             className="absolute right-1 top-1"
             onClick={() => onPageChange(1)}
+            data-testid="user-search-button"
           >
             Search
           </Button>
@@ -114,6 +116,7 @@ export function UsersTab({
             variant={filter === "all" ? "default" : "outline"}
             size="sm"
             onClick={() => onFilterChange("all")}
+            data-testid="filter-all-button"
           >
             All
           </Button>
@@ -121,6 +124,7 @@ export function UsersTab({
             variant={filter === "admins" ? "default" : "outline"}
             size="sm"
             onClick={() => onFilterChange("admins")}
+            data-testid="filter-admins-button"
           >
             Admins
           </Button>
@@ -129,6 +133,7 @@ export function UsersTab({
             size="sm"
             onClick={() => onFilterChange("banned")}
             className={filter === "banned" ? "bg-red-500 hover:bg-red-600" : ""}
+            data-testid="filter-banned-button"
           >
             Banned
           </Button>
@@ -147,12 +152,13 @@ export function UsersTab({
             <p>No users found</p>
           </div>
         ) : (
-          <div className="divide-y divide-border">
+          <div className="divide-y divide-border" data-testid="users-list">
             {users.map((u) => (
               <div
                 key={u.id}
                 className="p-4 hover:bg-muted/50 cursor-pointer transition-colors"
                 onClick={() => { setSelectedUser(u); setShowUserModal(true); }}
+                data-testid={`user-row-${u.id}`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -167,10 +173,10 @@ export function UsersTab({
                       <div className="flex items-center gap-2">
                         <span className="font-medium text-foreground">{u.username}</span>
                         {u.is_admin && (
-                          <span className="px-2 py-0.5 text-[10px] font-bold bg-lime text-black rounded-full">ADMIN</span>
+                          <span className="px-2 py-0.5 text-[10px] font-bold bg-lime text-black rounded-full" data-testid="admin-badge">ADMIN</span>
                         )}
                         {u.is_banned && (
-                          <span className="px-2 py-0.5 text-[10px] font-bold bg-red-500 text-white rounded-full">BANNED</span>
+                          <span className="px-2 py-0.5 text-[10px] font-bold bg-red-500 text-white rounded-full" data-testid="banned-badge">BANNED</span>
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground">{u.email}</p>
@@ -188,12 +194,13 @@ export function UsersTab({
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-2 p-4 border-t border-border">
+          <div className="flex items-center justify-center gap-2 p-4 border-t border-border" data-testid="users-pagination">
             <Button
               variant="outline"
               size="sm"
               disabled={page <= 1}
               onClick={() => onPageChange(page - 1)}
+              data-testid="pagination-prev"
             >
               Previous
             </Button>
@@ -205,6 +212,7 @@ export function UsersTab({
               size="sm"
               disabled={page >= totalPages}
               onClick={() => onPageChange(page + 1)}
+              data-testid="pagination-next"
             >
               Next
             </Button>
