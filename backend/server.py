@@ -2943,6 +2943,9 @@ async def admin_users_stats(
 # Include router
 app.include_router(api_router)
 
+# GZip compression for all responses (minimum 500 bytes)
+app.add_middleware(GZipMiddleware, minimum_size=500)
+
 # CORS middleware - configurable via environment variable
 CORS_ORIGINS = os.environ.get('CORS_ORIGINS', '*')
 cors_origins = CORS_ORIGINS.split(',') if CORS_ORIGINS != '*' else ["*"]
