@@ -435,6 +435,7 @@ export default function AdminDashboard() {
   const fetchUsers = async (page: number = 1, search?: string, filter?: string) => {
     if (!token) return;
     setUsersLoading(true);
+    setUsersPage(page);
     try {
       const params = new URLSearchParams();
       params.append("page", String(page));
@@ -451,8 +452,7 @@ export default function AdminDashboard() {
         setUsers(data.users || []);
         setUsersTotalPages(data.total_pages || 1);
       }
-    } catch (error) {
-      console.error("Error fetching users:", error);
+    } catch {
       toast.error("Failed to load users");
     }
     setUsersLoading(false);
