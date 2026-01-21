@@ -83,7 +83,7 @@ export default function AdminDashboard() {
     fetchGames();
     fetchSettings();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, authLoading]);
 
   const fetchGames = async () => {
     try {
