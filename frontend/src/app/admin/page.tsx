@@ -489,10 +489,10 @@ export default function AdminDashboard() {
         fetchUserStats();
         setShowUserModal(false);
       } else {
-        const error = await res.json();
-        toast.error(error.detail || "Failed to ban user");
+        const err = await res.json();
+        toast.error(err.detail || "Failed to ban user");
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to ban user");
     }
     setUserActionLoading(false);
@@ -513,10 +513,10 @@ export default function AdminDashboard() {
         fetchUserStats();
         setShowUserModal(false);
       } else {
-        const error = await res.json();
-        toast.error(error.detail || "Failed to unban user");
+        const err = await res.json();
+        toast.error(err.detail || "Failed to unban user");
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to unban user");
     }
     setUserActionLoading(false);
@@ -537,10 +537,10 @@ export default function AdminDashboard() {
         fetchUserStats();
         setShowUserModal(false);
       } else {
-        const error = await res.json();
-        toast.error(error.detail || "Failed to make admin");
+        const err = await res.json();
+        toast.error(err.detail || "Failed to make admin");
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to make admin");
     }
     setUserActionLoading(false);
@@ -561,10 +561,10 @@ export default function AdminDashboard() {
         fetchUserStats();
         setShowUserModal(false);
       } else {
-        const error = await res.json();
-        toast.error(error.detail || "Failed to remove admin");
+        const err = await res.json();
+        toast.error(err.detail || "Failed to remove admin");
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to remove admin");
     }
     setUserActionLoading(false);
@@ -587,10 +587,10 @@ export default function AdminDashboard() {
         fetchUserStats();
         setShowUserModal(false);
       } else {
-        const error = await res.json();
-        toast.error(error.detail || "Failed to delete user");
+        const err = await res.json();
+        toast.error(err.detail || "Failed to delete user");
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to delete user");
     }
     setUserActionLoading(false);
