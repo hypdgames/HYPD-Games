@@ -23,10 +23,29 @@ const nextConfig = {
         protocol: "https",
         hostname: "*.railway.app",
       },
+      {
+        protocol: "https",
+        hostname: "games.gamepix.com",
+      },
+      {
+        protocol: "https",
+        hostname: "www.gamepix.com",
+      },
     ],
+    // Optimize images with these formats
+    formats: ["image/avif", "image/webp"],
+    // Device sizes for responsive images
+    deviceSizes: [640, 750, 828, 1080, 1200],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
   // Output standalone for optimized production builds
   output: "standalone",
+  // Enable compression
+  compress: true,
+  // Power efficient build options
+  poweredByHeader: false,
+  // Generate ETags for caching
+  generateEtags: true,
 };
 
 export default nextConfig;
