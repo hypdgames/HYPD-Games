@@ -1727,7 +1727,6 @@ export default function AdminDashboard() {
                     </>
                   )}
                 </motion.div>
-              </div>
 
               {/* Device Statistics */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
@@ -1842,6 +1841,8 @@ export default function AdminDashboard() {
                     <p className="text-sm text-muted-foreground">No screen data yet</p>
                   )}
                 </motion.div>
+              </div>
+
               </div>
             )}
           </TabsContent>
