@@ -498,7 +498,8 @@ async def get_games(
     game_responses = [GameResponse(**g.to_dict()).model_dump() for g in games]
     
     response = JSONResponse(content=game_responses)
-    response.headers["Cache-Control"] = "public, max-age=60"
+    # Stale-while-revalidate: serve cached content while fetching fresh in background
+    response.headers["Cache-Control"] = "public, max-age=30, stale-while-revalidate=60"
     return response
 
 @api_router.get("/games/{game_id}", response_model=GameResponse)
@@ -507,7 +508,10 @@ async def get_game(game_id: str, db: AsyncSession = Depends(get_db)):
     game = result.scalar_one_or_none()
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
-    return GameResponse(**game.to_dict())
+    
+    response = JSONResponse(content=GameResponse(**game.to_dict()).model_dump())
+    response.headers["Cache-Control"] = "public, max-age=120, stale-while-revalidate=300"
+    return response
 
 @api_router.get("/games/{game_id}/meta")
 async def get_game_meta(game_id: str, db: AsyncSession = Depends(get_db)):
@@ -527,7 +531,7 @@ async def get_game_meta(game_id: str, db: AsyncSession = Depends(get_db)):
     }
     
     response = JSONResponse(content=meta)
-    response.headers["Cache-Control"] = "public, max-age=300"
+    response.headers["Cache-Control"] = "public, max-age=300, stale-while-revalidate=600"
     return response
 
 @api_router.get("/games/{game_id}/play")
