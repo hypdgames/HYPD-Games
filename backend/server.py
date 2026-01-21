@@ -2366,17 +2366,42 @@ async def track_analytics_with_region(
     game_id: Optional[str] = Form(None),
     region: Optional[str] = Form(None),
     country: Optional[str] = Form(None),
+    device_type: Optional[str] = Form(None),
+    browser: Optional[str] = Form(None),
+    os: Optional[str] = Form(None),
+    screen_width: Optional[int] = Form(None),
+    screen_height: Optional[int] = Form(None),
     user: Optional[User] = Depends(get_optional_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """Track an analytics event with optional region data"""
+    """Track an analytics event with region and device data"""
     event_data = {}
     
-    # Try to get region from form data or headers
+    # Region data
     if region:
         event_data['region'] = region
     if country:
         event_data['country'] = country
+    
+    # Device data
+    if device_type:
+        event_data['device_type'] = device_type
+    if browser:
+        event_data['browser'] = browser
+    if os:
+        event_data['os'] = os
+    if screen_width and screen_height:
+        event_data['screen_width'] = screen_width
+        event_data['screen_height'] = screen_height
+        # Categorize screen size
+        if screen_width < 768:
+            event_data['screen_category'] = 'Mobile'
+        elif screen_width < 1024:
+            event_data['screen_category'] = 'Tablet'
+        elif screen_width < 1440:
+            event_data['screen_category'] = 'Laptop'
+        else:
+            event_data['screen_category'] = 'Desktop'
     
     # Try to get country from Cloudflare/Vercel headers if available
     cf_country = request.headers.get('CF-IPCountry')
@@ -2388,6 +2413,43 @@ async def track_analytics_with_region(
     elif vercel_country and not event_data.get('country'):
         event_data['country'] = vercel_country
         event_data['region'] = vercel_country
+    
+    # Parse user agent if device info not provided
+    user_agent = request.headers.get('User-Agent', '')
+    if user_agent and not device_type:
+        ua_lower = user_agent.lower()
+        if 'mobile' in ua_lower or 'android' in ua_lower or 'iphone' in ua_lower:
+            event_data['device_type'] = 'Mobile'
+        elif 'tablet' in ua_lower or 'ipad' in ua_lower:
+            event_data['device_type'] = 'Tablet'
+        else:
+            event_data['device_type'] = 'Desktop'
+        
+        # Basic browser detection
+        if not browser:
+            if 'chrome' in ua_lower and 'edg' not in ua_lower:
+                event_data['browser'] = 'Chrome'
+            elif 'firefox' in ua_lower:
+                event_data['browser'] = 'Firefox'
+            elif 'safari' in ua_lower and 'chrome' not in ua_lower:
+                event_data['browser'] = 'Safari'
+            elif 'edg' in ua_lower:
+                event_data['browser'] = 'Edge'
+            elif 'opera' in ua_lower:
+                event_data['browser'] = 'Opera'
+        
+        # Basic OS detection
+        if not os:
+            if 'windows' in ua_lower:
+                event_data['os'] = 'Windows'
+            elif 'mac os' in ua_lower or 'macos' in ua_lower:
+                event_data['os'] = 'macOS'
+            elif 'android' in ua_lower:
+                event_data['os'] = 'Android'
+            elif 'iphone' in ua_lower or 'ipad' in ua_lower:
+                event_data['os'] = 'iOS'
+            elif 'linux' in ua_lower:
+                event_data['os'] = 'Linux'
     
     event = AnalyticsEvent(
         event_type=event_type,
