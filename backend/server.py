@@ -209,10 +209,62 @@ app = FastAPI(title="Hypd Games API")
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
+# ==================== RATE LIMITING ====================
+
+# Simple in-memory rate limiter (for production, use Redis)
+rate_limit_store: dict = defaultdict(list)
+RATE_LIMIT_WINDOW = 60  # seconds
+RATE_LIMIT_MAX_REQUESTS = 10  # max requests per window for auth endpoints
+
+def check_rate_limit(identifier: str, max_requests: int = RATE_LIMIT_MAX_REQUESTS) -> bool:
+    """Check if request should be rate limited. Returns True if allowed."""
+    now = time.time()
+    window_start = now - RATE_LIMIT_WINDOW
+    
+    # Clean old entries
+    rate_limit_store[identifier] = [t for t in rate_limit_store[identifier] if t > window_start]
+    
+    if len(rate_limit_store[identifier]) >= max_requests:
+        return False
+    
+    rate_limit_store[identifier].append(now)
+    return True
+
+def get_client_ip(request: Request) -> str:
+    """Get client IP from request, handling proxies"""
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
 # ==================== PYDANTIC MODELS ====================
 
 class UserCreate(BaseModel):
-    username: str
+    username: str = Field(..., min_length=3, max_length=50)
+    email: EmailStr
+    password: str = Field(..., min_length=8, max_length=128)
+    
+    @field_validator('password')
+    @classmethod
+    def validate_password_strength(cls, v):
+        """Enforce password strength requirements"""
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters')
+        if not re.search(r'[A-Z]', v):
+            raise ValueError('Password must contain at least one uppercase letter')
+        if not re.search(r'[a-z]', v):
+            raise ValueError('Password must contain at least one lowercase letter')
+        if not re.search(r'\d', v):
+            raise ValueError('Password must contain at least one number')
+        return v
+    
+    @field_validator('username')
+    @classmethod
+    def validate_username(cls, v):
+        """Validate username format"""
+        if not re.match(r'^[a-zA-Z0-9_]+$', v):
+            raise ValueError('Username can only contain letters, numbers, and underscores')
+        return v
     email: EmailStr
     password: str
 
