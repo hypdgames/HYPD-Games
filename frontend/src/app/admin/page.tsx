@@ -1781,7 +1781,7 @@ export default function AdminDashboard() {
                   </h3>
                   {deviceStats && deviceStats.browsers.length > 0 ? (
                     <div className="space-y-2">
-                      {deviceStats.browsers.slice(0, 5).map((browser, i) => (
+                      {deviceStats.browsers.slice(0, 5).map((browser) => (
                         <div key={browser.name} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                           <span className="text-sm text-foreground">{browser.name}</span>
                           <span className="text-sm font-medium text-muted-foreground">{browser.count}</span>
