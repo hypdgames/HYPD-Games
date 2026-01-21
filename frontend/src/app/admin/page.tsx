@@ -1726,6 +1726,121 @@ export default function AdminDashboard() {
                   )}
                 </motion.div>
               </div>
+
+              {/* Device Statistics */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                {/* Device Types */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-card border border-border rounded-xl p-6"
+                >
+                  <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <Monitor className="w-5 h-5 text-lime" />
+                    Device Types
+                  </h3>
+                  {deviceStats ? (
+                    <>
+                      <div className="space-y-3">
+                        {deviceStats.device_types.map((device, i) => (
+                          <div key={device.name} className="flex items-center gap-3">
+                            <div className="w-16 text-sm text-muted-foreground">{device.name}</div>
+                            <div className="flex-1 h-6 bg-muted rounded-full overflow-hidden">
+                              <div
+                                className={`h-full ${i === 0 ? 'bg-lime' : i === 1 ? 'bg-blue-500' : 'bg-purple-500'}`}
+                                style={{ width: `${device.percentage}%` }}
+                              />
+                            </div>
+                            <div className="w-14 text-right text-sm font-medium text-foreground">
+                              {device.percentage}%
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-xs text-muted-foreground text-center mt-4">
+                        {deviceStats.total_events} total events tracked
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No device data yet</p>
+                  )}
+                </motion.div>
+
+                {/* Browsers */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="bg-card border border-border rounded-xl p-6"
+                >
+                  <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <Globe className="w-5 h-5 text-lime" />
+                    Browsers
+                  </h3>
+                  {deviceStats && deviceStats.browsers.length > 0 ? (
+                    <div className="space-y-2">
+                      {deviceStats.browsers.slice(0, 5).map((browser, i) => (
+                        <div key={browser.name} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                          <span className="text-sm text-foreground">{browser.name}</span>
+                          <span className="text-sm font-medium text-muted-foreground">{browser.count}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No browser data yet</p>
+                  )}
+                </motion.div>
+
+                {/* Operating Systems */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="bg-card border border-border rounded-xl p-6"
+                >
+                  <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <Settings className="w-5 h-5 text-lime" />
+                    Operating Systems
+                  </h3>
+                  {deviceStats && deviceStats.operating_systems.length > 0 ? (
+                    <div className="space-y-2">
+                      {deviceStats.operating_systems.slice(0, 5).map((os, i) => (
+                        <div key={os.name} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                          <span className="text-sm text-foreground">{os.name}</span>
+                          <span className="text-sm font-medium text-muted-foreground">{os.count}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No OS data yet</p>
+                  )}
+                </motion.div>
+
+                {/* Screen Sizes */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="bg-card border border-border rounded-xl p-6"
+                >
+                  <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <Smartphone className="w-5 h-5 text-lime" />
+                    Screen Sizes
+                  </h3>
+                  {deviceStats && deviceStats.screen_sizes.length > 0 ? (
+                    <div className="space-y-2">
+                      {deviceStats.screen_sizes.slice(0, 5).map((screen, i) => (
+                        <div key={screen.name} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                          <span className="text-sm text-foreground">{screen.name}</span>
+                          <span className="text-sm font-medium text-muted-foreground">{screen.count}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No screen data yet</p>
+                  )}
+                </motion.div>
+              </div>
             )}
           </TabsContent>
 
