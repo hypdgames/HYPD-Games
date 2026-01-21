@@ -2290,6 +2290,75 @@ async def get_region_analytics(
     }
 
 
+@api_router.get("/admin/analytics/devices")
+async def get_device_stats(
+    days: int = 30,
+    user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get device statistics from analytics events"""
+    since_date = datetime.now(timezone.utc) - timedelta(days=days)
+    
+    # Query events with device data
+    result = await db.execute(
+        select(AnalyticsEvent)
+        .where(AnalyticsEvent.timestamp >= since_date)
+    )
+    events = result.scalars().all()
+    
+    # Aggregate device stats
+    device_types = {}
+    browsers = {}
+    os_stats = {}
+    screen_sizes = {}
+    
+    for event in events:
+        data = event.event_data or {}
+        
+        # Device type
+        device = data.get('device_type', 'Unknown')
+        device_types[device] = device_types.get(device, 0) + 1
+        
+        # Browser
+        browser = data.get('browser', 'Unknown')
+        if browser != 'Unknown':
+            browsers[browser] = browsers.get(browser, 0) + 1
+        
+        # OS
+        os_name = data.get('os', 'Unknown')
+        if os_name != 'Unknown':
+            os_stats[os_name] = os_stats.get(os_name, 0) + 1
+        
+        # Screen size category
+        screen = data.get('screen_category', 'Unknown')
+        if screen != 'Unknown':
+            screen_sizes[screen] = screen_sizes.get(screen, 0) + 1
+    
+    # Sort by count and format
+    def sort_and_format(data_dict, limit=10):
+        sorted_items = sorted(data_dict.items(), key=lambda x: x[1], reverse=True)
+        return [{"name": k, "count": v} for k, v in sorted_items[:limit]]
+    
+    # Calculate percentages for device types
+    total_events = sum(device_types.values()) or 1
+    device_breakdown = []
+    for name, count in sorted(device_types.items(), key=lambda x: x[1], reverse=True):
+        device_breakdown.append({
+            "name": name,
+            "count": count,
+            "percentage": round(count / total_events * 100, 1)
+        })
+    
+    return {
+        "device_types": device_breakdown,
+        "browsers": sort_and_format(browsers),
+        "operating_systems": sort_and_format(os_stats),
+        "screen_sizes": sort_and_format(screen_sizes),
+        "total_events": total_events,
+        "period_days": days
+    }
+
+
 @api_router.post("/analytics/track")
 async def track_analytics_with_region(
     request: Request,
