@@ -170,6 +170,18 @@
 
 ## Changelog
 
+### January 21, 2026 - Security Audit & Fixes
+- **SECURITY AUDIT:** Comprehensive review of all 10 OWASP security categories
+- **IMPLEMENTED:**
+  1. **Rate Limiting** - Auth endpoints limited to 10 requests/minute per IP
+  2. **Password Strength Validation** - Min 8 chars, uppercase, lowercase, number required
+  3. **Security Logging** - All auth events logged with IP addresses
+  4. **Error Message Sanitization** - Internal errors no longer expose stack traces
+  5. **Banned User Login Block** - Banned users receive 403 on login attempt
+  6. **Admin Action Logging** - Ban/unban actions logged with admin ID
+- **DOCUMENTATION:** Created `/app/memory/SECURITY_AUDIT.md` with full findings
+- **REMAINING:** CORS configuration should be restricted in production
+
 ### January 21, 2026 - Admin Dashboard Refactoring & Testing
 - **REFACTORED:** Admin Dashboard (`/app/frontend/src/app/admin/page.tsx`)
   - Reduced from 2,405 lines to 581 lines (76% reduction in main file)
