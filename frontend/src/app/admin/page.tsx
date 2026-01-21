@@ -173,6 +173,7 @@ export default function AdminDashboard() {
   const [topGames, setTopGames] = useState<TopGame[]>([]);
   const [retention, setRetention] = useState<RetentionData | null>(null);
   const [regionData, setRegionData] = useState<RegionData[]>([]);
+  const [deviceStats, setDeviceStats] = useState<DeviceStats | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
 
   // User Management state
