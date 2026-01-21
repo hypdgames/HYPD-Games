@@ -434,7 +434,7 @@ export default function AdminDashboard() {
     }
   };
 
-  if (!user?.is_admin) {
+  if (authLoading || !user?.is_admin) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="w-10 h-10 text-lime animate-spin" />
