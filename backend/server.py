@@ -2772,6 +2772,8 @@ async def admin_ban_user(
     )
     await db.commit()
     
+    security_logger.info(f"ADMIN ACTION: User {user.id} ({user.username}) banned by admin {admin.id}. Reason: {reason}")
+    
     return {"success": True, "message": f"User {user.username} has been banned"}
 
 
@@ -2795,6 +2797,8 @@ async def admin_unban_user(
         )
     )
     await db.commit()
+    
+    security_logger.info(f"ADMIN ACTION: User {user.id} ({user.username}) unbanned by admin {admin.id}")
     
     return {"success": True, "message": f"User {user.username} has been unbanned"}
 
