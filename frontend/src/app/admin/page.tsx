@@ -111,6 +111,15 @@ interface RegionData {
   events: number;
 }
 
+interface DeviceStats {
+  device_types: { name: string; count: number; percentage: number }[];
+  browsers: { name: string; count: number }[];
+  operating_systems: { name: string; count: number }[];
+  screen_sizes: { name: string; count: number }[];
+  total_events: number;
+  period_days: number;
+}
+
 interface AdminUser {
   id: string;
   username: string;
