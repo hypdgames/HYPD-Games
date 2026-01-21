@@ -222,8 +222,8 @@ export function UsersTab({
 
       {/* User Detail Modal */}
       {showUserModal && selectedUser && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowUserModal(false)}>
-          <div className="bg-card border border-border rounded-xl max-w-md w-full max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowUserModal(false)} data-testid="user-modal-backdrop">
+          <div className="bg-card border border-border rounded-xl max-w-md w-full max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()} data-testid="user-modal">
             <div className="p-6">
               <div className="flex items-center gap-4 mb-6">
                 <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
@@ -234,8 +234,8 @@ export function UsersTab({
                   )}
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-foreground">{selectedUser.username}</h3>
-                  <p className="text-sm text-muted-foreground">{selectedUser.email}</p>
+                  <h3 className="text-xl font-bold text-foreground" data-testid="modal-username">{selectedUser.username}</h3>
+                  <p className="text-sm text-muted-foreground" data-testid="modal-email">{selectedUser.email}</p>
                   <div className="flex gap-2 mt-1">
                     {selectedUser.is_admin && (
                       <span className="px-2 py-0.5 text-[10px] font-bold bg-lime text-black rounded-full">ADMIN</span>
@@ -248,7 +248,7 @@ export function UsersTab({
               </div>
 
               {/* User Info */}
-              <div className="space-y-3 mb-6">
+              <div className="space-y-3 mb-6" data-testid="user-info-section">
                 <div className="flex justify-between py-2 border-b border-border">
                   <span className="text-sm text-muted-foreground">Games Played</span>
                   <span className="text-sm font-medium text-foreground">{selectedUser.total_games_played}</span>
@@ -276,7 +276,7 @@ export function UsersTab({
               </div>
 
               {/* Actions */}
-              <div className="space-y-2">
+              <div className="space-y-2" data-testid="user-actions">
                 {selectedUser.id !== currentUserId && (
                   <>
                     {!selectedUser.is_banned ? (
@@ -285,6 +285,7 @@ export function UsersTab({
                         className="w-full border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
                         onClick={() => handleAction(() => onBanUser(selectedUser.id, "Banned by admin"))}
                         disabled={actionLoading}
+                        data-testid="ban-user-button"
                       >
                         {actionLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                         Ban User
@@ -295,6 +296,7 @@ export function UsersTab({
                         className="w-full border-green-500 text-green-500 hover:bg-green-500 hover:text-white"
                         onClick={() => handleAction(() => onUnbanUser(selectedUser.id))}
                         disabled={actionLoading}
+                        data-testid="unban-user-button"
                       >
                         {actionLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                         Unban User
@@ -307,6 +309,7 @@ export function UsersTab({
                         className="w-full"
                         onClick={() => handleAction(() => onMakeAdmin(selectedUser.id))}
                         disabled={actionLoading || selectedUser.is_banned}
+                        data-testid="make-admin-button"
                       >
                         Make Admin
                       </Button>
@@ -316,6 +319,7 @@ export function UsersTab({
                         className="w-full"
                         onClick={() => handleAction(() => onRemoveAdmin(selectedUser.id))}
                         disabled={actionLoading}
+                        data-testid="remove-admin-button"
                       >
                         Remove Admin
                       </Button>
@@ -326,6 +330,7 @@ export function UsersTab({
                       className="w-full"
                       onClick={() => handleAction(() => onDeleteUser(selectedUser.id))}
                       disabled={actionLoading || selectedUser.is_admin}
+                      data-testid="delete-user-button"
                     >
                       Delete User
                     </Button>
@@ -336,6 +341,7 @@ export function UsersTab({
                   variant="ghost"
                   className="w-full"
                   onClick={() => setShowUserModal(false)}
+                  data-testid="close-modal-button"
                 >
                   Close
                 </Button>
