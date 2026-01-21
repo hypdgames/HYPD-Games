@@ -1806,7 +1806,7 @@ export default function AdminDashboard() {
                   </h3>
                   {deviceStats && deviceStats.operating_systems.length > 0 ? (
                     <div className="space-y-2">
-                      {deviceStats.operating_systems.slice(0, 5).map((os, i) => (
+                      {deviceStats.operating_systems.slice(0, 5).map((os) => (
                         <div key={os.name} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                           <span className="text-sm text-foreground">{os.name}</span>
                           <span className="text-sm font-medium text-muted-foreground">{os.count}</span>
