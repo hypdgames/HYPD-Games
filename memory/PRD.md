@@ -189,6 +189,14 @@
   - Full CRUD operations, ban/unban, make/remove admin
   - Search, filters, pagination all working
 - **ADDED:** Comprehensive test file `/app/tests/test_user_management.py`
+- **ADDED:** data-testid attributes to UsersTab component for better test automation
+- **FIXED:** Light mode background pattern visibility
+  - Increased opacity from 8% to 15%
+  - Changed color from #557700 to #336600 for better contrast
+- **FIXED:** Session persistence on page refresh
+  - Auth store now persists both `token` AND `user` object to localStorage
+  - Admin page now waits for `authLoading` state before checking permissions
+  - Page refresh on /admin no longer redirects to /profile
 
 ### January 19, 2026 - Client-Side Navigation Bug Fix & ESLint Config
 - **FIXED:** Critical client-side crash when switching tabs (P0)
