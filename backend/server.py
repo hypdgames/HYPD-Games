@@ -386,10 +386,18 @@ async def health_check(db: AsyncSession = Depends(get_db)):
 # ==================== AUTH ENDPOINTS ====================
 
 @api_router.post("/auth/register")
-async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
+async def register(user_data: UserCreate, request: Request, db: AsyncSession = Depends(get_db)):
+    client_ip = get_client_ip(request)
+    
+    # Rate limiting
+    if not check_rate_limit(f"register:{client_ip}", max_requests=5):
+        security_logger.warning(f"Rate limit exceeded for registration from IP: {client_ip}")
+        raise HTTPException(status_code=429, detail="Too many registration attempts. Please try again later.")
+    
     # Check if email exists
     result = await db.execute(select(User).where(User.email == user_data.email))
     if result.scalar_one_or_none():
+        security_logger.info(f"Registration attempt with existing email from IP: {client_ip}")
         raise HTTPException(status_code=400, detail="Email already registered")
     
     # Check if username exists
@@ -412,16 +420,33 @@ async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
     await db.commit()
     await db.refresh(new_user)
     
+    security_logger.info(f"New user registered: {new_user.id} ({new_user.username}) from IP: {client_ip}")
+    
     token = create_token(new_user.id)
     return {"access_token": token, "user": UserResponse(**new_user.to_dict(include_private=True))}
 
 @api_router.post("/auth/login")
-async def login(credentials: UserLogin, db: AsyncSession = Depends(get_db)):
+async def login(credentials: UserLogin, request: Request, db: AsyncSession = Depends(get_db)):
+    client_ip = get_client_ip(request)
+    
+    # Rate limiting
+    if not check_rate_limit(f"login:{client_ip}", max_requests=10):
+        security_logger.warning(f"Rate limit exceeded for login from IP: {client_ip}")
+        raise HTTPException(status_code=429, detail="Too many login attempts. Please try again later.")
+    
     result = await db.execute(select(User).where(User.email == credentials.email))
     user = result.scalar_one_or_none()
     
     if not user or not verify_password(credentials.password, user.hashed_password):
+        security_logger.warning(f"Failed login attempt for email: {credentials.email} from IP: {client_ip}")
         raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    # Check if user is banned
+    if user.is_banned:
+        security_logger.warning(f"Banned user login attempt: {user.id} from IP: {client_ip}")
+        raise HTTPException(status_code=403, detail="Account is banned")
+    
+    security_logger.info(f"Successful login for user: {user.id} from IP: {client_ip}")
     
     token = create_token(user.id)
     return {"access_token": token, "user": UserResponse(**user.to_dict(include_private=True))}
