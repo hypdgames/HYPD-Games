@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import {
   Users,
@@ -15,20 +16,6 @@ import {
   Smartphone,
   Loader2,
 } from "lucide-react";
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts";
 import type {
   AnalyticsOverview,
   DailyStats,
@@ -40,6 +27,20 @@ import type {
   Game,
 } from "./types";
 import { CHART_COLORS } from "./types";
+
+// Lazy load recharts components to reduce initial bundle size
+const AreaChart = dynamic(() => import("recharts").then(mod => mod.AreaChart), { ssr: false });
+const Area = dynamic(() => import("recharts").then(mod => mod.Area), { ssr: false });
+const XAxis = dynamic(() => import("recharts").then(mod => mod.XAxis), { ssr: false });
+const YAxis = dynamic(() => import("recharts").then(mod => mod.YAxis), { ssr: false });
+const CartesianGrid = dynamic(() => import("recharts").then(mod => mod.CartesianGrid), { ssr: false });
+const Tooltip = dynamic(() => import("recharts").then(mod => mod.Tooltip), { ssr: false });
+const ResponsiveContainer = dynamic(() => import("recharts").then(mod => mod.ResponsiveContainer), { ssr: false });
+const BarChart = dynamic(() => import("recharts").then(mod => mod.BarChart), { ssr: false });
+const Bar = dynamic(() => import("recharts").then(mod => mod.Bar), { ssr: false });
+const PieChart = dynamic(() => import("recharts").then(mod => mod.PieChart), { ssr: false });
+const Pie = dynamic(() => import("recharts").then(mod => mod.Pie), { ssr: false });
+const Cell = dynamic(() => import("recharts").then(mod => mod.Cell), { ssr: false });
 
 interface AnalyticsTabProps {
   loading: boolean;
