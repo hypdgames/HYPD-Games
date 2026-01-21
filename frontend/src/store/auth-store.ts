@@ -115,7 +115,7 @@ export const useAuthStore = create<AuthStore>()(
     }),
     {
       name: "hypd-auth",
-      partialize: (state) => ({ token: state.token }),
+      partialize: (state) => ({ token: state.token, user: state.user }),
     }
   )
 );
