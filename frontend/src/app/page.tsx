@@ -411,11 +411,15 @@ export default function GameFeed() {
                   <div className="relative rounded-3xl overflow-hidden border border-border bg-card shadow-2xl">
                     {/* Game Thumbnail */}
                     <div className="aspect-[4/3] relative">
-                      <img
+                      <Image
                         src={game.thumbnail_url || "https://images.unsplash.com/photo-1637734373619-af1e76434bec?w=800&q=80"}
                         alt={game.title}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 640px) 100vw, 384px"
+                        loading={virtualItem.index < 3 ? "eager" : "lazy"}
+                        placeholder="blur"
+                        blurDataURL={BLUR_PLACEHOLDER}
                       />
                       {/* Play overlay on hover */}
                       <div className="absolute inset-0 bg-black/0 hover:bg-black/30 transition-colors flex items-center justify-center group cursor-pointer"
