@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { Search, Gamepad2, ChevronRight, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useAuthStore } from "@/store";
@@ -9,6 +10,9 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import type { Game } from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+
+// Blur placeholder for images
+const BLUR_PLACEHOLDER = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMCwsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wAARCAAIAAoDASIAAhEBAxEB/8QAFgABAQEAAAAAAAAAAAAAAAAAAAkH/8QAIhAAAQMDBAMAAAAAAAAAAAAAAQIDBAAFEQYSITEHQVH/xAAVAQEBAAAAAAAAAAAAAAAAAAADBP/EABkRAAIDAQAAAAAAAAAAAAAAAAECAAMRIf/aAAwDAQACEQMRAD8AoNtFwbuUGJcGWnGW5TKHW0O43hKgCAcZHBrRdM+O7Jp2wQLQxKuC2IbKGEKdlOrUQlIGSVKJJ9kk0pU1WTkyTIc2f//Z";
 
 export default function ExplorePage() {
   const router = useRouter();
