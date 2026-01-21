@@ -31,6 +31,10 @@ const nextConfig = {
         protocol: "https",
         hostname: "www.gamepix.com",
       },
+      {
+        protocol: "https",
+        hostname: "img.gamepix.com",
+      },
     ],
     // Optimize images with these formats
     formats: ["image/avif", "image/webp"],
