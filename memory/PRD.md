@@ -127,9 +127,10 @@
 1. **Real GameDistribution Integration** - Waiting for publisher approval (Publisher ID/API Key)
 
 ### P1 - High Priority
-2. **Featured Games Section** - Highlight top-quality GamePix games on home feed (based on quality_score)
-3. **Video Previews** - Cloudinary integration for game preview videos
-4. **Ad System** - Feed interstitial ads with GamePix SDK (pending approval)
+2. **Fix Light Mode Background Pattern** - Background pattern on main feed is not visible in light mode
+3. **Featured Games Section** - Highlight top-quality GamePix games on home feed (based on quality_score)
+4. **Video Previews** - Cloudinary integration for game preview videos
+5. **Ad System** - Feed interstitial ads with GamePix SDK (pending approval)
 
 ### P2 - Medium Priority
 5. **Friend-to-Friend Challenges** - Challenge friends to beat their scores
