@@ -98,6 +98,21 @@
   - Join challenge functionality
   - Points/rewards display
 
+### Daily Login Streak ✅ (January 25, 2026)
+- [x] **Streak Backend Logic**
+  - Streak calculation on login (consecutive days increment, missed day resets to 1)
+  - Bonus points based on streak length with multiplier system
+  - Best streak tracking
+- [x] **Streak API Endpoints**
+  - `/api/user/streak` - Authenticated user's streak data
+  - `/api/user/streak/leaderboard` - Public top streakers
+- [x] **Streak Frontend UI**
+  - Streak tab on Profile page with hero card
+  - Progress bar to next milestone
+  - Stats grid (Best, Points, Days, Multiplier)
+  - Milestones badges (7, 14, 30, 60, 90, 180, 365 days)
+  - Top Streakers leaderboard
+
 ### SEO & Performance ✅
 - [x] Dynamic sitemap.xml
 - [x] robots.txt
