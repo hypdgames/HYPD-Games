@@ -1434,19 +1434,26 @@ class GPXGameImport(BaseModel):
 async def browse_gamepix_games(
     category: Optional[str] = None,
     page: int = 1,
-    limit: int = 12
+    limit: int = 12,
+    order: str = "quality"  # 'quality' or 'pubdate' (newest first)
 ):
-    """Browse games from GamePix RSS feed"""
+    """Browse games from GamePix RSS feed with sorting"""
     try:
         # GamePix only allows specific pagination values: 12, 24, 48, 96
         allowed_limits = [12, 24, 48, 96]
         gpx_limit = min([l for l in allowed_limits if l >= limit], default=96)
         
+        # Validate order parameter
+        valid_orders = ["quality", "pubdate"]
+        if order not in valid_orders:
+            order = "quality"
+        
         async with httpx.AsyncClient(timeout=30.0) as client:
             params = {
                 "sid": GAMEPIX_SID,
                 "pagination": gpx_limit,
-                "page": page
+                "page": page,
+                "order": order  # Add sorting parameter
             }
             
             if category and category.lower() != "all":
