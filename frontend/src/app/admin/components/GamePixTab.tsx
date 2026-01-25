@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Globe, Loader2, Plus, Check, ArrowUpDown } from "lucide-react";
+import { Globe, Loader2, Plus, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { GPXGame, Game } from "./types";
 
