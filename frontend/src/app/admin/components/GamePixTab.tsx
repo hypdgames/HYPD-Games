@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Globe, Loader2, Plus, Check } from "lucide-react";
+import { Globe, Loader2, Plus, Check, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { GPXGame, Game } from "./types";
 
@@ -12,10 +12,12 @@ interface GamePixTabProps {
   gpxCategories: { id: string; name: string; icon: string }[];
   gpxHasMore: boolean;
   gpxPage: number;
+  gpxOrder: string;
   selectedGpxGames: Set<string>;
   games: Game[];
   importing: boolean;
   onCategoryChange: (category: string) => void;
+  onOrderChange: (order: string) => void;
   onRefresh: () => void;
   onLoadMore: () => void;
   onToggleSelection: (namespace: string) => void;
@@ -28,10 +30,12 @@ export function GamePixTab({
   gpxCategory,
   gpxCategories,
   gpxHasMore,
+  gpxOrder,
   selectedGpxGames,
   games,
   importing,
   onCategoryChange,
+  onOrderChange,
   onRefresh,
   onLoadMore,
   onToggleSelection,
@@ -43,7 +47,9 @@ export function GamePixTab({
 
   return (
     <div className="space-y-4">
+      {/* Filters Row */}
       <div className="flex flex-col sm:flex-row gap-3">
+        {/* Category Select */}
         <select
           value={gpxCategory}
           onChange={(e) => onCategoryChange(e.target.value)}
