@@ -81,7 +81,13 @@ class User(Base):
             "avatar_url": self.avatar_url,
             "bio": self.bio,
             "created_at": self.created_at.isoformat() if self.created_at else None,
-            "last_active_at": self.last_active_at.isoformat() if self.last_active_at else None
+            "last_active_at": self.last_active_at.isoformat() if self.last_active_at else None,
+            # Login streak info (always include for gamification)
+            "login_streak": self.login_streak or 0,
+            "best_login_streak": self.best_login_streak or 0,
+            "total_login_days": self.total_login_days or 0,
+            "streak_points": self.streak_points or 0,
+            "last_login_date": self.last_login_date.isoformat() if self.last_login_date else None
         }
         if include_private:
             data["email"] = self.email
