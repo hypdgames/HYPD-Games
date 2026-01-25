@@ -203,7 +203,7 @@ export function AnalyticsTab({
                     borderRadius: '8px',
                     color: '#fff'
                   }}
-                  labelFormatter={formatDate}
+                  labelFormatter={formatDateLabel}
                 />
                 <Area 
                   type="monotone" 
