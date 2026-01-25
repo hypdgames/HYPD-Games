@@ -4,8 +4,8 @@ Migrated from MongoDB to PostgreSQL/Supabase
 """
 
 import uuid
-from datetime import datetime, timezone
-from sqlalchemy import Column, String, Text, Boolean, Integer, DateTime, ForeignKey, JSON, Float, Enum as SQLEnum
+from datetime import datetime, timezone, date
+from sqlalchemy import Column, String, Text, Boolean, Integer, DateTime, Date, ForeignKey, JSON, Float, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 from database import Base
 import enum
