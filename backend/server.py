@@ -287,6 +287,7 @@ class GameCreate(BaseModel):
     description: str = ""
     category: str = "Action"
     thumbnail_url: Optional[str] = None
+    icon_url: Optional[str] = None
     preview_type: str = "image"
 
 class GameResponse(BaseModel):
@@ -295,6 +296,7 @@ class GameResponse(BaseModel):
     description: str
     category: str
     thumbnail_url: Optional[str] = None
+    icon_url: Optional[str] = None
     video_preview_url: Optional[str] = None
     gif_preview_url: Optional[str] = None
     preview_type: str = "image"
