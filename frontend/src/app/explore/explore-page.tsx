@@ -268,10 +268,11 @@ function GameCard({
       className="group cursor-pointer w-[88px] md:w-[132px]"
       data-testid={`game-card-${index}`}
     >
-      {/* Square Image */}
+      {/* Square Image - prefer icon_url for grid layouts */}
       <div className="aspect-square relative overflow-hidden rounded-xl bg-card border border-border group-hover:border-lime/50 transition-all group-hover:scale-[1.02]">
         <Image
           src={
+            game.icon_url ||  // Prefer square icon for grid
             game.thumbnail_url ||
             "https://images.unsplash.com/photo-1637734373619-af1e76434bec?w=400&q=80"
           }
