@@ -520,10 +520,14 @@ export default function AdminDashboard() {
               importing={importing}
               onCategoryChange={(cat) => {
                 setGpxCategory(cat);
-                fetchGpxGames(cat, 1, false);
+                fetchGpxGames(cat, 1, false, gpxOrder);
               }}
-              onRefresh={() => fetchGpxGames(gpxCategory, 1, false)}
-              onLoadMore={() => fetchGpxGames(gpxCategory, gpxPage + 1, true)}
+              onOrderChange={(order) => {
+                setGpxOrder(order);
+                fetchGpxGames(gpxCategory, 1, false, order);
+              }}
+              onRefresh={() => fetchGpxGames(gpxCategory, 1, false, gpxOrder)}
+              onLoadMore={() => fetchGpxGames(gpxCategory, gpxPage + 1, true, gpxOrder)}
               onToggleSelection={toggleGpxGameSelection}
               onImportSelected={importSelectedGpxGames}
             />
