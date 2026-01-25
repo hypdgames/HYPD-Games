@@ -1587,13 +1587,14 @@ async def bulk_import_gamepix_games(
                 skipped.append(game_data.title)
                 continue
             
-            # Create new game
+            # Create new game with both banner and icon images
             new_game = Game(
                 id=str(uuid.uuid4()),
                 title=game_data.title,
                 description=game_data.description or "",
                 category=game_data.category.title() if game_data.category else "Action",
-                thumbnail_url=game_data.thumbnail_url or game_data.icon_url,
+                thumbnail_url=game_data.thumbnail_url,  # Banner image
+                icon_url=game_data.icon_url,  # Square icon
                 embed_url=game_data.play_url,
                 gd_game_id=f"gpx-{game_data.namespace}",
                 source="gamepix",
