@@ -157,6 +157,31 @@ export default function ProfilePage() {
     setFriendsLoading(false);
   };
 
+  const fetchStreakData = async () => {
+    if (!token) return;
+    setStreakLoading(true);
+    try {
+      const [streakRes, leaderboardRes] = await Promise.all([
+        fetch(`${API_URL}/api/user/streak`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`${API_URL}/api/user/streak/leaderboard`),
+      ]);
+
+      if (streakRes.ok) {
+        const data = await streakRes.json();
+        setStreakData(data);
+      }
+      if (leaderboardRes.ok) {
+        const data = await leaderboardRes.json();
+        setStreakLeaderboard(data.leaderboard || []);
+      }
+    } catch (e) {
+      console.error("Error fetching streak data:", e);
+    }
+    setStreakLoading(false);
+  };
+
   const searchUsers = async (query: string) => {
     if (query.length < 2) {
       setSearchResults([]);
