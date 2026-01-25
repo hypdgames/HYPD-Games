@@ -280,6 +280,7 @@ export default function ProfilePage() {
     if (user && token) {
       fetchSavedGames();
       fetchFriends();
+      fetchStreakData();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, token]);
