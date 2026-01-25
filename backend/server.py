@@ -1536,13 +1536,14 @@ async def import_gamepix_game(
         if existing:
             raise HTTPException(status_code=400, detail="Game already imported")
         
-        # Create new game
+        # Create new game with both banner (thumbnail) and icon images
         new_game = Game(
             id=str(uuid.uuid4()),
             title=game_data.title,
             description=game_data.description or "",
             category=game_data.category.title() if game_data.category else "Action",
-            thumbnail_url=game_data.thumbnail_url or game_data.icon_url,
+            thumbnail_url=game_data.thumbnail_url,  # Banner image (landscape)
+            icon_url=game_data.icon_url,  # Square icon image
             embed_url=game_data.play_url,  # GamePix provides direct play URL
             gd_game_id=f"gpx-{game_data.namespace}",  # Prefix with gpx- to distinguish
             source="gamepix",
