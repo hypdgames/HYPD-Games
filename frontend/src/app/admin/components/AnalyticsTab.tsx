@@ -70,6 +70,14 @@ export function AnalyticsTab({
     return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   };
 
+  // Wrapper for recharts labelFormatter that handles ReactNode type
+  const formatDateLabel = (label: unknown) => {
+    if (typeof label === "string") {
+      return formatDate(label);
+    }
+    return String(label);
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center py-12">
