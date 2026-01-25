@@ -287,13 +287,14 @@ export default function AdminDashboard() {
   };
 
   // Fetch GamePix games
-  const fetchGpxGames = async (category?: string, page: number = 1, append: boolean = false) => {
+  const fetchGpxGames = async (category?: string, page: number = 1, append: boolean = false, order: string = gpxOrder) => {
     setGpxLoading(true);
     try {
       const params = new URLSearchParams();
       if (category && category !== "all") params.append("category", category);
       params.append("page", String(page));
       params.append("limit", "12");
+      params.append("order", order);
       
       const res = await fetch(`${API_URL}/api/gamepix/browse?${params}`);
       if (res.ok) {
