@@ -276,7 +276,8 @@ class Game(Base):
     title = Column(String(255), nullable=False, index=True)
     description = Column(Text, nullable=True)
     category = Column(String(100), nullable=False, index=True)
-    thumbnail_url = Column(Text, nullable=True)  # Base64 or URL
+    thumbnail_url = Column(Text, nullable=True)  # Banner/cover image (landscape)
+    icon_url = Column(Text, nullable=True)  # Square icon image (for grids)
     video_preview_url = Column(Text, nullable=True)
     gif_preview_url = Column(Text, nullable=True)
     preview_type = Column(String(20), default='image')  # 'video', 'gif', 'image'
@@ -303,6 +304,7 @@ class Game(Base):
             "description": self.description,
             "category": self.category,
             "thumbnail_url": self.thumbnail_url,
+            "icon_url": self.icon_url,
             "video_preview_url": self.video_preview_url,
             "gif_preview_url": self.gif_preview_url,
             "preview_type": self.preview_type,
