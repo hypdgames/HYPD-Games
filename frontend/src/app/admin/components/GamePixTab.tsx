@@ -62,6 +62,18 @@ export function GamePixTab({
             </option>
           ))}
         </select>
+        
+        {/* Sort Select */}
+        <select
+          value={gpxOrder}
+          onChange={(e) => onOrderChange(e.target.value)}
+          className="h-10 px-4 rounded-lg bg-card border border-border text-foreground"
+          data-testid="gpx-order-select"
+        >
+          <option value="quality">⭐ Best Quality</option>
+          <option value="pubdate">🕐 Newest First</option>
+        </select>
+        
         <Button
           variant="outline"
           onClick={onRefresh}
