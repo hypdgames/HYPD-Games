@@ -176,6 +176,10 @@
 - `GET /api/challenges` - Get active challenges
 - `POST /api/challenges/{id}/join` - Join a challenge
 
+### Login Streak
+- `GET /api/user/streak` - Get user's streak info (auth required)
+- `GET /api/user/streak/leaderboard` - Get top streakers (public)
+
 ### Admin Analytics
 - `GET /api/admin/analytics/overview` - Stats overview with categories and top games
 - `GET /api/admin/analytics/daily?days=14` - Daily activity stats
