@@ -63,6 +63,26 @@ interface SearchUser {
   friendship_status: "none" | "friends" | "pending_sent" | "pending_received";
 }
 
+interface StreakData {
+  current_streak: number;
+  best_streak: number;
+  total_login_days: number;
+  streak_points: number;
+  last_login_date: string | null;
+  streak_active: boolean;
+  next_milestone: number | null;
+  days_to_milestone: number | null;
+  current_multiplier: number;
+}
+
+interface LeaderboardEntry {
+  rank: number;
+  username: string;
+  login_streak: number;
+  best_streak: number;
+  streak_points: number;
+}
+
 export default function ProfilePage() {
   const router = useRouter();
   const { user, token, login, register, logout, settings } = useAuthStore();
@@ -78,6 +98,11 @@ export default function ProfilePage() {
   const [searchResults, setSearchResults] = useState<SearchUser[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [friendsLoading, setFriendsLoading] = useState(false);
+
+  // Streak state
+  const [streakData, setStreakData] = useState<StreakData | null>(null);
+  const [streakLeaderboard, setStreakLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [streakLoading, setStreakLoading] = useState(false);
 
   // Form states
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
