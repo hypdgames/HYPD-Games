@@ -4,7 +4,8 @@ export interface Game {
   title: string;
   description: string;
   category: string;
-  thumbnail_url?: string;
+  thumbnail_url?: string;  // Banner/cover image (landscape)
+  icon_url?: string;       // Square icon image (for grids)
   video_preview_url?: string;
   gif_preview_url?: string;
   preview_type: 'video' | 'gif' | 'image';
@@ -16,7 +17,7 @@ export interface Game {
   created_at: string;
   // GameDistribution fields
   gd_game_id?: string;
-  source?: 'custom' | 'gamedistribution';
+  source?: 'custom' | 'gamedistribution' | 'gamepix';
   embed_url?: string;
   instructions?: string;
 }
