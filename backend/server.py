@@ -532,6 +532,78 @@ async def login(credentials: UserLogin, request: Request, db: AsyncSession = Dep
 async def get_me(user: User = Depends(get_current_user)):
     return UserResponse(**user.to_dict(include_private=True))
 
+# ==================== USER STREAK ENDPOINTS ====================
+
+@api_router.get("/user/streak")
+async def get_user_streak(user: User = Depends(get_current_user)):
+    """Get current user's login streak information"""
+    today = datetime.now(timezone.utc).date()
+    last_login = user.last_login_date
+    
+    # Calculate if streak is still active (hasn't been broken)
+    streak_active = False
+    if last_login:
+        days_since_login = (today - last_login).days
+        streak_active = days_since_login <= 1  # Active if logged in today or yesterday
+    
+    # Calculate days until next milestone
+    current_streak = user.login_streak or 0
+    milestones = [7, 14, 30, 60, 90, 180, 365]
+    next_milestone = None
+    days_to_milestone = None
+    
+    for m in milestones:
+        if current_streak < m:
+            next_milestone = m
+            days_to_milestone = m - current_streak
+            break
+    
+    # Calculate bonus multiplier
+    if current_streak <= 7:
+        multiplier = current_streak
+    elif current_streak <= 30:
+        multiplier = 7 + ((current_streak - 7) * 1.5)
+    else:
+        multiplier = 7 + 34.5 + ((current_streak - 30) * 2)
+    
+    return {
+        "current_streak": current_streak,
+        "best_streak": user.best_login_streak or 0,
+        "total_login_days": user.total_login_days or 0,
+        "streak_points": user.streak_points or 0,
+        "last_login_date": user.last_login_date.isoformat() if user.last_login_date else None,
+        "streak_active": streak_active,
+        "next_milestone": next_milestone,
+        "days_to_milestone": days_to_milestone,
+        "current_multiplier": round(multiplier, 1)
+    }
+
+@api_router.get("/user/streak/leaderboard")
+async def get_streak_leaderboard(
+    limit: int = 10,
+    db: AsyncSession = Depends(get_db)
+):
+    """Get top users by login streak"""
+    result = await db.execute(
+        select(User)
+        .where(User.is_banned == False)
+        .order_by(desc(User.login_streak))
+        .limit(limit)
+    )
+    users = result.scalars().all()
+    
+    leaderboard = []
+    for i, u in enumerate(users, 1):
+        leaderboard.append({
+            "rank": i,
+            "username": u.username,
+            "login_streak": u.login_streak or 0,
+            "best_streak": u.best_login_streak or 0,
+            "streak_points": u.streak_points or 0
+        })
+    
+    return {"leaderboard": leaderboard}
+
 @api_router.post("/auth/save-game/{game_id}")
 async def save_game(game_id: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     saved = user.saved_games or []
