@@ -45,7 +45,7 @@
 **Configuration:**
 ```python
 # backend/.env
-CORS_ORIGINS="https://gamescroll-2.preview.emergentagent.com,http://localhost:3000"
+CORS_ORIGINS="https://playswipe-1.preview.emergentagent.com,http://localhost:3000"
 ```
 
 **Verified:**
