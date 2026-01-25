@@ -515,6 +515,7 @@ export default function AdminDashboard() {
               gpxCategories={gpxCategories}
               gpxHasMore={gpxHasMore}
               gpxPage={gpxPage}
+              gpxOrder={gpxOrder}
               selectedGpxGames={selectedGpxGames}
               games={games}
               importing={importing}
