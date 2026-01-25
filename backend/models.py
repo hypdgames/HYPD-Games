@@ -56,6 +56,13 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), default=utc_now)
     last_active_at = Column(DateTime(timezone=True), default=utc_now)
     
+    # Login streak tracking
+    login_streak = Column(Integer, default=0)  # Current consecutive days
+    best_login_streak = Column(Integer, default=0)  # Highest streak achieved
+    last_login_date = Column(Date, nullable=True)  # Last date user logged in (date only, not time)
+    total_login_days = Column(Integer, default=0)  # Total unique days logged in
+    streak_points = Column(Integer, default=0)  # Points earned from streaks
+    
     # Relationships
     play_sessions = relationship('PlaySession', back_populates='user', cascade='all, delete-orphan')
     sent_friend_requests = relationship('Friendship', foreign_keys='Friendship.requester_id', back_populates='requester', cascade='all, delete-orphan')
