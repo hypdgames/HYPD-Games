@@ -39,6 +39,7 @@ export default function AdminDashboard() {
   const [gpxGames, setGpxGames] = useState<GPXGame[]>([]);
   const [gpxLoading, setGpxLoading] = useState(false);
   const [gpxCategory, setGpxCategory] = useState<string>("");
+  const [gpxOrder, setGpxOrder] = useState<string>("quality");
   const [gpxPage, setGpxPage] = useState(1);
   const [gpxHasMore, setGpxHasMore] = useState(false);
   const [selectedGpxGames, setSelectedGpxGames] = useState<Set<string>>(new Set());
