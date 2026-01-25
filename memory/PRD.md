@@ -170,6 +170,28 @@
 
 ## Changelog
 
+### January 25, 2026 - Daily Login Streak Feature
+- **IMPLEMENTED:** Complete Daily Login Streak system for user engagement
+  - **Backend Logic:**
+    - Login endpoint now calculates and updates user streak on successful login
+    - First login starts streak at 1 day + 10 points
+    - Consecutive daily logins increment streak with bonus points (multiplier-based)
+    - Missing a day resets streak to 1 (total login days preserved)
+    - Points scale: Day 1-7: 10×day, Day 8-30: 100+15×(day-7), Day 31+: 500+20×(day-30)
+  - **New API Endpoints:**
+    - `GET /api/user/streak` - Returns detailed streak info (current, best, points, milestones, multiplier)
+    - `GET /api/user/streak/leaderboard` - Public leaderboard of top streakers
+  - **Frontend UI:**
+    - New Streak tab added to Profile page (first tab in 4-tab layout)
+    - Hero card with animated flame icon, current streak count, active/inactive status
+    - Progress bar showing days until next milestone (7, 14, 30, 60, 90, 180, 365)
+    - Stats grid: Best Streak, Streak Points, Total Days, Multiplier
+    - Milestones section with achievement badges
+    - Top Streakers leaderboard with current user highlighted
+    - "How Streaks Work" info section
+  - **Database Fields:** `login_streak`, `best_login_streak`, `last_login_date`, `total_login_days`, `streak_points` on User model
+- **TEST RESULTS:** 100% pass rate (8/8 backend tests, all frontend UI verified)
+
 ### January 21, 2026 - Security Audit & Fixes
 - **SECURITY AUDIT:** Comprehensive review of all 10 OWASP security categories
 - **IMPLEMENTED:**
