@@ -137,7 +137,7 @@ export default function WalletPage() {
     setLoading(false);
   }, []);
 
-  const fetchTransactions = async () => {
+  const fetchTransactions = useCallback(async () => {
     if (!token) return;
     try {
       const res = await fetch(`${API_URL}/api/wallet/transactions?limit=20`, {
@@ -150,14 +150,14 @@ export default function WalletPage() {
     } catch (e) {
       console.error("Error fetching transactions:", e);
     }
-  };
+  }, [token]);
 
   useEffect(() => {
     fetchData();
     if (token) {
       fetchTransactions();
     }
-  }, [fetchData, token]);
+  }, [fetchData, token, fetchTransactions]);
 
   const handlePurchase = async (packageId: string) => {
     if (!token) {
