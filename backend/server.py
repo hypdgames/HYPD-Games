@@ -1660,7 +1660,10 @@ async def get_coin_packages():
             "price_usd": pkg["price"],
             "is_popular": pkg_id == "popular"
         })
-    return {"packages": sorted(packages, key=lambda x: x["price_usd"])}
+    return {
+        "packages": sorted(packages, key=lambda x: x["price_usd"]),
+        "purchases_enabled": STRIPE_ENABLED
+    }
 
 @api_router.get("/wallet/ad-free-options")
 async def get_ad_free_options():
