@@ -102,6 +102,24 @@ export const useAuthStore = create<AuthStore>()(
         }
       },
 
+      refreshUser: async () => {
+        const { token } = get();
+        if (!token) return;
+
+        try {
+          const res = await fetch(`${API_URL}/api/auth/me`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          
+          if (res.ok) {
+            const userData = await res.json();
+            set({ user: userData });
+          }
+        } catch (e) {
+          console.error("Refresh user error:", e);
+        }
+      },
+
       fetchSettings: async () => {
         try {
           const res = await fetch(`${API_URL}/api/settings`);
