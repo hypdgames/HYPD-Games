@@ -28,11 +28,13 @@
 - **Auth:** JWT (PyJWT)
 - **File Storage:** Supabase Storage
 - **Caching:** Redis (Railway)
+- **Payments:** Stripe (via emergentintegrations)
 
 ### Integrations
 - ✅ **Supabase:** Database + Storage
 - ✅ **Redis:** Caching (hosted on Railway)
 - ✅ **GamePix:** Real game integration via RSS feed (sid=1M9DD) - LIVE
+- ✅ **Stripe:** Payment processing (TEST MODE)
 - ✅ **Google AdSense:** Site ownership verified
 - ⏳ **GamePix Ads SDK:** Pending GamePix approval
 - ⏳ **Cloudinary:** For video previews (planned)
@@ -45,7 +47,7 @@
 - [x] TikTok-style vertical game feed with snap scrolling
 - [x] TanStack Virtual for performance
 - [x] Full-screen game player with draggable back button
-- [x] 5-tab navigation: Feed, Explore, Challenges, Leaders, Profile
+- [x] 5-tab navigation: Feed, Explore, Wallet, Leaders, Profile
 - [x] JWT authentication (login/register)
 - [x] Admin Dashboard with game management
 
