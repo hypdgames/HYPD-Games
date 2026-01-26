@@ -1846,8 +1846,8 @@ async def check_payment_status(
 @api_router.post("/webhook/stripe")
 async def stripe_webhook(request: Request, db: AsyncSession = Depends(get_db)):
     """Handle Stripe webhook events"""
-    if not STRIPE_API_KEY:
-        raise HTTPException(status_code=500, detail="Payment system not configured")
+    if not STRIPE_ENABLED:
+        return {"status": "disabled"}
     
     payload = await request.body()
     sig_header = request.headers.get("Stripe-Signature")
