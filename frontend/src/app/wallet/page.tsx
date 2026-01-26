@@ -114,7 +114,7 @@ export default function WalletPage() {
       console.error("Error checking payment:", e);
       setTimeout(() => pollPaymentStatus(sessionId, attempts + 1), 2000);
     }
-  }, [token, router, refreshUser]);
+  }, [token, router, refreshUser, fetchTransactions]);
 
   // Check for payment return
   useEffect(() => {
