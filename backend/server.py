@@ -1599,12 +1599,17 @@ async def bulk_import_gd_games(
 # ==================== WALLET / COINS SYSTEM ====================
 
 # Stripe is optional - purchases disabled if not configured
+STRIPE_ENABLED = False
 try:
     import stripe
-    stripe.api_key = STRIPE_API_KEY
-    STRIPE_ENABLED = bool(STRIPE_API_KEY)
+    # Only enable if we have a real API key (not the placeholder)
+    if STRIPE_API_KEY and not STRIPE_API_KEY.startswith("sk_test_emergent"):
+        stripe.api_key = STRIPE_API_KEY
+        STRIPE_ENABLED = True
+        logger.info("Stripe payments enabled")
+    else:
+        logger.info("Stripe API key not configured - purchases disabled")
 except ImportError:
-    STRIPE_ENABLED = False
     logger.info("Stripe SDK not installed - purchases disabled")
 
 # Coin package definitions (backend-controlled for security)
