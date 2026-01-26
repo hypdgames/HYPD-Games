@@ -1683,8 +1683,8 @@ async def create_purchase_checkout(
     db: AsyncSession = Depends(get_db)
 ):
     """Create Stripe checkout session for coin purchase"""
-    if not STRIPE_API_KEY:
-        raise HTTPException(status_code=500, detail="Payment system not configured")
+    if not STRIPE_ENABLED:
+        raise HTTPException(status_code=503, detail="Coin purchases are coming soon! Stay tuned.")
     
     # Validate package
     if purchase.package_id not in COIN_PACKAGES:
