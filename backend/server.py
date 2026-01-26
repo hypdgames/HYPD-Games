@@ -1746,8 +1746,14 @@ async def create_purchase_checkout(
             "session_id": session.id
         }
         
+    except stripe.error.AuthenticationError as e:
+        logger.error(f"Stripe authentication error: {e}")
+        raise HTTPException(status_code=500, detail="Payment system configuration error. Please contact support.")
+    except stripe.error.StripeError as e:
+        logger.error(f"Stripe error: {e}")
+        raise HTTPException(status_code=500, detail="Payment processing error. Please try again.")
     except Exception as e:
-        logger.error(f"Stripe checkout error: {e}")
+        logger.error(f"Checkout error: {e}")
         raise HTTPException(status_code=500, detail="Failed to create checkout session")
 
 @api_router.get("/wallet/checkout/status/{session_id}")
