@@ -6,12 +6,38 @@ Tests for coin packages, purchases, spending, and transaction history
 import pytest
 import requests
 import os
+import time
 
 BASE_URL = os.environ.get('NEXT_PUBLIC_API_URL', 'https://playswipe-1.preview.emergentagent.com')
 
 # Test credentials
 ADMIN_EMAIL = "admin@hypd.games"
 ADMIN_PASSWORD = "admin123"
+
+# Global session to avoid rate limiting
+_session = None
+_token = None
+_user = None
+
+def get_auth_session():
+    """Get or create authenticated session"""
+    global _session, _token, _user
+    
+    if _session is None:
+        _session = requests.Session()
+        response = _session.post(f"{BASE_URL}/api/auth/login", json={
+            "email": ADMIN_EMAIL,
+            "password": ADMIN_PASSWORD
+        })
+        if response.status_code == 200:
+            data = response.json()
+            _token = data["access_token"]
+            _user = data["user"]
+            _session.headers.update({"Authorization": f"Bearer {_token}"})
+        else:
+            raise Exception(f"Login failed: {response.status_code} - {response.text}")
+    
+    return _session, _token, _user
 
 
 class TestWalletPublicEndpoints:
@@ -98,23 +124,10 @@ class TestWalletPublicEndpoints:
 class TestWalletAuthenticatedEndpoints:
     """Test authenticated wallet endpoints"""
     
-    @pytest.fixture(autouse=True)
-    def setup(self):
-        """Login and get auth token"""
-        response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": ADMIN_EMAIL,
-            "password": ADMIN_PASSWORD
-        })
-        assert response.status_code == 200, f"Login failed: {response.text}"
-        
-        data = response.json()
-        self.token = data["access_token"]
-        self.user = data["user"]
-        self.headers = {"Authorization": f"Bearer {self.token}"}
-    
     def test_get_wallet_info(self):
         """GET /api/wallet - returns user's wallet information"""
-        response = requests.get(f"{BASE_URL}/api/wallet", headers=self.headers)
+        session, token, user = get_auth_session()
+        response = session.get(f"{BASE_URL}/api/wallet")
         assert response.status_code == 200
         
         data = response.json()
@@ -144,7 +157,8 @@ class TestWalletAuthenticatedEndpoints:
     
     def test_get_transactions(self):
         """GET /api/wallet/transactions - returns transaction history"""
-        response = requests.get(f"{BASE_URL}/api/wallet/transactions", headers=self.headers)
+        session, token, user = get_auth_session()
+        response = session.get(f"{BASE_URL}/api/wallet/transactions")
         assert response.status_code == 200
         
         data = response.json()
@@ -168,7 +182,8 @@ class TestWalletAuthenticatedEndpoints:
     
     def test_get_transactions_with_limit(self):
         """GET /api/wallet/transactions - respects limit parameter"""
-        response = requests.get(f"{BASE_URL}/api/wallet/transactions?limit=5", headers=self.headers)
+        session, token, user = get_auth_session()
+        response = session.get(f"{BASE_URL}/api/wallet/transactions?limit=5")
         assert response.status_code == 200
         
         data = response.json()
@@ -178,7 +193,8 @@ class TestWalletAuthenticatedEndpoints:
     
     def test_get_unlocked_games(self):
         """GET /api/wallet/unlocked-games - returns unlocked premium games"""
-        response = requests.get(f"{BASE_URL}/api/wallet/unlocked-games", headers=self.headers)
+        session, token, user = get_auth_session()
+        response = session.get(f"{BASE_URL}/api/wallet/unlocked-games")
         assert response.status_code == 200
         
         data = response.json()
@@ -191,24 +207,11 @@ class TestWalletAuthenticatedEndpoints:
 class TestWalletPurchaseFlow:
     """Test coin purchase flow (Stripe integration)"""
     
-    @pytest.fixture(autouse=True)
-    def setup(self):
-        """Login and get auth token"""
-        response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": ADMIN_EMAIL,
-            "password": ADMIN_PASSWORD
-        })
-        assert response.status_code == 200
-        
-        data = response.json()
-        self.token = data["access_token"]
-        self.headers = {"Authorization": f"Bearer {self.token}"}
-    
     def test_create_purchase_checkout(self):
         """POST /api/wallet/purchase - creates Stripe checkout session"""
-        response = requests.post(
+        session, token, user = get_auth_session()
+        response = session.post(
             f"{BASE_URL}/api/wallet/purchase",
-            headers=self.headers,
             json={
                 "package_id": "starter",
                 "origin_url": "https://playswipe-1.preview.emergentagent.com"
@@ -216,7 +219,7 @@ class TestWalletPurchaseFlow:
         )
         
         # Should return 200 with checkout URL (Stripe test mode)
-        assert response.status_code == 200
+        assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
         
         data = response.json()
         assert "checkout_url" in data
@@ -229,9 +232,9 @@ class TestWalletPurchaseFlow:
     
     def test_purchase_invalid_package(self):
         """POST /api/wallet/purchase - rejects invalid package"""
-        response = requests.post(
+        session, token, user = get_auth_session()
+        response = session.post(
             f"{BASE_URL}/api/wallet/purchase",
-            headers=self.headers,
             json={
                 "package_id": "invalid_package",
                 "origin_url": "https://playswipe-1.preview.emergentagent.com"
@@ -261,26 +264,13 @@ class TestWalletPurchaseFlow:
 class TestWalletSpendFlow:
     """Test coin spending flow"""
     
-    @pytest.fixture(autouse=True)
-    def setup(self):
-        """Login and get auth token"""
-        response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": ADMIN_EMAIL,
-            "password": ADMIN_PASSWORD
-        })
-        assert response.status_code == 200
-        
-        data = response.json()
-        self.token = data["access_token"]
-        self.user = data["user"]
-        self.headers = {"Authorization": f"Bearer {self.token}"}
-    
     def test_spend_ad_free_insufficient_coins(self):
         """POST /api/wallet/spend - fails with insufficient coins"""
+        session, token, user = get_auth_session()
+        
         # User likely has 0 coins, so this should fail
-        response = requests.post(
+        response = session.post(
             f"{BASE_URL}/api/wallet/spend",
-            headers=self.headers,
             json={
                 "spend_type": "ad_free",
                 "option_id": "1hour"
@@ -288,7 +278,7 @@ class TestWalletSpendFlow:
         )
         
         # Should fail with 400 if insufficient coins
-        if self.user.get("coin_balance", 0) < 25:
+        if user.get("coin_balance", 0) < 25:
             assert response.status_code == 400
             data = response.json()
             assert "Insufficient coins" in data.get("detail", "")
@@ -300,9 +290,9 @@ class TestWalletSpendFlow:
     
     def test_spend_invalid_option(self):
         """POST /api/wallet/spend - rejects invalid ad-free option"""
-        response = requests.post(
+        session, token, user = get_auth_session()
+        response = session.post(
             f"{BASE_URL}/api/wallet/spend",
-            headers=self.headers,
             json={
                 "spend_type": "ad_free",
                 "option_id": "invalid_option"
@@ -317,9 +307,9 @@ class TestWalletSpendFlow:
     
     def test_spend_invalid_type(self):
         """POST /api/wallet/spend - rejects invalid spend type"""
-        response = requests.post(
+        session, token, user = get_auth_session()
+        response = session.post(
             f"{BASE_URL}/api/wallet/spend",
-            headers=self.headers,
             json={
                 "spend_type": "invalid_type"
             }
@@ -350,14 +340,7 @@ class TestWalletDataInUserResponse:
     
     def test_login_returns_wallet_fields(self):
         """Login response includes wallet fields"""
-        response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": ADMIN_EMAIL,
-            "password": ADMIN_PASSWORD
-        })
-        assert response.status_code == 200
-        
-        data = response.json()
-        user = data["user"]
+        session, token, user = get_auth_session()
         
         # Verify wallet fields in user response
         assert "coin_balance" in user
@@ -368,29 +351,21 @@ class TestWalletDataInUserResponse:
     
     def test_auth_me_returns_wallet_fields(self):
         """GET /api/auth/me returns wallet fields"""
-        # Login first
-        login_response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": ADMIN_EMAIL,
-            "password": ADMIN_PASSWORD
-        })
-        token = login_response.json()["access_token"]
+        session, token, user = get_auth_session()
         
         # Get user info
-        response = requests.get(
-            f"{BASE_URL}/api/auth/me",
-            headers={"Authorization": f"Bearer {token}"}
-        )
+        response = session.get(f"{BASE_URL}/api/auth/me")
         assert response.status_code == 200
         
-        user = response.json()
+        user_data = response.json()
         
         # Verify wallet fields
-        assert "coin_balance" in user
-        assert "is_ad_free" in user
-        assert "ad_free_until" in user
-        assert "total_coins_purchased" in user
-        assert "total_coins_spent" in user
-        assert "total_coins_earned" in user
+        assert "coin_balance" in user_data
+        assert "is_ad_free" in user_data
+        assert "ad_free_until" in user_data
+        assert "total_coins_purchased" in user_data
+        assert "total_coins_spent" in user_data
+        assert "total_coins_earned" in user_data
         
         print(f"✓ /api/auth/me returns all wallet fields")
 
