@@ -1767,8 +1767,8 @@ async def check_payment_status(
     db: AsyncSession = Depends(get_db)
 ):
     """Check payment status and credit coins if successful"""
-    if not STRIPE_API_KEY:
-        raise HTTPException(status_code=500, detail="Payment system not configured")
+    if not STRIPE_ENABLED:
+        raise HTTPException(status_code=503, detail="Payment system not available")
     
     # Find the transaction
     result = await db.execute(
