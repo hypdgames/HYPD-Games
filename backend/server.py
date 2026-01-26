@@ -1563,6 +1563,469 @@ async def bulk_import_gd_games(
         "skipped_games": skipped
     }
 
+# ==================== WALLET / COINS SYSTEM ====================
+
+from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionResponse, CheckoutStatusResponse, CheckoutSessionRequest
+
+# Coin package definitions (backend-controlled for security)
+COIN_PACKAGES = {
+    "starter": {"name": "Starter Pack", "coins": 100, "price": 0.99, "bonus": 0},
+    "popular": {"name": "Popular Pack", "coins": 550, "price": 4.99, "bonus": 50},
+    "value": {"name": "Value Pack", "coins": 1200, "price": 9.99, "bonus": 200},
+    "mega": {"name": "Mega Pack", "coins": 2700, "price": 19.99, "bonus": 700},
+    "ultimate": {"name": "Ultimate Pack", "coins": 7000, "price": 49.99, "bonus": 2000},
+}
+
+# Ad-free duration options (coins -> hours)
+AD_FREE_OPTIONS = {
+    "1hour": {"coins": 25, "hours": 1, "label": "1 Hour"},
+    "4hours": {"coins": 75, "hours": 4, "label": "4 Hours"},
+    "1day": {"coins": 150, "hours": 24, "label": "1 Day"},
+    "1week": {"coins": 800, "hours": 168, "label": "1 Week"},
+    "1month": {"coins": 2500, "hours": 720, "label": "1 Month"},
+}
+
+class WalletPurchaseRequest(BaseModel):
+    package_id: str
+    origin_url: str  # Frontend origin for success/cancel URLs
+
+class WalletSpendRequest(BaseModel):
+    spend_type: str  # 'ad_free' or 'premium_game'
+    option_id: Optional[str] = None  # For ad_free: duration option
+    game_id: Optional[str] = None  # For premium_game unlock
+
+@api_router.get("/wallet")
+async def get_wallet(user: User = Depends(get_current_user)):
+    """Get user's wallet information"""
+    return {
+        "coin_balance": user.coin_balance or 0,
+        "total_coins_purchased": user.total_coins_purchased or 0,
+        "total_coins_spent": user.total_coins_spent or 0,
+        "total_coins_earned": user.total_coins_earned or 0,
+        "is_ad_free": user.is_ad_free or False,
+        "ad_free_until": user.ad_free_until.isoformat() if user.ad_free_until else None
+    }
+
+@api_router.get("/wallet/packages")
+async def get_coin_packages():
+    """Get available coin packages for purchase"""
+    packages = []
+    for pkg_id, pkg in COIN_PACKAGES.items():
+        packages.append({
+            "package_id": pkg_id,
+            "name": pkg["name"],
+            "coins": pkg["coins"],
+            "bonus_coins": pkg["bonus"],
+            "total_coins": pkg["coins"] + pkg["bonus"],
+            "price_usd": pkg["price"],
+            "is_popular": pkg_id == "popular"
+        })
+    return {"packages": sorted(packages, key=lambda x: x["price_usd"])}
+
+@api_router.get("/wallet/ad-free-options")
+async def get_ad_free_options():
+    """Get ad-free purchase options"""
+    options = []
+    for opt_id, opt in AD_FREE_OPTIONS.items():
+        options.append({
+            "option_id": opt_id,
+            "label": opt["label"],
+            "coins": opt["coins"],
+            "hours": opt["hours"]
+        })
+    return {"options": options}
+
+@api_router.post("/wallet/purchase")
+async def create_purchase_checkout(
+    request: Request,
+    purchase: WalletPurchaseRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Create Stripe checkout session for coin purchase"""
+    if not STRIPE_API_KEY:
+        raise HTTPException(status_code=500, detail="Payment system not configured")
+    
+    # Validate package
+    if purchase.package_id not in COIN_PACKAGES:
+        raise HTTPException(status_code=400, detail="Invalid package selected")
+    
+    package = COIN_PACKAGES[purchase.package_id]
+    
+    # Build URLs from frontend origin (not hardcoded)
+    success_url = f"{purchase.origin_url}/profile?payment=success&session_id={{CHECKOUT_SESSION_ID}}"
+    cancel_url = f"{purchase.origin_url}/profile?payment=cancelled"
+    
+    # Initialize Stripe
+    host_url = str(request.base_url).rstrip('/')
+    webhook_url = f"{host_url}/api/webhook/stripe"
+    stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
+    
+    try:
+        # Create checkout session
+        checkout_request = CheckoutSessionRequest(
+            amount=float(package["price"]),
+            currency="usd",
+            success_url=success_url,
+            cancel_url=cancel_url,
+            metadata={
+                "user_id": user.id,
+                "package_id": purchase.package_id,
+                "coins": str(package["coins"]),
+                "bonus_coins": str(package["bonus"]),
+                "type": "coin_purchase"
+            }
+        )
+        
+        session: CheckoutSessionResponse = await stripe_checkout.create_checkout_session(checkout_request)
+        
+        # Create pending transaction record
+        transaction = WalletTransaction(
+            id=str(uuid.uuid4()),
+            user_id=user.id,
+            transaction_type=TransactionType.PURCHASE,
+            status=TransactionStatus.PENDING,
+            coins=package["coins"] + package["bonus"],
+            amount_usd=package["price"],
+            stripe_session_id=session.session_id,
+            package_id=purchase.package_id,
+            description=f"Purchase: {package['name']}",
+            metadata={
+                "package_name": package["name"],
+                "base_coins": package["coins"],
+                "bonus_coins": package["bonus"]
+            }
+        )
+        db.add(transaction)
+        await db.commit()
+        
+        logger.info(f"Created checkout session for user {user.id}, package: {purchase.package_id}")
+        
+        return {
+            "checkout_url": session.url,
+            "session_id": session.session_id
+        }
+        
+    except Exception as e:
+        logger.error(f"Stripe checkout error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create checkout session")
+
+@api_router.get("/wallet/checkout/status/{session_id}")
+async def check_payment_status(
+    session_id: str,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Check payment status and credit coins if successful"""
+    if not STRIPE_API_KEY:
+        raise HTTPException(status_code=500, detail="Payment system not configured")
+    
+    # Find the transaction
+    result = await db.execute(
+        select(WalletTransaction).where(WalletTransaction.stripe_session_id == session_id)
+    )
+    transaction = result.scalar_one_or_none()
+    
+    if not transaction:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    
+    # Verify it belongs to this user
+    if transaction.user_id != user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    # If already completed, return status
+    if transaction.status == TransactionStatus.COMPLETED:
+        return {
+            "status": "completed",
+            "payment_status": "paid",
+            "coins_credited": transaction.coins,
+            "new_balance": user.coin_balance
+        }
+    
+    # Check with Stripe
+    stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url="")
+    
+    try:
+        status: CheckoutStatusResponse = await stripe_checkout.get_checkout_status(session_id)
+        
+        if status.payment_status == "paid" and transaction.status == TransactionStatus.PENDING:
+            # Credit coins to user (only once)
+            await db.execute(
+                update(User)
+                .where(User.id == user.id)
+                .values(
+                    coin_balance=User.coin_balance + transaction.coins,
+                    total_coins_purchased=User.total_coins_purchased + transaction.coins
+                )
+            )
+            
+            # Update transaction
+            transaction.status = TransactionStatus.COMPLETED
+            transaction.completed_at = datetime.now(timezone.utc)
+            
+            await db.commit()
+            await db.refresh(user)
+            
+            logger.info(f"Credited {transaction.coins} coins to user {user.id}")
+            
+            return {
+                "status": "completed",
+                "payment_status": "paid",
+                "coins_credited": transaction.coins,
+                "new_balance": user.coin_balance
+            }
+        
+        elif status.status == "expired":
+            transaction.status = TransactionStatus.FAILED
+            await db.commit()
+            
+            return {
+                "status": "expired",
+                "payment_status": "failed",
+                "coins_credited": 0
+            }
+        
+        return {
+            "status": status.status,
+            "payment_status": status.payment_status,
+            "coins_credited": 0
+        }
+        
+    except Exception as e:
+        logger.error(f"Error checking payment status: {e}")
+        raise HTTPException(status_code=500, detail="Failed to check payment status")
+
+@api_router.post("/webhook/stripe")
+async def stripe_webhook(request: Request, db: AsyncSession = Depends(get_db)):
+    """Handle Stripe webhook events"""
+    if not STRIPE_API_KEY:
+        raise HTTPException(status_code=500, detail="Payment system not configured")
+    
+    body = await request.body()
+    sig_header = request.headers.get("Stripe-Signature")
+    
+    stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url="")
+    
+    try:
+        webhook_response = await stripe_checkout.handle_webhook(body, sig_header)
+        
+        if webhook_response.payment_status == "paid":
+            # Find and update transaction
+            result = await db.execute(
+                select(WalletTransaction).where(
+                    WalletTransaction.stripe_session_id == webhook_response.session_id
+                )
+            )
+            transaction = result.scalar_one_or_none()
+            
+            if transaction and transaction.status == TransactionStatus.PENDING:
+                # Credit coins
+                await db.execute(
+                    update(User)
+                    .where(User.id == transaction.user_id)
+                    .values(
+                        coin_balance=User.coin_balance + transaction.coins,
+                        total_coins_purchased=User.total_coins_purchased + transaction.coins
+                    )
+                )
+                
+                transaction.status = TransactionStatus.COMPLETED
+                transaction.completed_at = datetime.now(timezone.utc)
+                transaction.stripe_payment_id = webhook_response.event_id
+                
+                await db.commit()
+                logger.info(f"Webhook: Credited {transaction.coins} coins to user {transaction.user_id}")
+        
+        return {"status": "ok"}
+        
+    except Exception as e:
+        logger.error(f"Webhook error: {e}")
+        return {"status": "error", "message": str(e)}
+
+@api_router.post("/wallet/spend")
+async def spend_coins(
+    spend_request: WalletSpendRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Spend coins on features (ad-free, premium games)"""
+    
+    if spend_request.spend_type == "ad_free":
+        # Remove ads temporarily
+        if not spend_request.option_id or spend_request.option_id not in AD_FREE_OPTIONS:
+            raise HTTPException(status_code=400, detail="Invalid ad-free option")
+        
+        option = AD_FREE_OPTIONS[spend_request.option_id]
+        coins_needed = option["coins"]
+        
+        if (user.coin_balance or 0) < coins_needed:
+            raise HTTPException(status_code=400, detail=f"Insufficient coins. Need {coins_needed}, have {user.coin_balance or 0}")
+        
+        # Calculate new ad-free expiration
+        now = datetime.now(timezone.utc)
+        current_expiry = user.ad_free_until if user.ad_free_until and user.ad_free_until > now else now
+        new_expiry = current_expiry + timedelta(hours=option["hours"])
+        
+        # Create transaction
+        transaction = WalletTransaction(
+            id=str(uuid.uuid4()),
+            user_id=user.id,
+            transaction_type=TransactionType.SPEND,
+            status=TransactionStatus.COMPLETED,
+            coins=-coins_needed,
+            spend_type="ad_free",
+            spend_reference=spend_request.option_id,
+            description=f"Ad-free: {option['label']}",
+            completed_at=now
+        )
+        db.add(transaction)
+        
+        # Update user
+        await db.execute(
+            update(User)
+            .where(User.id == user.id)
+            .values(
+                coin_balance=User.coin_balance - coins_needed,
+                total_coins_spent=User.total_coins_spent + coins_needed,
+                is_ad_free=True,
+                ad_free_until=new_expiry
+            )
+        )
+        
+        await db.commit()
+        
+        logger.info(f"User {user.id} purchased ad-free: {option['label']} for {coins_needed} coins")
+        
+        return {
+            "success": True,
+            "coins_spent": coins_needed,
+            "new_balance": (user.coin_balance or 0) - coins_needed,
+            "ad_free_until": new_expiry.isoformat(),
+            "message": f"Enjoy ad-free gaming for {option['label']}!"
+        }
+    
+    elif spend_request.spend_type == "premium_game":
+        # Unlock premium game
+        if not spend_request.game_id:
+            raise HTTPException(status_code=400, detail="Game ID required")
+        
+        # Check if game is premium
+        result = await db.execute(
+            select(PremiumGame).where(
+                PremiumGame.game_id == spend_request.game_id,
+                PremiumGame.is_active == True
+            )
+        )
+        premium_game = result.scalar_one_or_none()
+        
+        if not premium_game:
+            raise HTTPException(status_code=404, detail="Game is not a premium game or not found")
+        
+        # Check if already unlocked
+        result = await db.execute(
+            select(UserUnlockedGame).where(
+                UserUnlockedGame.user_id == user.id,
+                UserUnlockedGame.game_id == spend_request.game_id
+            )
+        )
+        if result.scalar_one_or_none():
+            raise HTTPException(status_code=400, detail="Game already unlocked")
+        
+        coins_needed = premium_game.coin_price
+        
+        if (user.coin_balance or 0) < coins_needed:
+            raise HTTPException(status_code=400, detail=f"Insufficient coins. Need {coins_needed}, have {user.coin_balance or 0}")
+        
+        # Get game info for description
+        game_result = await db.execute(select(Game).where(Game.id == spend_request.game_id))
+        game = game_result.scalar_one_or_none()
+        game_title = game.title if game else "Unknown Game"
+        
+        # Create transaction
+        transaction = WalletTransaction(
+            id=str(uuid.uuid4()),
+            user_id=user.id,
+            transaction_type=TransactionType.SPEND,
+            status=TransactionStatus.COMPLETED,
+            coins=-coins_needed,
+            spend_type="premium_game",
+            spend_reference=spend_request.game_id,
+            description=f"Unlocked: {game_title}",
+            completed_at=datetime.now(timezone.utc)
+        )
+        db.add(transaction)
+        
+        # Create unlock record
+        unlock = UserUnlockedGame(
+            id=str(uuid.uuid4()),
+            user_id=user.id,
+            game_id=spend_request.game_id
+        )
+        db.add(unlock)
+        
+        # Update user balance
+        await db.execute(
+            update(User)
+            .where(User.id == user.id)
+            .values(
+                coin_balance=User.coin_balance - coins_needed,
+                total_coins_spent=User.total_coins_spent + coins_needed
+            )
+        )
+        
+        await db.commit()
+        
+        logger.info(f"User {user.id} unlocked premium game {spend_request.game_id} for {coins_needed} coins")
+        
+        return {
+            "success": True,
+            "coins_spent": coins_needed,
+            "new_balance": (user.coin_balance or 0) - coins_needed,
+            "game_id": spend_request.game_id,
+            "message": f"Unlocked {game_title}!"
+        }
+    
+    else:
+        raise HTTPException(status_code=400, detail="Invalid spend type")
+
+@api_router.get("/wallet/transactions")
+async def get_transactions(
+    limit: int = 20,
+    offset: int = 0,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get user's transaction history"""
+    result = await db.execute(
+        select(WalletTransaction)
+        .where(WalletTransaction.user_id == user.id)
+        .order_by(desc(WalletTransaction.created_at))
+        .offset(offset)
+        .limit(limit)
+    )
+    transactions = result.scalars().all()
+    
+    return {
+        "transactions": [t.to_dict() for t in transactions],
+        "offset": offset,
+        "limit": limit
+    }
+
+@api_router.get("/wallet/unlocked-games")
+async def get_unlocked_games(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get list of premium games user has unlocked"""
+    result = await db.execute(
+        select(UserUnlockedGame).where(UserUnlockedGame.user_id == user.id)
+    )
+    unlocked = result.scalars().all()
+    
+    return {
+        "unlocked_game_ids": [u.game_id for u in unlocked]
+    }
+
 # ==================== GAMEPIX INTEGRATION ====================
 
 # GamePix Configuration
