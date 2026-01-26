@@ -63,6 +63,11 @@ JWT_SECRET = os.environ.get('JWT_SECRET', 'hypd-games-secret-key-2024')
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRATION_HOURS = 24
 
+# Stripe Configuration
+STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY')
+if STRIPE_API_KEY:
+    logger.info("Stripe API key configured")
+
 # Supabase Configuration
 SUPABASE_URL = os.environ.get('SUPABASE_URL')
 SUPABASE_SERVICE_KEY = os.environ.get('SUPABASE_SERVICE_KEY')
