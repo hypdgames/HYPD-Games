@@ -390,8 +390,23 @@ export default function WalletPage() {
             {/* Buy Coins Tab */}
             {activeTab === "buy" && (
               <div className="space-y-3" data-testid="buy-coins-section">
+                {!purchasesEnabled && (
+                  <div className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/30 rounded-xl p-4 mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+                        <Clock className="w-5 h-5 text-blue-500" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-foreground">Coming Soon!</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Coin purchases will be available soon. Earn free coins through login streaks!
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-3">
-                  Choose a Package
+                  {purchasesEnabled ? "Choose a Package" : "Preview Packages"}
                 </h3>
                 {packages.map((pkg) => (
                   <motion.div
@@ -400,7 +415,7 @@ export default function WalletPage() {
                     animate={{ opacity: 1, x: 0 }}
                     className={`relative bg-card border rounded-xl p-4 ${
                       pkg.is_popular ? "border-lime" : "border-border"
-                    }`}
+                    } ${!purchasesEnabled ? "opacity-75" : ""}`}
                     data-testid={`package-${pkg.package_id}`}
                   >
                     {pkg.is_popular && (
@@ -432,15 +447,17 @@ export default function WalletPage() {
                         </div>
                       </div>
                       <Button
-                        onClick={() => handlePurchase(pkg.package_id)}
-                        disabled={purchasing === pkg.package_id}
+                        onClick={() => purchasesEnabled && handlePurchase(pkg.package_id)}
+                        disabled={!purchasesEnabled || purchasing === pkg.package_id}
                         className={pkg.is_popular ? "bg-lime text-black hover:bg-lime/90" : ""}
                         data-testid={`buy-${pkg.package_id}`}
                       >
                         {purchasing === pkg.package_id ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
+                        ) : purchasesEnabled ? (
                           `$${pkg.price_usd.toFixed(2)}`
+                        ) : (
+                          "Soon"
                         )}
                       </Button>
                     </div>
