@@ -63,21 +63,7 @@ export default function WalletPage() {
   const [spending, setSpending] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"buy" | "spend" | "history">("buy");
 
-  // Check for payment return
-  useEffect(() => {
-    const paymentStatus = searchParams.get("payment");
-    const sessionId = searchParams.get("session_id");
-
-    if (paymentStatus === "success" && sessionId) {
-      pollPaymentStatus(sessionId);
-    } else if (paymentStatus === "cancelled") {
-      toast.error("Payment cancelled");
-      // Clear URL params
-      router.replace("/wallet");
-    }
-  }, [searchParams]);
-
-  const pollPaymentStatus = async (sessionId: string, attempts = 0) => {
+  const pollPaymentStatus = useCallback(async (sessionId: string, attempts = 0) => {
     const maxAttempts = 5;
 
     if (attempts >= maxAttempts) {
@@ -113,7 +99,21 @@ export default function WalletPage() {
       console.error("Error checking payment:", e);
       setTimeout(() => pollPaymentStatus(sessionId, attempts + 1), 2000);
     }
-  };
+  }, [token, router, refreshUser]);
+
+  // Check for payment return
+  useEffect(() => {
+    const paymentStatus = searchParams.get("payment");
+    const sessionId = searchParams.get("session_id");
+
+    if (paymentStatus === "success" && sessionId) {
+      pollPaymentStatus(sessionId);
+    } else if (paymentStatus === "cancelled") {
+      toast.error("Payment cancelled");
+      // Clear URL params
+      router.replace("/wallet");
+    }
+  }, [searchParams, pollPaymentStatus, router]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
