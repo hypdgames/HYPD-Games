@@ -1689,19 +1689,25 @@ async def create_purchase_checkout(
     package = COIN_PACKAGES[purchase.package_id]
     
     # Build URLs from frontend origin (not hardcoded)
-    success_url = f"{purchase.origin_url}/profile?payment=success&session_id={{CHECKOUT_SESSION_ID}}"
-    cancel_url = f"{purchase.origin_url}/profile?payment=cancelled"
-    
-    # Initialize Stripe
-    host_url = str(request.base_url).rstrip('/')
-    webhook_url = f"{host_url}/api/webhook/stripe"
-    stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
+    success_url = f"{purchase.origin_url}/wallet?payment=success&session_id={{CHECKOUT_SESSION_ID}}"
+    cancel_url = f"{purchase.origin_url}/wallet?payment=cancelled"
     
     try:
-        # Create checkout session
-        checkout_request = CheckoutSessionRequest(
-            amount=float(package["price"]),
-            currency="usd",
+        # Create Stripe checkout session using standard SDK
+        session = stripe.checkout.Session.create(
+            payment_method_types=["card"],
+            line_items=[{
+                "price_data": {
+                    "currency": "usd",
+                    "product_data": {
+                        "name": package["name"],
+                        "description": f"{package['coins']} coins" + (f" + {package['bonus']} bonus" if package["bonus"] > 0 else ""),
+                    },
+                    "unit_amount": int(package["price"] * 100),  # Stripe uses cents
+                },
+                "quantity": 1,
+            }],
+            mode="payment",
             success_url=success_url,
             cancel_url=cancel_url,
             metadata={
@@ -1713,8 +1719,6 @@ async def create_purchase_checkout(
             }
         )
         
-        session: CheckoutSessionResponse = await stripe_checkout.create_checkout_session(checkout_request)
-        
         # Create pending transaction record
         transaction = WalletTransaction(
             id=str(uuid.uuid4()),
@@ -1723,7 +1727,7 @@ async def create_purchase_checkout(
             status=TransactionStatus.PENDING,
             coins=package["coins"] + package["bonus"],
             amount_usd=package["price"],
-            stripe_session_id=session.session_id,
+            stripe_session_id=session.id,
             package_id=purchase.package_id,
             description=f"Purchase: {package['name']}",
             extra_data={
@@ -1739,7 +1743,7 @@ async def create_purchase_checkout(
         
         return {
             "checkout_url": session.url,
-            "session_id": session.session_id
+            "session_id": session.id
         }
         
     except Exception as e:
