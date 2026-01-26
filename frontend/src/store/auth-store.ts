@@ -23,6 +23,7 @@ interface AuthStore {
   register: (credentials: RegisterCredentials) => Promise<User>;
   logout: () => void;
   fetchUser: () => Promise<void>;
+  refreshUser: () => Promise<void>;
   fetchSettings: () => Promise<void>;
 }
 
