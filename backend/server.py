@@ -35,7 +35,8 @@ from database import get_db, engine, Base
 from models import (
     User, Game, PlaySession, AppSettings,
     Friendship, FriendshipStatus, Challenge, ChallengeParticipant,
-    ChallengeType, ChallengeStatus, LeaderboardEntry, AnalyticsEvent, DailyStats
+    ChallengeType, ChallengeStatus, LeaderboardEntry, AnalyticsEvent, DailyStats,
+    WalletTransaction, TransactionType, TransactionStatus, CoinPackage, PremiumGame, UserUnlockedGame
 )
 from cache import (
     get_games_feed, set_games_feed, invalidate_games_cache,
