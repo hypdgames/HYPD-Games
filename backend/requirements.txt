@@ -36,3 +36,4 @@ python-dotenv>=1.0.0
 
 # Utilities
 aiofiles>=23.0.0
+stripe>=7.0.0
