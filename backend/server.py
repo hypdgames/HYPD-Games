@@ -293,6 +293,13 @@ class UserResponse(BaseModel):
     total_login_days: int = 0
     streak_points: int = 0
     last_login_date: Optional[str] = None
+    # Wallet fields
+    coin_balance: int = 0
+    is_ad_free: bool = False
+    ad_free_until: Optional[str] = None
+    total_coins_purchased: int = 0
+    total_coins_spent: int = 0
+    total_coins_earned: int = 0
 
 class GameCreate(BaseModel):
     title: str
