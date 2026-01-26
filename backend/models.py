@@ -414,8 +414,8 @@ class WalletTransaction(Base):
     user_id = Column(String(36), ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
     
     # Transaction details
-    transaction_type = Column(SQLEnum(TransactionType), nullable=False, index=True)
-    status = Column(SQLEnum(TransactionStatus), default=TransactionStatus.PENDING, index=True)
+    transaction_type = Column(SQLEnum(TransactionType, values_callable=lambda x: [e.value for e in x]), nullable=False, index=True)
+    status = Column(SQLEnum(TransactionStatus, values_callable=lambda x: [e.value for e in x]), default=TransactionStatus.PENDING, index=True)
     coins = Column(Integer, nullable=False)  # Positive for credits, negative for debits
     
     # For purchases
