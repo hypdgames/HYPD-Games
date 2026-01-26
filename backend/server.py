@@ -495,6 +495,29 @@ async def login(credentials: UserLogin, request: Request, db: AsyncSession = Dep
         
         user.streak_points = (user.streak_points or 0) + points_earned
         
+        # Award bonus coins for streak milestones
+        coins_earned = 0
+        if user.login_streak == 7:
+            coins_earned = 50  # 7-day milestone
+        elif user.login_streak == 14:
+            coins_earned = 100  # 14-day milestone
+        elif user.login_streak == 30:
+            coins_earned = 250  # 30-day milestone
+        elif user.login_streak == 60:
+            coins_earned = 500  # 60-day milestone
+        elif user.login_streak == 90:
+            coins_earned = 750  # 90-day milestone
+        elif user.login_streak == 180:
+            coins_earned = 1500  # 180-day milestone
+        elif user.login_streak == 365:
+            coins_earned = 5000  # 365-day milestone
+        elif user.login_streak % 30 == 0 and user.login_streak > 90:
+            coins_earned = 300  # Every 30 days after 90 days
+        
+        if coins_earned > 0:
+            user.coin_balance = (user.coin_balance or 0) + coins_earned
+            user.total_coins_earned = (user.total_coins_earned or 0) + coins_earned
+        
         # Update best streak if current is higher
         if user.login_streak > (user.best_login_streak or 0):
             user.best_login_streak = user.login_streak
@@ -506,6 +529,7 @@ async def login(credentials: UserLogin, request: Request, db: AsyncSession = Dep
         user.total_login_days = (user.total_login_days or 0) + 1
         points_earned = 10  # Base points for new streak
         user.streak_points = (user.streak_points or 0) + points_earned
+        coins_earned = 0
         streak_updated = True
     
     # Update last login date
@@ -520,6 +544,8 @@ async def login(credentials: UserLogin, request: Request, db: AsyncSession = Dep
                 last_login_date=user.last_login_date,
                 total_login_days=user.total_login_days,
                 streak_points=user.streak_points,
+                coin_balance=user.coin_balance,
+                total_coins_earned=user.total_coins_earned,
                 last_active_at=datetime.now(timezone.utc)
             )
         )
@@ -527,7 +553,7 @@ async def login(credentials: UserLogin, request: Request, db: AsyncSession = Dep
         await db.refresh(user)
         
         if streak_updated:
-            logger.info(f"Login streak updated for user {user.id}: streak={user.login_streak}, points_earned={points_earned}")
+            logger.info(f"Login streak updated for user {user.id}: streak={user.login_streak}, points={points_earned}, coins={coins_earned}")
     
     security_logger.info(f"Successful login for user: {user.id} from IP: {client_ip}")
     
