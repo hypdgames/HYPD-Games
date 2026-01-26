@@ -188,7 +188,7 @@ export default function WalletPage() {
         const error = await res.json();
         toast.error(error.detail || "Failed to create checkout");
       }
-    } catch (e) {
+    } catch {
       toast.error("Failed to initiate purchase");
     }
     setPurchasing(null);
