@@ -82,7 +82,7 @@ async def run_migration():
                     spend_type VARCHAR(50),
                     spend_reference VARCHAR(255),
                     description VARCHAR(500),
-                    metadata JSONB DEFAULT '{}',
+                    extra_data JSONB DEFAULT '{}',
                     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                     completed_at TIMESTAMP WITH TIME ZONE
                 )
