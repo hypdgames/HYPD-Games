@@ -152,21 +152,6 @@ export default function WalletPage() {
     setLoading(false);
   }, []);
 
-  const fetchTransactions = useCallback(async () => {
-    if (!token) return;
-    try {
-      const res = await fetch(`${API_URL}/api/wallet/transactions?limit=20`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setTransactions(data.transactions || []);
-      }
-    } catch (e) {
-      console.error("Error fetching transactions:", e);
-    }
-  }, [token]);
-
   useEffect(() => {
     fetchData();
     if (token) {
