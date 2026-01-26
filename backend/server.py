@@ -1598,10 +1598,14 @@ async def bulk_import_gd_games(
 
 # ==================== WALLET / COINS SYSTEM ====================
 
-import stripe
-
-# Initialize Stripe with API key
-stripe.api_key = STRIPE_API_KEY
+# Stripe is optional - purchases disabled if not configured
+try:
+    import stripe
+    stripe.api_key = STRIPE_API_KEY
+    STRIPE_ENABLED = bool(STRIPE_API_KEY)
+except ImportError:
+    STRIPE_ENABLED = False
+    logger.info("Stripe SDK not installed - purchases disabled")
 
 # Coin package definitions (backend-controlled for security)
 COIN_PACKAGES = {
