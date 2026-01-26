@@ -233,7 +233,7 @@ export default function WalletPage() {
         const error = await res.json();
         toast.error(error.detail || "Failed to purchase ad-free");
       }
-    } catch (e) {
+    } catch {
       toast.error("Failed to spend coins");
     }
     setSpending(null);
