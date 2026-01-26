@@ -62,6 +62,7 @@ export default function WalletPage() {
   const [purchasing, setPurchasing] = useState<string | null>(null);
   const [spending, setSpending] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"buy" | "spend" | "history">("buy");
+  const [purchasesEnabled, setPurchasesEnabled] = useState(false);
 
   const fetchTransactions = useCallback(async () => {
     if (!token) return;
