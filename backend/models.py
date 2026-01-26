@@ -428,9 +428,9 @@ class WalletTransaction(Base):
     spend_type = Column(String(50), nullable=True)  # 'ad_free', 'premium_game', etc.
     spend_reference = Column(String(255), nullable=True)  # game_id or feature reference
     
-    # Metadata
+    # Extra data
     description = Column(String(500), nullable=True)
-    metadata = Column(JSON, default=dict)
+    extra_data = Column(JSON, default=dict)  # Additional transaction data
     created_at = Column(DateTime(timezone=True), default=utc_now, index=True)
     completed_at = Column(DateTime(timezone=True), nullable=True)
     
