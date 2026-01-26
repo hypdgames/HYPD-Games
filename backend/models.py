@@ -389,3 +389,134 @@ class AppSettings(Base):
             "value": self.value,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None
         }
+
+
+class TransactionType(enum.Enum):
+    PURCHASE = "purchase"  # Bought coins with real money
+    SPEND = "spend"  # Spent coins on features
+    BONUS = "bonus"  # Earned from streaks/challenges
+    REFUND = "refund"  # Refunded coins
+    ADMIN = "admin"  # Admin adjustment
+
+
+class TransactionStatus(enum.Enum):
+    PENDING = "pending"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    REFUNDED = "refunded"
+
+
+class WalletTransaction(Base):
+    """Track all coin transactions for users"""
+    __tablename__ = 'wallet_transactions'
+    
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    user_id = Column(String(36), ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+    
+    # Transaction details
+    transaction_type = Column(SQLEnum(TransactionType), nullable=False, index=True)
+    status = Column(SQLEnum(TransactionStatus), default=TransactionStatus.PENDING, index=True)
+    coins = Column(Integer, nullable=False)  # Positive for credits, negative for debits
+    
+    # For purchases
+    amount_usd = Column(Float, nullable=True)  # Price in USD (for purchases)
+    stripe_session_id = Column(String(255), nullable=True, unique=True, index=True)
+    stripe_payment_id = Column(String(255), nullable=True)
+    package_id = Column(String(50), nullable=True)  # Which coin package
+    
+    # For spending
+    spend_type = Column(String(50), nullable=True)  # 'ad_free', 'premium_game', etc.
+    spend_reference = Column(String(255), nullable=True)  # game_id or feature reference
+    
+    # Metadata
+    description = Column(String(500), nullable=True)
+    metadata = Column(JSON, default=dict)
+    created_at = Column(DateTime(timezone=True), default=utc_now, index=True)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+    
+    # Relationships
+    user = relationship('User', back_populates='wallet_transactions')
+    
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "transaction_type": self.transaction_type.value,
+            "status": self.status.value,
+            "coins": self.coins,
+            "amount_usd": self.amount_usd,
+            "package_id": self.package_id,
+            "spend_type": self.spend_type,
+            "description": self.description,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "completed_at": self.completed_at.isoformat() if self.completed_at else None
+        }
+
+
+class CoinPackage(Base):
+    """Predefined coin packages for purchase"""
+    __tablename__ = 'coin_packages'
+    
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    package_id = Column(String(50), unique=True, nullable=False, index=True)  # e.g., 'starter', 'popular', 'mega'
+    name = Column(String(100), nullable=False)
+    coins = Column(Integer, nullable=False)
+    price_usd = Column(Float, nullable=False)
+    bonus_coins = Column(Integer, default=0)  # Extra bonus coins
+    is_popular = Column(Boolean, default=False)  # Highlight this package
+    is_active = Column(Boolean, default=True)
+    sort_order = Column(Integer, default=0)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+    
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "package_id": self.package_id,
+            "name": self.name,
+            "coins": self.coins,
+            "bonus_coins": self.bonus_coins,
+            "total_coins": self.coins + self.bonus_coins,
+            "price_usd": self.price_usd,
+            "is_popular": self.is_popular,
+            "is_active": self.is_active
+        }
+
+
+class PremiumGame(Base):
+    """Games that can be unlocked with coins"""
+    __tablename__ = 'premium_games'
+    
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    game_id = Column(String(36), ForeignKey('games.id', ondelete='CASCADE'), nullable=False, unique=True, index=True)
+    coin_price = Column(Integer, nullable=False)  # Coins needed to unlock
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+    
+    # Relationships
+    game = relationship('Game')
+    
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "game_id": self.game_id,
+            "coin_price": self.coin_price,
+            "is_active": self.is_active
+        }
+
+
+class UserUnlockedGame(Base):
+    """Track which premium games users have unlocked"""
+    __tablename__ = 'user_unlocked_games'
+    
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    user_id = Column(String(36), ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+    game_id = Column(String(36), ForeignKey('games.id', ondelete='CASCADE'), nullable=False, index=True)
+    unlocked_at = Column(DateTime(timezone=True), default=utc_now)
+    
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "game_id": self.game_id,
+            "unlocked_at": self.unlocked_at.isoformat() if self.unlocked_at else None
+        }
