@@ -1598,7 +1598,10 @@ async def bulk_import_gd_games(
 
 # ==================== WALLET / COINS SYSTEM ====================
 
-from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionResponse, CheckoutStatusResponse, CheckoutSessionRequest
+import stripe
+
+# Initialize Stripe with API key
+stripe.api_key = STRIPE_API_KEY
 
 # Coin package definitions (backend-controlled for security)
 COIN_PACKAGES = {
