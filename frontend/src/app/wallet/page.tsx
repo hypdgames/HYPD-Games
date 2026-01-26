@@ -63,6 +63,21 @@ export default function WalletPage() {
   const [spending, setSpending] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"buy" | "spend" | "history">("buy");
 
+  const fetchTransactions = useCallback(async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_URL}/api/wallet/transactions?limit=20`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setTransactions(data.transactions || []);
+      }
+    } catch (e) {
+      console.error("Error fetching transactions:", e);
+    }
+  }, [token]);
+
   const pollPaymentStatus = useCallback(async (sessionId: string, attempts = 0) => {
     const maxAttempts = 5;
 
