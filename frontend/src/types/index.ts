@@ -37,6 +37,13 @@ export interface User {
   total_login_days?: number;
   streak_points?: number;
   last_login_date?: string;
+  // Wallet fields
+  coin_balance?: number;
+  is_ad_free?: boolean;
+  ad_free_until?: string;
+  total_coins_purchased?: number;
+  total_coins_spent?: number;
+  total_coins_earned?: number;
 }
 
 // Auth types
