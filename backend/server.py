@@ -1723,7 +1723,7 @@ async def create_purchase_checkout(
             stripe_session_id=session.session_id,
             package_id=purchase.package_id,
             description=f"Purchase: {package['name']}",
-            metadata={
+            extra_data={
                 "package_name": package["name"],
                 "base_coins": package["coins"],
                 "bonus_coins": package["bonus"]
