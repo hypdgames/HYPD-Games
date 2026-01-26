@@ -1782,13 +1782,11 @@ async def check_payment_status(
             "new_balance": user.coin_balance
         }
     
-    # Check with Stripe
-    stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url="")
-    
+    # Check with Stripe using standard SDK
     try:
-        status: CheckoutStatusResponse = await stripe_checkout.get_checkout_status(session_id)
+        session = stripe.checkout.Session.retrieve(session_id)
         
-        if status.payment_status == "paid" and transaction.status == TransactionStatus.PENDING:
+        if session.payment_status == "paid" and transaction.status == TransactionStatus.PENDING:
             # Credit coins to user (only once)
             await db.execute(
                 update(User)
@@ -1815,7 +1813,7 @@ async def check_payment_status(
                 "new_balance": user.coin_balance
             }
         
-        elif status.status == "expired":
+        elif session.status == "expired":
             transaction.status = TransactionStatus.FAILED
             await db.commit()
             
@@ -1826,8 +1824,8 @@ async def check_payment_status(
             }
         
         return {
-            "status": status.status,
-            "payment_status": status.payment_status,
+            "status": session.status,
+            "payment_status": session.payment_status,
             "coins_credited": 0
         }
         
@@ -1841,40 +1839,55 @@ async def stripe_webhook(request: Request, db: AsyncSession = Depends(get_db)):
     if not STRIPE_API_KEY:
         raise HTTPException(status_code=500, detail="Payment system not configured")
     
-    body = await request.body()
+    payload = await request.body()
     sig_header = request.headers.get("Stripe-Signature")
-    
-    stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url="")
+    endpoint_secret = os.environ.get("STRIPE_WEBHOOK_SECRET")
     
     try:
-        webhook_response = await stripe_checkout.handle_webhook(body, sig_header)
+        # Verify webhook signature if secret is configured
+        if endpoint_secret and sig_header:
+            event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
+        else:
+            # For testing without webhook secret
+            import json
+            event = stripe.Event.construct_from(json.loads(payload), stripe.api_key)
         
-        if webhook_response.payment_status == "paid":
-            # Find and update transaction
-            result = await db.execute(
-                select(WalletTransaction).where(
-                    WalletTransaction.stripe_session_id == webhook_response.session_id
-                )
-            )
-            transaction = result.scalar_one_or_none()
+        # Handle checkout.session.completed event
+        if event.type == "checkout.session.completed":
+            session = event.data.object
             
-            if transaction and transaction.status == TransactionStatus.PENDING:
-                # Credit coins
-                await db.execute(
-                    update(User)
-                    .where(User.id == transaction.user_id)
-                    .values(
-                        coin_balance=User.coin_balance + transaction.coins,
-                        total_coins_purchased=User.total_coins_purchased + transaction.coins
+            if session.payment_status == "paid":
+                # Find and update transaction
+                result = await db.execute(
+                    select(WalletTransaction).where(
+                        WalletTransaction.stripe_session_id == session.id
                     )
                 )
+                transaction = result.scalar_one_or_none()
                 
-                transaction.status = TransactionStatus.COMPLETED
-                transaction.completed_at = datetime.now(timezone.utc)
-                transaction.stripe_payment_id = webhook_response.event_id
-                
-                await db.commit()
-                logger.info(f"Webhook: Credited {transaction.coins} coins to user {transaction.user_id}")
+                if transaction and transaction.status == TransactionStatus.PENDING:
+                    # Credit coins
+                    await db.execute(
+                        update(User)
+                        .where(User.id == transaction.user_id)
+                        .values(
+                            coin_balance=User.coin_balance + transaction.coins,
+                            total_coins_purchased=User.total_coins_purchased + transaction.coins
+                        )
+                    )
+                    
+                    transaction.status = TransactionStatus.COMPLETED
+                    transaction.completed_at = datetime.now(timezone.utc)
+                    transaction.stripe_payment_id = session.payment_intent
+                    
+                    await db.commit()
+                    logger.info(f"Webhook: Credited {transaction.coins} coins to user {transaction.user_id}")
+        
+        return {"status": "ok"}
+        
+    except stripe.error.SignatureVerificationError as e:
+        logger.error(f"Webhook signature verification failed: {e}")
+        raise HTTPException(status_code=400, detail="Invalid signature")
         
         return {"status": "ok"}
         
