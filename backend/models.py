@@ -63,11 +63,20 @@ class User(Base):
     total_login_days = Column(Integer, default=0)  # Total unique days logged in
     streak_points = Column(Integer, default=0)  # Points earned from streaks
     
+    # Wallet/Coins system
+    coin_balance = Column(Integer, default=0)  # Current coin balance
+    total_coins_purchased = Column(Integer, default=0)  # Lifetime coins purchased
+    total_coins_spent = Column(Integer, default=0)  # Lifetime coins spent
+    total_coins_earned = Column(Integer, default=0)  # Lifetime coins earned (bonus/rewards)
+    is_ad_free = Column(Boolean, default=False)  # Currently has ad-free status
+    ad_free_until = Column(DateTime(timezone=True), nullable=True)  # When ad-free expires
+    
     # Relationships
     play_sessions = relationship('PlaySession', back_populates='user', cascade='all, delete-orphan')
     sent_friend_requests = relationship('Friendship', foreign_keys='Friendship.requester_id', back_populates='requester', cascade='all, delete-orphan')
     received_friend_requests = relationship('Friendship', foreign_keys='Friendship.addressee_id', back_populates='addressee', cascade='all, delete-orphan')
     challenge_participations = relationship('ChallengeParticipant', back_populates='user', cascade='all, delete-orphan')
+    wallet_transactions = relationship('WalletTransaction', back_populates='user', cascade='all, delete-orphan')
     
     def to_dict(self, include_private=False):
         data = {
@@ -87,12 +96,19 @@ class User(Base):
             "best_login_streak": self.best_login_streak or 0,
             "total_login_days": self.total_login_days or 0,
             "streak_points": self.streak_points or 0,
-            "last_login_date": self.last_login_date.isoformat() if self.last_login_date else None
+            "last_login_date": self.last_login_date.isoformat() if self.last_login_date else None,
+            # Wallet info (always include)
+            "coin_balance": self.coin_balance or 0,
+            "is_ad_free": self.is_ad_free or False,
+            "ad_free_until": self.ad_free_until.isoformat() if self.ad_free_until else None
         }
         if include_private:
             data["email"] = self.email
             data["saved_games"] = self.saved_games or []
             data["high_scores"] = self.high_scores or {}
+            data["total_coins_purchased"] = self.total_coins_purchased or 0
+            data["total_coins_spent"] = self.total_coins_spent or 0
+            data["total_coins_earned"] = self.total_coins_earned or 0
         return data
 
 
