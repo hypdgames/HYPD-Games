@@ -191,6 +191,39 @@
 
 ## Changelog
 
+### January 26, 2026 - Wallet/Coins System
+- **IMPLEMENTED:** Complete virtual currency system for user monetization
+  - **Coin Packages (Stripe TEST MODE):**
+    - Starter: 100 coins @ $0.99
+    - Popular: 550 + 50 bonus @ $4.99 (marked as "BEST VALUE")
+    - Value: 1,200 + 200 bonus @ $9.99
+    - Mega: 2,700 + 700 bonus @ $19.99
+    - Ultimate: 7,000 + 2,000 bonus @ $49.99
+  - **Spend Options:**
+    - Ad-free gaming: 1 Hour (25 coins), 4 Hours (75), 1 Day (150), 1 Week (800), 1 Month (2,500)
+    - Premium game unlocks (coming soon)
+  - **Earn Free Coins:**
+    - Streak milestones: 7 days (50), 14 days (100), 30 days (250), 60 days (500), 90 days (750), 180 days (1,500), 365 days (5,000)
+    - Every 30 days after 90 days: 300 bonus coins
+  - **New API Endpoints:**
+    - `GET /api/wallet` - User wallet info
+    - `GET /api/wallet/packages` - Available coin packages
+    - `GET /api/wallet/ad-free-options` - Ad-free purchase options
+    - `POST /api/wallet/purchase` - Create Stripe checkout
+    - `GET /api/wallet/checkout/status/{session_id}` - Check payment status
+    - `POST /api/wallet/spend` - Spend coins on features
+    - `GET /api/wallet/transactions` - Transaction history
+    - `GET /api/wallet/unlocked-games` - User's unlocked premium games
+    - `POST /api/webhook/stripe` - Stripe webhook handler
+  - **Frontend:**
+    - New `/wallet` page with 3 tabs: Buy Coins, Spend, History
+    - Balance card with animated coin icon
+    - Bottom navigation updated: Challenges → Wallet (yellow coin icon)
+    - Coin balance indicator badge on nav
+  - **Database Models:** WalletTransaction, CoinPackage, PremiumGame, UserUnlockedGame
+- **TEST RESULTS:** 100% pass rate (16/16 backend + all frontend verified)
+- **NOTE:** Stripe is in TEST MODE - real payments won't process
+
 ### January 25, 2026 - Daily Login Streak Feature
 - **IMPLEMENTED:** Complete Daily Login Streak system for user engagement
   - **Backend Logic:**
