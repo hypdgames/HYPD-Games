@@ -142,6 +142,7 @@ export default function WalletPage() {
       if (packagesRes.ok) {
         const data = await packagesRes.json();
         setPackages(data.packages || []);
+        setPurchasesEnabled(data.purchases_enabled || false);
       }
       if (optionsRes.ok) {
         const data = await optionsRes.json();
