@@ -86,6 +86,11 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <head>
         <meta name="google-adsense-account" content="ca-pub-9316102142280167" />
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9316102142280167"
+          crossOrigin="anonymous"
+        ></script>
         {/* Preconnect to game servers for faster loading */}
         <link rel="preconnect" href="https://games.gamepix.com" />
         <link rel="dns-prefetch" href="https://games.gamepix.com" />
@@ -93,13 +98,6 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://html5.gamedistribution.com" />
       </head>
       <body className={`${chivo.variable} ${manrope.variable} font-sans antialiased`}>
-        {/* Google AdSense Script */}
-        <Script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9316102142280167"
-          crossOrigin="anonymous"
-          strategy="afterInteractive"
-        />
         <Providers>
           <SettingsProvider>
             <ServiceWorkerRegistration />
