@@ -584,29 +584,34 @@ export default function AdminDashboard() {
         <Tabs defaultValue="games" className="w-full" onValueChange={(v) => {
           if (v === "analytics") fetchAnalytics();
           if (v === "users") { fetchUsers(); fetchUserStats(); }
+          if (v === "gamemonetize") fetchGmzGames(gmzCategory);
         }}>
-          <TabsList className="grid w-full grid-cols-6 mb-6">
-            <TabsTrigger value="games" className="flex items-center gap-2">
+          <TabsList className="grid w-full grid-cols-7 mb-6">
+            <TabsTrigger value="games" className="flex items-center gap-1 text-xs sm:text-sm">
               <Gamepad2 className="w-4 h-4" />
               <span className="hidden sm:inline">Games</span>
             </TabsTrigger>
-            <TabsTrigger value="gamepix" className="flex items-center gap-2">
-              <Globe className="w-4 h-4" />
+            <TabsTrigger value="gamepix" className="flex items-center gap-1 text-xs sm:text-sm">
+              <Globe className="w-4 h-4 text-lime" />
               <span className="hidden sm:inline">GamePix</span>
             </TabsTrigger>
-            <TabsTrigger value="upload" className="flex items-center gap-2">
+            <TabsTrigger value="gamemonetize" className="flex items-center gap-1 text-xs sm:text-sm">
+              <Globe className="w-4 h-4 text-purple-500" />
+              <span className="hidden sm:inline">GMZ</span>
+            </TabsTrigger>
+            <TabsTrigger value="upload" className="flex items-center gap-1 text-xs sm:text-sm">
               <Upload className="w-4 h-4" />
               <span className="hidden sm:inline">Upload</span>
             </TabsTrigger>
-            <TabsTrigger value="users" className="flex items-center gap-2">
+            <TabsTrigger value="users" className="flex items-center gap-1 text-xs sm:text-sm">
               <Users className="w-4 h-4" />
               <span className="hidden sm:inline">Users</span>
             </TabsTrigger>
-            <TabsTrigger value="analytics" className="flex items-center gap-2">
+            <TabsTrigger value="analytics" className="flex items-center gap-1 text-xs sm:text-sm">
               <BarChart3 className="w-4 h-4" />
-              <span className="hidden sm:inline">Analytics</span>
+              <span className="hidden sm:inline">Stats</span>
             </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center gap-2">
+            <TabsTrigger value="settings" className="flex items-center gap-1 text-xs sm:text-sm">
               <Settings className="w-4 h-4" />
               <span className="hidden sm:inline">Settings</span>
             </TabsTrigger>
