@@ -2308,6 +2308,210 @@ async def bulk_import_gamepix_games(
         "skipped_games": skipped
     }
 
+# ==================== GAMEMONETIZE INTEGRATION ====================
+
+# GameMonetize Configuration
+GAMEMONETIZE_API_BASE = "https://gamemonetize.com/feeds"
+
+# GameMonetize categories mapping
+GAMEMONETIZE_CATEGORIES = [
+    {"id": "all", "name": "All Games", "icon": "🎮"},
+    {"id": "action", "name": "Action", "icon": "⚔️"},
+    {"id": "adventure", "name": "Adventure", "icon": "🗺️"},
+    {"id": "arcade", "name": "Arcade", "icon": "👾"},
+    {"id": "basketball", "name": "Basketball", "icon": "🏀"},
+    {"id": "beauty", "name": "Beauty", "icon": "💄"},
+    {"id": "bike", "name": "Bike", "icon": "🚴"},
+    {"id": "car", "name": "Car", "icon": "🚗"},
+    {"id": "card", "name": "Card", "icon": "🃏"},
+    {"id": "casual", "name": "Casual", "icon": "🎯"},
+    {"id": "clicker", "name": "Clicker", "icon": "👆"},
+    {"id": "controller", "name": "Controller", "icon": "🎮"},
+    {"id": "dressup", "name": "Dress Up", "icon": "👗"},
+    {"id": "driving", "name": "Driving", "icon": "🏎️"},
+    {"id": "escape", "name": "Escape", "icon": "🚪"},
+    {"id": "flash", "name": "Flash", "icon": "⚡"},
+    {"id": "fps", "name": "FPS", "icon": "🔫"},
+    {"id": "halloween", "name": "Halloween", "icon": "🎃"},
+    {"id": "horror", "name": "Horror", "icon": "👻"},
+    {"id": "io", "name": ".io", "icon": "🌐"},
+    {"id": "mahjong", "name": "Mahjong", "icon": "🀄"},
+    {"id": "minecraft", "name": "Minecraft", "icon": "⛏️"},
+    {"id": "mobile", "name": "Mobile", "icon": "📱"},
+    {"id": "multiplayer", "name": "Multiplayer", "icon": "👥"},
+    {"id": "pool", "name": "Pool", "icon": "🎱"},
+    {"id": "puzzle", "name": "Puzzle", "icon": "🧩"},
+    {"id": "racing", "name": "Racing", "icon": "🏁"},
+    {"id": "shooting", "name": "Shooting", "icon": "🎯"},
+    {"id": "soccer", "name": "Soccer", "icon": "⚽"},
+    {"id": "sports", "name": "Sports", "icon": "🏆"},
+    {"id": "stickman", "name": "Stickman", "icon": "🏃"},
+    {"id": "strategy", "name": "Strategy", "icon": "♟️"},
+    {"id": "tower-defense", "name": "Tower Defense", "icon": "🏰"},
+    {"id": "2-player", "name": "2 Player", "icon": "👫"},
+    {"id": "3d", "name": "3D", "icon": "🎲"},
+]
+
+class GMZGameImport(BaseModel):
+    gmz_game_id: str
+    title: str
+    description: Optional[str] = None
+    category: str = "Action"
+    thumbnail_url: Optional[str] = None
+    play_url: str
+    instructions: Optional[str] = None
+    width: Optional[int] = None
+    height: Optional[int] = None
+
+@api_router.get("/gamemonetize/browse")
+async def browse_gamemonetize_games(
+    category: Optional[str] = None,
+    page: int = 1,
+    limit: int = 24
+):
+    """Browse games from GameMonetize JSON feed"""
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            # GameMonetize uses .json endpoint for their feed
+            url = f"{GAMEMONETIZE_API_BASE}/"
+            
+            if category and category.lower() != "all":
+                url += f"?category={category.lower()}"
+            else:
+                url += "?category="
+            
+            response = await client.get(url)
+            
+            if response.status_code != 200:
+                logger.warning(f"GameMonetize API returned {response.status_code}")
+                return {"games": [], "total": 0, "page": page, "limit": limit, "error": "Failed to fetch games"}
+            
+            data = response.json()
+            
+            # GameMonetize returns a list of games directly
+            all_games = data if isinstance(data, list) else []
+            
+            # Paginate locally
+            start_idx = (page - 1) * limit
+            end_idx = start_idx + limit
+            page_games = all_games[start_idx:end_idx]
+            
+            games = []
+            for g in page_games:
+                games.append({
+                    "gmz_game_id": g.get("id", ""),
+                    "title": g.get("title", "Unknown"),
+                    "description": g.get("description", ""),
+                    "category": g.get("category", "Action"),
+                    "thumbnail_url": g.get("thumb", ""),
+                    "play_url": g.get("url", ""),
+                    "instructions": g.get("instructions", ""),
+                    "width": g.get("width"),
+                    "height": g.get("height"),
+                })
+            
+            return {
+                "games": games,
+                "total": len(all_games),
+                "page": page,
+                "limit": limit,
+                "has_more": end_idx < len(all_games)
+            }
+            
+    except Exception as e:
+        logger.error(f"Error fetching GameMonetize games: {e}")
+        return {"games": [], "total": 0, "page": page, "limit": limit, "error": str(e)}
+
+@api_router.get("/gamemonetize/categories")
+async def get_gamemonetize_categories():
+    """Get available GameMonetize categories"""
+    return {"categories": GAMEMONETIZE_CATEGORIES}
+
+@api_router.post("/admin/gamemonetize/import")
+async def import_gamemonetize_game(
+    game_data: GMZGameImport,
+    user: User = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Import a single game from GameMonetize"""
+    # Check if already imported
+    gd_game_id = f"gmz-{game_data.gmz_game_id}"
+    result = await db.execute(select(Game).where(Game.gd_game_id == gd_game_id))
+    existing = result.scalar_one_or_none()
+    
+    if existing:
+        return {"success": False, "message": "Game already imported", "game_id": existing.id}
+    
+    # Create new game
+    new_game = Game(
+        id=str(uuid.uuid4()),
+        title=game_data.title,
+        description=game_data.description or "",
+        category=game_data.category.title(),
+        thumbnail_url=game_data.thumbnail_url,
+        embed_url=game_data.play_url,
+        source="gamemonetize",
+        gd_game_id=gd_game_id,
+        is_active=True,
+        orientation="landscape" if (game_data.width or 800) > (game_data.height or 600) else "portrait"
+    )
+    
+    db.add(new_game)
+    await db.commit()
+    
+    logger.info(f"Imported GameMonetize game: {new_game.title} (ID: {new_game.id})")
+    
+    return {"success": True, "game_id": new_game.id, "title": new_game.title}
+
+@api_router.post("/admin/gamemonetize/bulk-import")
+async def bulk_import_gamemonetize_games(
+    games: List[GMZGameImport],
+    user: User = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Bulk import games from GameMonetize"""
+    imported = []
+    skipped = []
+    
+    for game_data in games:
+        gd_game_id = f"gmz-{game_data.gmz_game_id}"
+        
+        # Check if already exists
+        result = await db.execute(select(Game).where(Game.gd_game_id == gd_game_id))
+        existing = result.scalar_one_or_none()
+        
+        if existing:
+            skipped.append(game_data.title)
+            continue
+        
+        # Create new game
+        new_game = Game(
+            id=str(uuid.uuid4()),
+            title=game_data.title,
+            description=game_data.description or "",
+            category=game_data.category.title(),
+            thumbnail_url=game_data.thumbnail_url,
+            embed_url=game_data.play_url,
+            source="gamemonetize",
+            gd_game_id=gd_game_id,
+            is_active=True,
+            orientation="landscape" if (game_data.width or 800) > (game_data.height or 600) else "portrait"
+        )
+        
+        db.add(new_game)
+        imported.append(game_data.title)
+    
+    await db.commit()
+    
+    logger.info(f"Bulk imported {len(imported)} GameMonetize games")
+    
+    return {
+        "imported": len(imported),
+        "skipped": len(skipped),
+        "imported_games": imported,
+        "skipped_games": skipped
+    }
+
 # ==================== SOCIAL FEATURES ====================
 
 # Pydantic models for social features
