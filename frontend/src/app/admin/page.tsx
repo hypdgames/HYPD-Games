@@ -341,8 +341,110 @@ export default function AdminDashboard() {
   useEffect(() => {
     fetchGpxCategories();
     fetchGpxGames();
+    fetchGmzCategories();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // GameMonetize functions
+  const fetchGmzGames = async (category?: string, page: number = 1, append: boolean = false) => {
+    setGmzLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (category && category !== "all") params.append("category", category);
+      params.append("page", String(page));
+      params.append("limit", "24");
+      
+      const res = await fetch(`${API_URL}/api/gamemonetize/browse?${params}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (append) {
+          setGmzGames(prev => [...prev, ...(data.games || [])]);
+        } else {
+          setGmzGames(data.games || []);
+        }
+        setGmzHasMore(data.has_more || false);
+        setGmzPage(page);
+      }
+    } catch (error) {
+      console.error("Error fetching GameMonetize games:", error);
+      toast.error("Failed to load games from GameMonetize");
+    }
+    setGmzLoading(false);
+  };
+
+  const fetchGmzCategories = async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/gamemonetize/categories`);
+      if (res.ok) {
+        const data = await res.json();
+        setGmzCategories(data.categories || []);
+      }
+    } catch (error) {
+      console.error("Error fetching GameMonetize categories:", error);
+    }
+  };
+
+  const toggleGmzGameSelection = (id: string) => {
+    setSelectedGmzGames(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
+
+  const importSelectedGmzGames = async () => {
+    if (selectedGmzGames.size === 0) {
+      toast.error("Please select at least one game to import");
+      return;
+    }
+
+    setGmzImporting(true);
+    try {
+      const gamesToImport = gmzGames
+        .filter(g => selectedGmzGames.has(g.gmz_game_id))
+        .map(g => ({
+          gmz_game_id: g.gmz_game_id,
+          title: g.title,
+          description: g.description,
+          category: g.category,
+          thumbnail_url: g.thumbnail_url,
+          play_url: g.play_url,
+          instructions: g.instructions,
+          width: g.width,
+          height: g.height,
+        }));
+
+      const res = await fetch(`${API_URL}/api/admin/gamemonetize/bulk-import`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(gamesToImport),
+      });
+
+      if (res.ok) {
+        const result = await res.json();
+        toast.success(`Imported ${result.imported} games!`);
+        if (result.skipped > 0) {
+          toast.info(`${result.skipped} games were already imported`);
+        }
+        setSelectedGmzGames(new Set());
+        fetchGames();
+      } else {
+        const error = await res.json();
+        toast.error(error.detail || "Failed to import games");
+      }
+    } catch (error) {
+      console.error("Import error:", error);
+      toast.error("Failed to import games");
+    }
+    setGmzImporting(false);
+  };
 
   const toggleGpxGameSelection = (namespace: string) => {
     setSelectedGpxGames(prev => {
