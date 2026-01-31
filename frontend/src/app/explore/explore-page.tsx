@@ -30,8 +30,8 @@ export default function ExplorePage() {
     const fetchData = async () => {
       try {
         const [gamesRes, categoriesRes] = await Promise.all([
-          fetch(`${API_URL}/api/games`),
-          fetch(`${API_URL}/api/categories`),
+          fetch(`${API_URL}/api/games`, { cache: "no-store" }),
+          fetch(`${API_URL}/api/categories`, { cache: "no-store" }),
         ]);
 
         if (gamesRes.ok) {
