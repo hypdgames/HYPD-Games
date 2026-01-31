@@ -184,6 +184,17 @@ export default function GamePlayer() {
         />
       )}
 
+      {/* Ad-Free Badge for Pro Users */}
+      {isAdFree && !loading && (
+        <div 
+          className="fixed top-4 right-4 z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500/90 to-yellow-500/90 text-black text-xs font-bold shadow-lg"
+          data-testid="ad-free-badge"
+        >
+          <Crown className="w-3.5 h-3.5" />
+          Ad-Free
+        </div>
+      )}
+
       {/* Draggable Back Button */}
       <button
         onMouseDown={handleDragStart}
