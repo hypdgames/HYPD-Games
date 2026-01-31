@@ -583,6 +583,29 @@ export default function AdminDashboard() {
     }
   };
 
+  const bulkDeleteGames = async (gameIds: string[]) => {
+    try {
+      const res = await fetch(`${API_URL}/api/admin/games/bulk-delete`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ game_ids: gameIds }),
+      });
+      if (res.ok) {
+        const result = await res.json();
+        toast.success(`Deleted ${result.deleted_count} game${result.deleted_count > 1 ? 's' : ''}`);
+        fetchGames();
+      } else {
+        const error = await res.json();
+        toast.error(error.detail || "Failed to delete games");
+      }
+    } catch {
+      toast.error("Failed to delete games");
+    }
+  };
+
   if (authLoading || !user?.is_admin) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
