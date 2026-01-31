@@ -60,6 +60,14 @@ export default function GamePlayer() {
     startTimeRef.current = Date.now();
   }, [gameId, isAdFree, userChecked]);
 
+  // Cleanup: record play session on unmount
+  useEffect(() => {
+    return () => {
+      recordPlaySession();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const recordPlaySession = async () => {
     if (!startTimeRef.current) return;
 
