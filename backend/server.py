@@ -2311,7 +2311,7 @@ async def bulk_import_gamepix_games(
 # ==================== GAMEMONETIZE INTEGRATION ====================
 
 # GameMonetize Configuration
-GAMEMONETIZE_API_BASE = "https://gamemonetize.com/rssfeed.php"
+GAMEMONETIZE_API_BASE = "https://rss.gamemonetize.com/rssfeed.php"
 
 # GameMonetize categories mapping (ID -> name)
 GAMEMONETIZE_CATEGORIES = [
