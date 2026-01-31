@@ -350,12 +350,13 @@ export default function AdminDashboard() {
   const [gmzSearch, setGmzSearch] = useState("");
 
   // GameMonetize functions
-  const fetchGmzGames = async (category?: string, page: number = 1, append: boolean = false, search?: string) => {
+  const fetchGmzGames = async (category?: string, page: number = 1, append: boolean = false, search?: string, sort?: string) => {
     setGmzLoading(true);
     try {
       const params = new URLSearchParams();
       if (category && category.toLowerCase() !== "all") params.append("category", category);
       if (search) params.append("search", search);
+      if (sort) params.append("sort", sort);
       params.append("page", String(page));
       params.append("num", "50");
       
