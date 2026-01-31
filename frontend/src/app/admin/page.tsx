@@ -84,6 +84,8 @@ export default function AdminDashboard() {
   const [siteName, setSiteName] = useState<string>("HYPD");
   const [faviconUrl, setFaviconUrl] = useState<string>("");
   const [primaryColor, setPrimaryColor] = useState<string>("#CCFF00");
+  const [gamepixEnabled, setGamepixEnabled] = useState<boolean>(true);
+  const [gamemonetizeEnabled, setGamemonetizeEnabled] = useState<boolean>(true);
 
   // Check admin status
   useEffect(() => {
@@ -124,6 +126,9 @@ export default function AdminDashboard() {
         if (data.site_name) setSiteName(data.site_name);
         if (data.favicon_url) setFaviconUrl(data.favicon_url);
         if (data.primary_color) setPrimaryColor(data.primary_color);
+        // Game network settings (default to true if not set)
+        setGamepixEnabled(data.gamepix_enabled !== "false");
+        setGamemonetizeEnabled(data.gamemonetize_enabled !== "false");
       }
     } catch (error) {
       console.error("Error fetching settings:", error);
