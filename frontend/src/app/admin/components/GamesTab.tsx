@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { Gamepad2, Eye, EyeOff, Trash2, Loader2 } from "lucide-react";
+import { Gamepad2, Eye, EyeOff, Trash2, Loader2, CheckSquare, Square, XSquare } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import type { Game } from "./types";
 
 interface GamesTabProps {
@@ -9,9 +11,54 @@ interface GamesTabProps {
   loading: boolean;
   onToggleVisibility: (gameId: string, currentVisibility: boolean) => void;
   onDeleteGame: (gameId: string) => void;
+  onBulkDelete?: (gameIds: string[]) => Promise<void>;
 }
 
-export function GamesTab({ games, loading, onToggleVisibility, onDeleteGame }: GamesTabProps) {
+export function GamesTab({ games, loading, onToggleVisibility, onDeleteGame, onBulkDelete }: GamesTabProps) {
+  const [selectedGames, setSelectedGames] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+
+  const toggleSelection = (gameId: string) => {
+    setSelectedGames(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(gameId)) {
+        newSet.delete(gameId);
+      } else {
+        newSet.add(gameId);
+      }
+      return newSet;
+    });
+  };
+
+  const selectAll = () => {
+    setSelectedGames(new Set(games.map(g => g.id)));
+  };
+
+  const clearSelection = () => {
+    setSelectedGames(new Set());
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedGames.size === 0) return;
+    
+    const confirmMessage = `Are you sure you want to delete ${selectedGames.size} game${selectedGames.size > 1 ? 's' : ''}? This action cannot be undone.`;
+    if (!confirm(confirmMessage)) return;
+
+    setBulkDeleting(true);
+    
+    if (onBulkDelete) {
+      await onBulkDelete(Array.from(selectedGames));
+    } else {
+      // Fallback: delete one by one
+      for (const gameId of selectedGames) {
+        onDeleteGame(gameId);
+      }
+    }
+    
+    setSelectedGames(new Set());
+    setBulkDeleting(false);
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center py-12">
@@ -34,24 +81,94 @@ export function GamesTab({ games, loading, onToggleVisibility, onDeleteGame }: G
 
   return (
     <div className="space-y-4">
+      {/* Bulk Actions Bar */}
+      <div className="flex items-center justify-between bg-card border border-border rounded-xl p-3" data-testid="bulk-actions-bar">
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={selectAll}
+            className="text-xs"
+            data-testid="select-all-btn"
+          >
+            <CheckSquare className="w-4 h-4 mr-1" />
+            Select All ({games.length})
+          </Button>
+          {selectedGames.size > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={clearSelection}
+              className="text-xs"
+              data-testid="clear-selection-btn"
+            >
+              <XSquare className="w-4 h-4 mr-1" />
+              Clear
+            </Button>
+          )}
+          {selectedGames.size > 0 && (
+            <span className="text-sm text-muted-foreground">
+              {selectedGames.size} selected
+            </span>
+          )}
+        </div>
+        
+        {selectedGames.size > 0 && (
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={handleBulkDelete}
+            disabled={bulkDeleting}
+            className="text-xs"
+            data-testid="bulk-delete-btn"
+          >
+            {bulkDeleting ? (
+              <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+            ) : (
+              <Trash2 className="w-4 h-4 mr-1" />
+            )}
+            Delete {selectedGames.size} Game{selectedGames.size > 1 ? 's' : ''}
+          </Button>
+        )}
+      </div>
+
+      {/* Games List */}
       {games.map((game) => (
         <motion.div
           key={game.id}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-4 bg-card border border-border rounded-xl p-4"
+          className={`flex items-center gap-4 bg-card border rounded-xl p-4 transition-colors ${
+            selectedGames.has(game.id) 
+              ? 'border-lime bg-lime/5' 
+              : 'border-border'
+          }`}
           data-testid={`admin-game-${game.id}`}
         >
+          {/* Checkbox */}
+          <button
+            onClick={() => toggleSelection(game.id)}
+            className="flex-shrink-0 w-6 h-6 flex items-center justify-center"
+            data-testid={`game-checkbox-${game.id}`}
+          >
+            {selectedGames.has(game.id) ? (
+              <CheckSquare className="w-5 h-5 text-lime" />
+            ) : (
+              <Square className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" />
+            )}
+          </button>
+
           <img
             src={
               game.thumbnail_url ||
               "https://images.unsplash.com/photo-1637734373619-af1e76434bec?w=100&q=80"
             }
             alt={game.title}
-            className="w-16 h-16 rounded-lg object-cover"
+            className="w-16 h-16 rounded-lg object-cover cursor-pointer"
+            onClick={() => toggleSelection(game.id)}
           />
 
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 cursor-pointer" onClick={() => toggleSelection(game.id)}>
             <div className="flex items-center gap-2">
               <h3 className="font-bold text-foreground truncate">
                 {game.title}
