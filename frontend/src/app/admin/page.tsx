@@ -345,14 +345,18 @@ export default function AdminDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // GameMonetize state for search
+  const [gmzSearch, setGmzSearch] = useState("");
+
   // GameMonetize functions
-  const fetchGmzGames = async (category?: string, page: number = 1, append: boolean = false) => {
+  const fetchGmzGames = async (category?: string, page: number = 1, append: boolean = false, search?: string) => {
     setGmzLoading(true);
     try {
       const params = new URLSearchParams();
-      if (category && category !== "all") params.append("category", category);
+      if (category && category.toLowerCase() !== "all") params.append("category", category);
+      if (search) params.append("search", search);
       params.append("page", String(page));
-      params.append("limit", "24");
+      params.append("num", "50");
       
       const res = await fetch(`${API_URL}/api/gamemonetize/browse?${params}`);
       if (res.ok) {
@@ -396,6 +400,22 @@ export default function AdminDashboard() {
     });
   };
 
+  const selectAllGmzGames = () => {
+    const selectableIds = gmzGames
+      .filter(g => !games.some(existing => existing.gd_game_id === `gmz-${g.gmz_game_id}`))
+      .map(g => g.gmz_game_id);
+    setSelectedGmzGames(new Set(selectableIds));
+  };
+
+  const clearGmzSelection = () => {
+    setSelectedGmzGames(new Set());
+  };
+
+  const handleGmzSearch = (query: string) => {
+    setGmzSearch(query);
+    fetchGmzGames(gmzCategory, 1, false, query);
+  };
+
   const importSelectedGmzGames = async () => {
     if (selectedGmzGames.size === 0) {
       toast.error("Please select at least one game to import");
@@ -414,6 +434,7 @@ export default function AdminDashboard() {
           thumbnail_url: g.thumbnail_url,
           play_url: g.play_url,
           instructions: g.instructions,
+          tags: g.tags,
           width: g.width,
           height: g.height,
         }));
