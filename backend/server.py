@@ -2523,8 +2523,10 @@ async def bulk_import_gamemonetize_games(
             embed_url=game_data.play_url,
             source="gamemonetize",
             gd_game_id=gd_game_id,
-            is_active=True,
-            orientation="landscape" if (game_data.width or 800) > (game_data.height or 600) else "portrait"
+            is_visible=True,
+            has_game_file=True,
+            instructions=game_data.instructions,
+            play_count=0
         )
         
         db.add(new_game)
