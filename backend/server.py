@@ -2466,7 +2466,7 @@ async def import_gamemonetize_game(
 @api_router.post("/admin/gamemonetize/bulk-import")
 async def bulk_import_gamemonetize_games(
     games: List[GMZGameImport],
-    user: User = Depends(get_current_admin),
+    user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db)
 ):
     """Bulk import games from GameMonetize"""
