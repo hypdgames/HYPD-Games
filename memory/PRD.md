@@ -141,7 +141,7 @@
 ## Upcoming Tasks
 
 ### P0 - Awaiting External
-1. **Real GameDistribution Integration** - Waiting for publisher approval (Publisher ID/API Key)
+1. **Enable Wallet System with Stripe** - Re-enable when user provides real `STRIPE_API_KEY`
 
 ### P1 - High Priority
 2. **Featured Games Section** - Highlight top-quality GamePix games on home feed (based on quality_score)
@@ -190,6 +190,18 @@
 ---
 
 ## Changelog
+
+### January 31, 2026 - Admin Network Settings
+- **IMPLEMENTED:** Admin dashboard Settings tab now includes "Game Networks" section
+  - **UI:** Toggle switches for enabling/disabling GamePix and GameMonetize networks
+  - **Behavior:** When a network is disabled, its tab is hidden from the admin dashboard tabs
+  - **Settings:** Persisted via `/api/admin/settings` as `gamepix_enabled` and `gamemonetize_enabled` string values
+  - **Warning:** Yellow warning message appears when both networks are disabled
+  - **New Component:** Created `/app/frontend/src/components/ui/switch.tsx` using @radix-ui/react-switch
+- **TEST RESULTS:** 100% pass rate (9/9 backend tests, all frontend UI verified)
+- **FILES UPDATED:**
+  - `/app/frontend/src/app/admin/page.tsx` - Conditional tab rendering based on network settings
+  - `/app/frontend/src/app/admin/components/SettingsTab.tsx` - Added Game Networks section with toggles
 
 ### January 26, 2026 - Wallet/Coins System
 - **IMPLEMENTED:** Complete virtual currency system for user monetization
