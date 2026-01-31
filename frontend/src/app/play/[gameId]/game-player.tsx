@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Crown } from "lucide-react";
 import { useAuthStore } from "@/store";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
@@ -11,7 +11,7 @@ export default function GamePlayer() {
   const params = useParams();
   const router = useRouter();
   const gameId = params.gameId as string;
-  const { token } = useAuthStore();
+  const { token, user } = useAuthStore();
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const startTimeRef = useRef<number | null>(null);
@@ -26,9 +26,16 @@ export default function GamePlayer() {
   const dragStartY = useRef(0);
   const buttonStartY = useRef(0);
 
+  // Check if user has ad-free status (Pro user)
+  const isAdFree = user?.is_ad_free || (user?.ad_free_until && new Date(user.ad_free_until) > new Date());
+
   useEffect(() => {
-    // Set game URL immediately - no artificial delay
-    setGameUrl(`${API_URL}/api/games/${gameId}/play`);
+    // Build game URL with noads parameter for Pro users
+    let url = `${API_URL}/api/games/${gameId}/play`;
+    if (isAdFree) {
+      url += "?noads=1";
+    }
+    setGameUrl(url);
     startTimeRef.current = Date.now();
 
     // Cleanup: record play session on unmount
@@ -36,7 +43,7 @@ export default function GamePlayer() {
       recordPlaySession();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gameId]);
+  }, [gameId, isAdFree]);
 
   const recordPlaySession = async () => {
     if (!startTimeRef.current) return;
