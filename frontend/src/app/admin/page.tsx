@@ -415,7 +415,12 @@ export default function AdminDashboard() {
 
   const handleGmzSearch = (query: string) => {
     setGmzSearch(query);
-    fetchGmzGames(gmzCategory, 1, false, query);
+    fetchGmzGames(gmzCategory, 1, false, query, gmzSort);
+  };
+
+  const handleGmzSortChange = (sort: string) => {
+    setGmzSort(sort);
+    fetchGmzGames(gmzCategory, 1, false, gmzSearch, sort);
   };
 
   const importSelectedGmzGames = async () => {
