@@ -336,6 +336,41 @@ export default function ProfilePage() {
     toast.success("Logged out successfully");
   };
 
+  // Toggle Pro status (admin only)
+  const handleTogglePro = async () => {
+    if (!token || !user?.is_admin) return;
+    
+    setTogglingPro(true);
+    try {
+      const res = await fetch(`${API_URL}/api/user/toggle-pro`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        // Refresh user data to get updated is_ad_free status
+        const userRes = await fetch(`${API_URL}/api/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (userRes.ok) {
+          const userData = await userRes.json();
+          // Update the auth store with new user data
+          useAuthStore.setState({ user: userData });
+        }
+        toast.success(data.message);
+      } else {
+        toast.error("Failed to toggle Pro status");
+      }
+    } catch (e) {
+      console.error("Error toggling Pro:", e);
+      toast.error("Failed to toggle Pro status");
+    }
+    setTogglingPro(false);
+  };
+
   const formatPlayTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
