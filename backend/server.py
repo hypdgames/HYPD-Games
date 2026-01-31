@@ -1050,6 +1050,48 @@ async def admin_delete_game(
     
     return {"success": True, "deleted_id": game_id}
 
+class BulkDeleteRequest(BaseModel):
+    game_ids: List[str]
+
+@api_router.post("/admin/games/bulk-delete")
+async def admin_bulk_delete_games(
+    request: BulkDeleteRequest,
+    user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Bulk delete multiple games"""
+    if not request.game_ids:
+        raise HTTPException(status_code=400, detail="No game IDs provided")
+    
+    # Get games to delete
+    result = await db.execute(select(Game).where(Game.id.in_(request.game_ids)))
+    games_to_delete = result.scalars().all()
+    
+    deleted_ids = []
+    deleted_titles = []
+    
+    for game in games_to_delete:
+        # Remove from cache
+        if game.id in game_files_cache:
+            del game_files_cache[game.id]
+        deleted_ids.append(game.id)
+        deleted_titles.append(game.title)
+    
+    # Delete from database
+    if deleted_ids:
+        await db.execute(delete(Game).where(Game.id.in_(deleted_ids)))
+        await db.commit()
+    
+    logger.info(f"Bulk deleted {len(deleted_ids)} games")
+    
+    return {
+        "success": True,
+        "deleted_count": len(deleted_ids),
+        "deleted_ids": deleted_ids,
+        "deleted_titles": deleted_titles,
+        "not_found_count": len(request.game_ids) - len(deleted_ids)
+    }
+
 @api_router.delete("/admin/games/cleanup/by-source")
 async def admin_cleanup_games_by_source(
     source: str,
