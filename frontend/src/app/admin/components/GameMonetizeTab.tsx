@@ -11,7 +11,9 @@ export interface GMZGame {
   title: string;
   description: string;
   category: string;
-  thumbnail_url: string;
+  thumbnail_url: string;  // 512x384 landscape banner
+  icon_url?: string;  // 512x512 square icon
+  thumbnail_large_url?: string;  // 512x340 wide banner
   play_url: string;
   instructions?: string;
   tags?: string;
