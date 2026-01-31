@@ -687,6 +687,7 @@ export default function AdminDashboard() {
               gmzLoading={gmzLoading}
               gmzCategory={gmzCategory}
               gmzCategories={gmzCategories}
+              gmzSort={gmzSort}
               gmzHasMore={gmzHasMore}
               gmzPage={gmzPage}
               selectedGmzGames={selectedGmzGames}
@@ -694,11 +695,12 @@ export default function AdminDashboard() {
               importing={gmzImporting}
               onCategoryChange={(cat) => {
                 setGmzCategory(cat);
-                fetchGmzGames(cat, 1, false, gmzSearch);
+                fetchGmzGames(cat, 1, false, gmzSearch, gmzSort);
               }}
+              onSortChange={handleGmzSortChange}
               onSearch={handleGmzSearch}
-              onRefresh={() => fetchGmzGames(gmzCategory, 1, false, gmzSearch)}
-              onLoadMore={() => fetchGmzGames(gmzCategory, gmzPage + 1, true, gmzSearch)}
+              onRefresh={() => fetchGmzGames(gmzCategory, 1, false, gmzSearch, gmzSort)}
+              onLoadMore={() => fetchGmzGames(gmzCategory, gmzPage + 1, true, gmzSearch, gmzSort)}
               onToggleSelection={toggleGmzGameSelection}
               onImportSelected={importSelectedGmzGames}
               onSelectAll={selectAllGmzGames}
