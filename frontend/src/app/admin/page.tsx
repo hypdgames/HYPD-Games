@@ -653,6 +653,28 @@ export default function AdminDashboard() {
             />
           </TabsContent>
 
+          <TabsContent value="gamemonetize">
+            <GameMonetizeTab
+              gmzGames={gmzGames}
+              gmzLoading={gmzLoading}
+              gmzCategory={gmzCategory}
+              gmzCategories={gmzCategories}
+              gmzHasMore={gmzHasMore}
+              gmzPage={gmzPage}
+              selectedGmzGames={selectedGmzGames}
+              games={games}
+              importing={gmzImporting}
+              onCategoryChange={(cat) => {
+                setGmzCategory(cat);
+                fetchGmzGames(cat, 1, false);
+              }}
+              onRefresh={() => fetchGmzGames(gmzCategory, 1, false)}
+              onLoadMore={() => fetchGmzGames(gmzCategory, gmzPage + 1, true)}
+              onToggleSelection={toggleGmzGameSelection}
+              onImportSelected={importSelectedGmzGames}
+            />
+          </TabsContent>
+
           <TabsContent value="upload">
             <UploadTab token={token} onGameCreated={fetchGames} />
           </TabsContent>
