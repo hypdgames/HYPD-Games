@@ -2430,7 +2430,7 @@ async def get_gamemonetize_categories():
 @api_router.post("/admin/gamemonetize/import")
 async def import_gamemonetize_game(
     game_data: GMZGameImport,
-    user: User = Depends(get_current_admin),
+    user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db)
 ):
     """Import a single game from GameMonetize"""
