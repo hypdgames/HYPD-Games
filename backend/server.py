@@ -643,6 +643,35 @@ async def get_streak_leaderboard(
     
     return {"leaderboard": leaderboard}
 
+@api_router.post("/user/toggle-pro")
+async def toggle_pro_status(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Toggle Pro/ad-free status for the current user (admin only for testing)"""
+    if not user.is_admin:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    # Toggle the is_ad_free status
+    new_status = not (user.is_ad_free or False)
+    
+    await db.execute(
+        update(User)
+        .where(User.id == user.id)
+        .values(is_ad_free=new_status)
+    )
+    await db.commit()
+    
+    # Return updated user data
+    result = await db.execute(select(User).where(User.id == user.id))
+    updated_user = result.scalar_one()
+    
+    return {
+        "success": True,
+        "is_ad_free": updated_user.is_ad_free,
+        "message": f"Pro status {'enabled' if new_status else 'disabled'}"
+    }
+
 @api_router.post("/auth/save-game/{game_id}")
 async def save_game(game_id: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     saved = user.saved_games or []
