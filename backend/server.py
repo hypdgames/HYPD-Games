@@ -669,7 +669,7 @@ async def get_games(
     visible_only: bool = True,
     db: AsyncSession = Depends(get_db)
 ):
-    """Get all games with caching"""
+    """Get all games - no caching for real-time updates"""
     query = select(Game)
     
     if category and category != "all":
@@ -684,8 +684,10 @@ async def get_games(
     game_responses = [GameResponse(**g.to_dict()).model_dump() for g in games]
     
     response = JSONResponse(content=game_responses)
-    # Stale-while-revalidate: serve cached content while fetching fresh in background
-    response.headers["Cache-Control"] = "public, max-age=30, stale-while-revalidate=60"
+    # Disable caching for real-time updates after admin changes
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
     return response
 
 @api_router.get("/games/{game_id}", response_model=GameResponse)
