@@ -720,7 +720,8 @@ export default function AdminDashboard() {
                 onImportSelected={importSelectedGmzGames}
                 onSelectAll={selectAllGmzGames}
                 onClearSelection={clearGmzSelection}
-            />
+              />
+            )}
           </TabsContent>
 
           <TabsContent value="upload">
@@ -770,6 +771,8 @@ export default function AdminDashboard() {
               initialSiteName={siteName}
               initialFaviconUrl={faviconUrl}
               initialPrimaryColor={primaryColor}
+              initialGamepixEnabled={gamepixEnabled}
+              initialGamemonetizeEnabled={gamemonetizeEnabled}
               onSettingsSaved={fetchSettings}
             />
           </TabsContent>
