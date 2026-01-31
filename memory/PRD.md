@@ -74,7 +74,11 @@
 - [x] Game visibility toggle
 - [x] Game deletion
 - [x] GamePix import (LIVE)
-- [x] GameDistribution import (mock - deprecated)
+- [x] GameMonetize import (LIVE - January 2026)
+- [x] **Admin Network Settings** (January 31, 2026)
+  - Enable/disable GamePix and GameMonetize individually
+  - Dynamic tab visibility based on settings
+  - Warning when all networks disabled
 - [x] **Enhanced Analytics Dashboard with charts:**
   - Overview cards (Total Users, Games, Plays, Active 24h)
   - Daily Activity Area Chart (14 days)
