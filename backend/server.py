@@ -2310,10 +2310,10 @@ async def bulk_import_gamepix_games(
 
 # ==================== GAMEMONETIZE INTEGRATION ====================
 
-# GameMonetize Configuration
-GAMEMONETIZE_API_BASE = "https://rss.gamemonetize.com/rssfeed.php"
+# GameMonetize Configuration - Using custom feed URL
+GAMEMONETIZE_FEED_URL = "https://gamemonetize.com/feed.php"
 
-# GameMonetize categories mapping (ID -> name)
+# GameMonetize categories (will be populated from feed)
 GAMEMONETIZE_CATEGORIES = [
     {"id": "All", "name": "All Games", "icon": "🎮"},
     {"id": "Action", "name": "Action", "icon": "⚔️"},
@@ -2322,6 +2322,7 @@ GAMEMONETIZE_CATEGORIES = [
     {"id": "Basketball", "name": "Basketball", "icon": "🏀"},
     {"id": "Beauty", "name": "Beauty", "icon": "💄"},
     {"id": "Bike", "name": "Bike", "icon": "🚴"},
+    {"id": "Boys", "name": "Boys", "icon": "👦"},
     {"id": "Car", "name": "Car", "icon": "🚗"},
     {"id": "Card", "name": "Card", "icon": "🃏"},
     {"id": "Casual", "name": "Casual", "icon": "🎯"},
@@ -2331,12 +2332,13 @@ GAMEMONETIZE_CATEGORIES = [
     {"id": "Driving", "name": "Driving", "icon": "🏎️"},
     {"id": "Escape", "name": "Escape", "icon": "🚪"},
     {"id": "FPS", "name": "FPS", "icon": "🔫"},
+    {"id": "Girls", "name": "Girls", "icon": "👧"},
     {"id": "Horror", "name": "Horror", "icon": "👻"},
+    {"id": "Hypercasual", "name": "Hypercasual", "icon": "⚡"},
     {"id": "io", "name": ".io Games", "icon": "🌐"},
     {"id": "Mahjong", "name": "Mahjong", "icon": "🀄"},
     {"id": "Minecraft", "name": "Minecraft", "icon": "⛏️"},
     {"id": "Multiplayer", "name": "Multiplayer", "icon": "👥"},
-    {"id": "Pool", "name": "Pool", "icon": "🎱"},
     {"id": "Puzzle", "name": "Puzzle", "icon": "🧩"},
     {"id": "Racing", "name": "Racing", "icon": "🏁"},
     {"id": "Shooting", "name": "Shooting", "icon": "🎯"},
@@ -2346,11 +2348,6 @@ GAMEMONETIZE_CATEGORIES = [
     {"id": "Strategy", "name": "Strategy", "icon": "♟️"},
     {"id": "2 Player", "name": "2 Player", "icon": "👫"},
     {"id": "3D", "name": "3D", "icon": "🎲"},
-    {"id": "Baby Hazel", "name": "Baby Hazel", "icon": "👶"},
-    {"id": "Bejeweled", "name": "Bejeweled", "icon": "💎"},
-    {"id": "Boys", "name": "Boys", "icon": "👦"},
-    {"id": "Girls", "name": "Girls", "icon": "👧"},
-    {"id": "Hypercasual", "name": "Hypercasual", "icon": "⚡"},
 ]
 
 class GMZGameImport(BaseModel):
@@ -2363,71 +2360,76 @@ class GMZGameImport(BaseModel):
     instructions: Optional[str] = None
     width: Optional[int] = None
     height: Optional[int] = None
+    tags: Optional[str] = None
 
 @api_router.get("/gamemonetize/browse")
 async def browse_gamemonetize_games(
     category: Optional[str] = None,
+    search: Optional[str] = None,
     page: int = 1,
-    limit: int = 24
+    num: int = 50
 ):
     """Browse games from GameMonetize JSON feed"""
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
-            # Build GameMonetize feed URL
+            # Build feed URL with your custom endpoint
             params = {
-                "format": "json",
-                "type": "html5",
-                "popularity": "newest",
-                "company": "All",
-                "amount": "200",  # Get more games to allow filtering
+                "format": "0",  # JSON format
+                "num": str(num),
+                "page": str(page),
             }
             
-            if category and category.lower() != "all":
-                params["category"] = category
-            else:
-                params["category"] = "All"
-            
-            response = await client.get(GAMEMONETIZE_API_BASE, params=params)
+            response = await client.get(GAMEMONETIZE_FEED_URL, params=params)
             
             if response.status_code != 200:
                 logger.warning(f"GameMonetize API returned {response.status_code}")
-                return {"games": [], "total": 0, "page": page, "limit": limit, "error": "Failed to fetch games"}
+                return {"games": [], "total": 0, "page": page, "num": num, "error": "Failed to fetch games"}
             
-            data = response.json()
+            all_games = response.json()
             
-            # GameMonetize returns a list of games directly
-            all_games = data if isinstance(data, list) else []
+            if not isinstance(all_games, list):
+                all_games = []
             
-            # Paginate locally
-            start_idx = (page - 1) * limit
-            end_idx = start_idx + limit
-            page_games = all_games[start_idx:end_idx]
+            # Apply category filter locally (since API doesn't seem to support it well)
+            if category and category.lower() != "all":
+                all_games = [g for g in all_games if g.get("category", "").lower() == category.lower()]
             
+            # Apply search filter
+            if search:
+                search_lower = search.lower()
+                all_games = [g for g in all_games if 
+                    search_lower in g.get("title", "").lower() or 
+                    search_lower in g.get("tags", "").lower() or
+                    search_lower in g.get("description", "").lower()
+                ]
+            
+            # Format games
             games = []
-            for g in page_games:
+            for g in all_games:
                 games.append({
                     "gmz_game_id": g.get("id", ""),
                     "title": g.get("title", "Unknown"),
                     "description": g.get("description", ""),
                     "category": g.get("category", "Action"),
-                    "thumbnail_url": g.get("thumb", "") or g.get("image", ""),
+                    "thumbnail_url": g.get("thumb", ""),
                     "play_url": g.get("url", ""),
                     "instructions": g.get("instructions", ""),
+                    "tags": g.get("tags", ""),
                     "width": int(g.get("width", 800)) if g.get("width") else 800,
                     "height": int(g.get("height", 600)) if g.get("height") else 600,
                 })
             
             return {
                 "games": games,
-                "total": len(all_games),
+                "total": len(games),
                 "page": page,
-                "limit": limit,
-                "has_more": end_idx < len(all_games)
+                "num": num,
+                "has_more": len(all_games) >= num  # If we got full page, might be more
             }
             
     except Exception as e:
         logger.error(f"Error fetching GameMonetize games: {e}")
-        return {"games": [], "total": 0, "page": page, "limit": limit, "error": str(e)}
+        return {"games": [], "total": 0, "page": page, "num": num, "error": str(e)}
 
 @api_router.get("/gamemonetize/categories")
 async def get_gamemonetize_categories():
