@@ -48,6 +48,16 @@ export default function AdminDashboard() {
   const [gpxCategories, setGpxCategories] = useState<{id: string; name: string; icon: string}[]>([]);
   const [importing, setImporting] = useState(false);
 
+  // GameMonetize state
+  const [gmzGames, setGmzGames] = useState<GMZGame[]>([]);
+  const [gmzLoading, setGmzLoading] = useState(false);
+  const [gmzCategory, setGmzCategory] = useState<string>("all");
+  const [gmzPage, setGmzPage] = useState(1);
+  const [gmzHasMore, setGmzHasMore] = useState(false);
+  const [selectedGmzGames, setSelectedGmzGames] = useState<Set<string>>(new Set());
+  const [gmzCategories, setGmzCategories] = useState<{id: string; name: string; icon: string}[]>([]);
+  const [gmzImporting, setGmzImporting] = useState(false);
+
   // Analytics state
   const [analyticsOverview, setAnalyticsOverview] = useState<AnalyticsOverview | null>(null);
   const [dailyStats, setDailyStats] = useState<DailyStats[]>([]);
