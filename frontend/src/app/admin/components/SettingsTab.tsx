@@ -1,9 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { Upload, Image as ImageIcon, Trash2, Globe, Check, Loader2 } from "lucide-react";
+import { useRef, useState, useEffect } from "react";
+import { Upload, Image as ImageIcon, Trash2, Globe, Check, Loader2, Gamepad2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
@@ -15,6 +16,8 @@ interface SettingsTabProps {
   initialSiteName: string;
   initialFaviconUrl: string;
   initialPrimaryColor: string;
+  initialGamepixEnabled?: boolean;
+  initialGamemonetizeEnabled?: boolean;
   onSettingsSaved: () => void;
 }
 
@@ -25,6 +28,8 @@ export function SettingsTab({
   initialSiteName,
   initialFaviconUrl,
   initialPrimaryColor,
+  initialGamepixEnabled = true,
+  initialGamemonetizeEnabled = true,
   onSettingsSaved,
 }: SettingsTabProps) {
   const [logoUrl, setLogoUrl] = useState(initialLogoUrl);
@@ -37,9 +42,19 @@ export function SettingsTab({
   const [faviconPreview, setFaviconPreview] = useState(initialFaviconUrl);
   const [primaryColor, setPrimaryColor] = useState(initialPrimaryColor);
   const [saving, setSaving] = useState(false);
+  
+  // Game network settings
+  const [gamepixEnabled, setGamepixEnabled] = useState(initialGamepixEnabled);
+  const [gamemonetizeEnabled, setGamemonetizeEnabled] = useState(initialGamemonetizeEnabled);
 
   const logoFileRef = useRef<HTMLInputElement>(null);
   const faviconFileRef = useRef<HTMLInputElement>(null);
+  
+  // Update state when initial values change
+  useEffect(() => {
+    setGamepixEnabled(initialGamepixEnabled);
+    setGamemonetizeEnabled(initialGamemonetizeEnabled);
+  }, [initialGamepixEnabled, initialGamemonetizeEnabled]);
 
   const handleLogoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -127,6 +142,8 @@ export function SettingsTab({
           site_name: siteName,
           favicon_url: finalFaviconUrl,
           primary_color: primaryColor,
+          gamepix_enabled: String(gamepixEnabled),
+          gamemonetize_enabled: String(gamemonetizeEnabled),
         }),
       });
 
@@ -388,6 +405,63 @@ export function SettingsTab({
             Recommended: 32x32 or 64x64 PNG, ICO, or SVG
           </p>
         </div>
+      </div>
+
+      {/* Game Networks Settings */}
+      <div className="bg-card border border-border rounded-xl p-6" data-testid="game-networks-settings">
+        <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+          <Gamepad2 className="w-5 h-5 text-lime" />
+          Game Networks
+        </h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          Enable or disable game provider integrations. Disabled networks won&apos;t appear in the admin dashboard for importing games.
+        </p>
+        
+        <div className="space-y-4">
+          {/* GamePix Toggle */}
+          <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-background">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-lime/20 flex items-center justify-center">
+                <Globe className="w-5 h-5 text-lime" />
+              </div>
+              <div>
+                <div className="font-medium text-foreground">GamePix</div>
+                <div className="text-xs text-muted-foreground">High-quality HTML5 games</div>
+              </div>
+            </div>
+            <Switch
+              checked={gamepixEnabled}
+              onCheckedChange={setGamepixEnabled}
+              data-testid="gamepix-toggle"
+            />
+          </div>
+          
+          {/* GameMonetize Toggle */}
+          <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-background">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                <Globe className="w-5 h-5 text-purple-500" />
+              </div>
+              <div>
+                <div className="font-medium text-foreground">GameMonetize</div>
+                <div className="text-xs text-muted-foreground">Large catalog of browser games</div>
+              </div>
+            </div>
+            <Switch
+              checked={gamemonetizeEnabled}
+              onCheckedChange={setGamemonetizeEnabled}
+              data-testid="gamemonetize-toggle"
+            />
+          </div>
+        </div>
+        
+        {!gamepixEnabled && !gamemonetizeEnabled && (
+          <div className="mt-4 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
+            <p className="text-sm text-yellow-500">
+              ⚠️ All game networks are disabled. You can still upload custom games.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Color Settings */}
