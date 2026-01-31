@@ -15,9 +15,9 @@ export interface Game {
   is_visible: boolean;
   play_count: number;
   created_at: string;
-  // GameDistribution fields
+  // Game network fields
   gd_game_id?: string;
-  source?: 'custom' | 'gamedistribution' | 'gamepix';
+  source?: 'custom' | 'gamedistribution' | 'gamepix' | 'gamemonetize';
   embed_url?: string;
   instructions?: string;
 }
