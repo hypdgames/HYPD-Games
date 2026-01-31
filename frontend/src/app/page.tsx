@@ -39,12 +39,10 @@ export default function GameFeed() {
   const precachedRef = useRef<Set<string>>(new Set());
 
   // Fetch games function (reusable for refresh)
-  const fetchGames = useCallback(async (showToast = false, forceRefresh = false) => {
+  const fetchGames = useCallback(async (showToast = false) => {
     try {
       const res = await fetch(`${API_URL}/api/games`, {
-        // Use cache with revalidation for initial load, no-store only for manual refresh
-        cache: forceRefresh ? "no-store" : "default",
-        next: forceRefresh ? undefined : { revalidate: 30 },
+        cache: "no-store",  // Always fetch fresh data
       });
       if (res.ok) {
         const data = await res.json();
