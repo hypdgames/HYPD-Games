@@ -1,172 +1,157 @@
 <analysis>**original_problem_statement**:
-Role: You are a Senior Full-Stack Developer and UI/UX Architect with experience in building high-performance browser gaming platforms (like Poki or CrazyGames).
-Project Name: Hypd Games
-Core Concept: A mobile-first instant gaming website featuring a vertical, TikTok-style endless scroll feed where users swipe through game previews and tap to play instantly.
-Technical Stack Requirements:
-- Frontend: React (Next.js) for SSR and performance. Tailwind CSS for styling. Framer Motion for swipe animations.
-- Backend: Python (FastAPI).
-- Database: PostgreSQL.
-- Storage: AWS S3 or similar for hosting game zip files and assets.
+The user wants to build Hypd Games, a mobile-first instant gaming website with a vertical, TikTok-style endless scroll feed. The initial requirements included a React (Next.js) frontend, a Python (FastAPI) backend, and a PostgreSQL database.
 
-Feature Specifications:
-- Game Feed: Full-screen vertical scroll, lazy loading, tap to play.
-- Game Player: 100% full screen with a draggable Back Arrow.
-- Mobile Bottom Bar: Tabs for Feed, Explore, PRO, Profile.
-- Admin Dashboard: Hidden link on Profile page, game upload (.zip), metadata management, logo change.
-- New game request: A Flappy Bird style game with high-quality pixel art.
-- Additional requests: Daily login streaks, security audit, performance optimization, game sorting, dual image types.
+During this session, the user requested the following features:
+- **Daily Login Streaks**: A system to reward users for consecutive daily logins.
+- **Wallet/Coin System**: An in-app currency (coins) system for users, intended to be integrated with Stripe for purchasing coin packs.
+- **AdSense Verification**: Add the Google AdSense verification script to the site.
+- ** Updates**: Add entries for their personal AdSense account and for a new game provider, GameMonetize.
+- **Multi-Network Game Integration**: Integrate GameMonetize as a second game provider alongside the existing GamePix integration.
+- **Admin Dashboard Enhancements**: Add a new tab in the admin dashboard to browse, filter, sort, and import games from GameMonetize.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The application is a full-stack gaming platform with a Next.js frontend and a FastAPI backend, integrated with GamePix for game content.
+The application is a full-stack gaming platform with a Next.js frontend and a FastAPI backend. It integrates two game providers, **GamePix** and **GameMonetize**, allowing an admin to import games from either network via dedicated tabs in the admin dashboard.
 
-Key functionalities include:
-- A card-based main feed and a redesigned explore page with horizontally scrolling categories.
-- A comprehensive admin dashboard featuring user management (CRUD), device analytics, game management, and GamePix import functionality with sorting by quality or date.
-- The system now supports both banner and icon images from GamePix, using the appropriate image for different UI contexts (feed vs. explore grids).
-- A full security audit has been completed and implemented, adding rate limiting, password complexity rules, secure CORS policies, and improved error handling.
-- Significant performance optimizations have been deployed, including backend Gzip compression, frontend API caching (SWR), and optimized image loading with .
-- The database schema has been updated to support a new daily login streak feature, though the backend logic is still in progress.
+Key functionalities implemented in this session:
+- **Multi-Network Admin Dashboard**: The admin dashboard now has separate tabs for GamePix and the newly added GameMonetize (GMZ). The GMZ tab features search, category filtering, and client-side sorting (Newest, Oldest, Title A-Z/Z-A).
+- **Daily Login Streak Feature**: A fully functional and tested daily login system is in place. It tracks consecutive login days, awards points, and displays the user's streak statistics on their profile page.
+- **Wallet System (Disabled)**: The backend models, API endpoints, and a dedicated frontend page () for a coin-based economy have been created. The Stripe integration for purchasing coins was implemented but then gracefully disabled at the user's request, as they do not have a Stripe account yet. The UI now shows Coming Soon for purchase options.
+- **AdSense & **: The site's layout includes the AdSense verification script, and the  file has been updated with all required entries for the user's personal AdSense ID, GamePix, and GameMonetize.
 
 **Last working item**:
-- Last item agent was working: The agent was implementing the Daily Login Streak feature. The database migration to add  and  columns to the  table has been successfully created and executed. The next step is to implement the business logic in the backend.
-- Status: IN PROGRESS
-- Agent Testing Done: N
-- Which testing method agent to use? backend testing agent or  commands to test the login endpoint's new streak logic and any new API endpoints created for fetching streak data.
+- Last item agent was working: The agent implemented client-side sorting for the GameMonetize games in the admin dashboard. The user requested the ability to sort games, and since the GameMonetize API feed did not support sorting parameters, the agent implemented the logic on the frontend.
+- Status: USER VERIFICATION PENDING
+- Agent Testing Done: Y
+- Which testing method agent to use? Manual testing by user. The user should navigate to the admin dashboard, go to the GMZ tab, and test the Sort by dropdown to confirm the games reorder as expected (Newest, Oldest, Title A-Z, Title Z-A).
 - User Testing Done: N
 
 **All Pending/In progress Issue list**:
-  - There are no outstanding bugs or issues. The current focus is on new feature development.
+- There are no outstanding bugs or issues.
 
 **In progress Task List**:
-  - Task 1:  Complete the Daily Login Streak Feature (P0)
-  
- Task Detail:
-  - Task 1: 
-     - Where to resume: The agent needs to modify .
-        1. Update the  endpoint to calculate and update the user's login streak based on .
-        2. Create a new endpoint (e.g., ) to allow the authenticated user to fetch their current streak information.
-        3. Update the frontend (e.g., on the profile or a new challenges page) to display this streak to the user.
-     - What will be achieved with this? This will complete the daily login streak feature, providing a new engagement mechanic for users.
-     - Status:  IN PROGRESS
-     - Should Test frontend/backend/both after fix? Both. Backend for the logic, frontend to ensure it's displayed correctly.
-     - Blocked on something: None.
+- No tasks are currently in progress.
 
 **Upcoming and Future Tasks**
 - **Upcoming Tasks:**
-    - P1: Implement a Featured Games section on the home feed that highlights top-quality GamePix games (based on ).
+    - P0: **Enable Wallet System with Stripe**: Re-enable the Stripe payment functionality once the user provides a valid . This involves uncommenting code in  and potentially adding  back to .
+    - P1: **Admin Network Settings**: Implement the proposed admin settings to allow enabling/disabling each game network (GamePix, GameMonetize) individually. This would likely be in the Settings tab of the admin dashboard.
+    - P1: **Implement Featured Games section**: As per the original request, add a section on the home feed to highlight top-quality games.
 - **Future Tasks:**
     - P1: Implement Video Previews for games.
-    - P2: Implement Social Feature Enhancements (friend-to-friend challenges, game sharing).
+    - P2: Implement Social Feature Enhancements (friend challenges, game sharing).
     - P2: Implement User Notifications.
     - P2: Implement Flappy Bird style game.
     - P2: Add custom fonts.
     - P2: Add SEO meta tags customization.
 
 **Completed work in this session**
-- **Admin Dashboard Refactoring**: Successfully refactored the monolithic 2,400-line  into seven smaller, modular components located in .
-- **Full Security Audit & Hardening**:
-    - Conducted a 10-point security audit and implemented several high-priority fixes.
-    - Added rate limiting to auth endpoints (, ).
-    - Enforced strong password policies (length and complexity).
-    - Secured the backend  policy for production environments.
-    - Replaced detailed exception responses with generic error messages to prevent information leaks.
-    - Added security logging for critical admin actions like banning/unbanning users.
-- **Website Performance Optimization**:
-    - Implemented Gzip compression in the FastAPI backend.
-    - Leveraged  for optimized image loading on the feed and explore pages, including configuring the  domain.
-    - Implemented dynamic imports () for the heavy  library in the analytics tab to reduce initial bundle size.
-    - Added  caching strategy on the frontend for the main games feed.
-- **Dual Game Image Support (Icon & Banner)**:
-    - Added an  field to the  model and ran a database migration to populate it for existing games.
-    - Updated the GamePix import logic to store both the wide  (as ) and the square  (as ).
-    - Modified the frontend to use the square  on the Explore page grid and the banner  on the main feed, improving the UI in both contexts.
-- **Admin Feature: GamePix Sorting**: Added controls to the admin dashboard to allow sorting of GamePix games by Best Quality or Newest First before importing.
-- **Session Persistence & UI Bug Fixes**:
-    - Fixed a critical session persistence issue where refreshing the  page would redirect to .
-    - Corrected an issue where the background pattern on the main feed was invisible in light mode.
-    - Added  attributes to the refactored admin components for improved testability.
-- **Vercel Build Failure Resolution**: Diagnosed and fixed a TypeScript type error in the  component that was causing the Vercel build to fail.
+- **GameMonetize Network Integration**:
+    - Backend: Added API endpoints to fetch and import games from the GameMonetize feed ().
+    - Frontend: Created a new  component with search, filtering, and client-side sorting capabilities. Integrated it into the main admin page ().
+- **Daily Login Streak Feature**:
+    - Backend: Updated the login endpoint to calculate streaks and award points; added a new endpoint to fetch streak data ().
+    - Frontend: Added a comprehensive Streaks tab to the user profile page ().
+    - Testing: Verified with the testing agent ().
+- **Wallet/Coin System (Implementation & Disabling)**:
+    - Backend: Created database models (, ) and API endpoints for the wallet. Refactored from  to the standard  SDK to solve a deployment issue, then disabled payment features by checking for .
+    - Frontend: Created a new  page and updated the UI to reflect that purchases are Coming Soon.
+    - Testing: Verified with the testing agent ().
+- **AdSense &  Setup**:
+    - Added the AdSense verification script to the root layout ().
+    - Updated  with entries for the user's AdSense ID and the complete list for GameMonetize.
+- **Railway Deployment Fix**: Resolved a deployment failure by replacing the platform-specific  library with the standard  library, then removing it when the user requested to disable payments.
 
 **Earlier issues found/mentioned but not fixed**
-   - None.
+- None.
 
 **Known issue recurrence from previous fork**
-  - None in this session.
+- None.
 
 **Code Architecture**
-icon_urlicon_urlicon_url
+
 
 **Key Technical Concepts**
-- **Frontend**: Next.js 14, TypeScript, Tailwind CSS, Zustand, Framer Motion, Recharts, SWR.
-- **Backend**: FastAPI, PostgreSQL (via Supabase), SQLAlchemy.
-- **Security Hardening**: Rate Limiting, Strong Password Policies, Secure CORS, Generic Error Handling, Security Logging.
-- **Performance Optimization**: Gzip Compression,  component, Dynamic Imports (),  caching.
-- **Database Migration**: Writing and executing Python scripts to alter table schemas and backfill data.
-- **Code Refactoring**: Breaking down large React components into smaller, more maintainable modules.
+- **Multi-Network Game Integration**: Managing and importing games from multiple third-party feeds (GamePix, GameMonetize).
+- **Client-Side Data Manipulation**: Implementing sorting (Newest, Oldest, A-Z) in React when the backing API lacks sort parameters.
+- **Graceful Feature Disabling**: Architecting features (like Stripe payments) to be toggled off via environment variables without breaking the application.
+- **Ad Monetization Setup**: Correctly placing AdSense verification scripts and managing a multi-provider  file.
+- **Database Migrations**: Scripting schema changes for new features like login streaks and the wallet system.
+- **Deployment Troubleshooting**: Diagnosing and fixing environment-specific build/runtime errors (e.g., missing dependencies on Railway).
 
 **key DB schema**
 - **users**: 
-- **games**: 
+- **games**:  (e.g., 'gamepix', 'gamemonetize', 'custom')
+- **wallet_transactions**: 
+- **coin_packages**: 
 
 **changes in tech stack**
-- No new technologies were added.
+- No permanent changes. The  library was temporarily added and then removed from .
 
 **All files of reference**
-- : Contains all backend logic, including security fixes, new sorting capabilities, and the placeholder for the login streak logic.
-- : Defines the database schema, including the newly added columns.
-- : The main admin page, now refactored to be much smaller.
-- : The directory containing all the refactored admin tab components.
-- : The Zustand store, updated to fix the session persistence issue.
-- : A detailed report of the security audit performed.
-- : The plan and results of the performance optimizations.
+- : Core logic for streaks, wallet system (disabled), and new GameMonetize integration.
+- : Defines schema for streaks and wallet.
+- : Manages state and logic for the new GameMonetize tab.
+- : UI for browsing and importing GameMonetize games.
+- : The new user-facing Wallet page.
+- : Displays the new Daily Login Streak feature.
+- : Contains combined ad network verification codes.
+- : Contains the AdSense verification script.
+- : The migration script for the new database tables.
 
 **Areas that need refactoring**:
-- The  file has been successfully refactored. Some of the new components, like  (over 500 lines), are still large and could be broken down further in the future if more functionality is added to them.
+- The main admin page at  is becoming large and complex again as it handles state for multiple import tabs. The state and fetch logic for  and  could be encapsulated within their respective components or moved to custom hooks to simplify the parent page.
 
 **key api endpoints**
-- : Needs to be updated to handle login streak logic.
-- : Now accepts an  query parameter ( or ).
-- : The main endpoint for the game feed, now serving Gzip-compressed responses with cache headers.
+-  (Updated for streak logic)
+- 
+- 
+- 
+- 
+-  (Disabled)
+- 
+- 
+- 
 
 **Critical Info for New Agent**
-- **Your immediate task is to complete the Daily Login Streak feature.** The database schema is already updated. You need to implement the core logic in the  endpoint in  and then create a new endpoint and frontend component to display the streak.
-- The admin dashboard has been significantly refactored. All tab-related code is now located in .
-- A comprehensive security audit and performance optimization pass has been completed. Be mindful of the new patterns, such as using  for images and the rate limiting on authentication routes.
+- Your immediate priority is to await user feedback on the new GameMonetize sorting feature in the admin dashboard.
+- The project now supports two game networks. All game import logic is handled in the admin panel.
+- The wallet system is built but **disabled**. Do not attempt to use the purchase functionality. The next logical step for this feature is for the user to provide a real Stripe API key to re-enable it. The backend code is designed to work with or without the .
+- The  and AdSense verification are configured. The user will need to deploy the application for the changes to be visible to Google.
 
 **documents and test reports created in this job**
 - 
 - 
 - 
-- 
-- 
-- 
 
 **Last 10 User Messages and any pending HUMAN messages**
-1. **User**: okay it worked. Now i want you to add daily login streaks as a challenge (IN PROGRESS - DB part done)
-2. **User**: 19:22:25.353 Running build in Washington, D.C... (RESOLVED - Log provided, agent fixed build error)
-3. **User**: 19:19:28.329 warning package-lock.json found... (RESOLVED - User shared warnings, agent fixed them)
-4. **User**: i got this error in vercel Command yarn build exited with 1 (RESOLVED)
-5. **User**: Now i want to be able to sort the games. On the ganepix dasboard it can sort games by quality and by last published. Can you add that to my dashbaord in the gamepix section (DONE)
-6. **User**: Yes do that please (DONE - Agent implemented dual image type support)
-7. **User**: In my gamepix dashboard i can see the games have multiple inages that can be used Such as icon and banner. Are you able to access both these options? (DONE)
-8. **User**: Okay now i want you to review the entire website and do any optimisations that can help speed up the site. (DONE)
-9. **User**: Fix this: 2. Security Misconfiguration ⚠️ CORS needs production config (DONE)
-10. **User**: Provided a 10-point security checklist to audit the application against. (DONE)
+1.  **User**: Asks to sort GameMonetize games by newest and other options. (DONE)
+2.  **User**: Provides their GameMonetize feed URL and asks for filtering options. (DONE)
+3.  **User**: Asks for a recommendation between JSON and XML for the game feed. (Agent advised JSON).
+4.  **User**: Reports that GameMonetize verification is working and asks about the game feed.
+5.  **User**: Provides the full, correct, multi-line  content for GameMonetize after the initial attempt failed verification. (DONE)
+6.  **User**: Provides the initial (incomplete)  snippet for GameMonetize. (DONE, then superseded).
+7.  **User**: Confirms to proceed with building the multi-network admin dashboard. (DONE)
+8.  **User**: Asks about the feasibility and best practices for having both GamePix and GameMonetize live on the site simultaneously. (Agent researched and provided a plan).
+9.  **User**: Asks to add a specific entry to . (This was their AdSense ID, DONE).
+10. **User**: Requests a change to the AdSense verification code snippet. (DONE).
 
 **Project Health Check:**
 - **Broken**: None
-- **Mocked**: None
+- **Mocked**: The Stripe payment functionality is mocked/disabled. The system is designed to run without it, showing Coming Soon on the frontend.
 
 **3rd Party Integrations**
 - **Vercel**: Hosts the Next.js frontend.
 - **Railway**: Hosts the FastAPI backend.
 - **Supabase**: PostgreSQL database.
 - **GamePix**: Integrated for HTML5 game content.
+- **GameMonetize**: Newly integrated for additional HTML5 game content.
+- **Google AdSense**: Site verification script and  entries have been added.
+- **Stripe**: Partially integrated for payments, but currently disabled.
 
 **Testing status**
-  - Testing agent used after significant changes: YES. Used for end-to-end testing of the refactored User Management UI and to verify session persistence.
+  - Testing agent used after significant changes: YES (for Daily Streaks and Wallet features).
   - Troubleshoot agent used after agent stuck in loop: NO
   - Test files created: None.
   - Known regressions: None.
@@ -175,4 +160,4 @@ icon_urlicon_urlicon_url
 - **Admin User**:  / 
 
 **What agent forgot to execute**
-- The agent has successfully addressed all user requests and items from the previous handoff. The current work is a new feature requested by the user and is actively in progress.</analysis>
+- After proposing a multi-network strategy, the agent suggested adding admin settings to enable/disable each network but did not implement this part. This remains as an upcoming task.</analysis>
