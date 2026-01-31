@@ -10,6 +10,7 @@ import type { Game } from "@/types";
 import {
   GamesTab,
   GamePixTab,
+  GameMonetizeTab,
   UploadTab,
   AnalyticsTab,
   UsersTab,
@@ -25,6 +26,7 @@ import {
   AdminUser,
   UserStats,
 } from "./components";
+import type { GMZGame } from "./components/GameMonetizeTab";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
