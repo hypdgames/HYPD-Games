@@ -2622,13 +2622,14 @@ async def bulk_import_gamemonetize_games(
             skipped.append(game_data.title)
             continue
         
-        # Create new game
+        # Create new game with proper image URLs
         new_game = Game(
             id=str(uuid.uuid4()),
             title=game_data.title,
             description=game_data.description or "",
             category=game_data.category.title(),
-            thumbnail_url=game_data.thumbnail_url,
+            thumbnail_url=game_data.thumbnail_url,  # 512x384 landscape banner
+            icon_url=game_data.icon_url,  # 512x512 square icon
             embed_url=game_data.play_url,
             source="gamemonetize",
             gd_game_id=gd_game_id,
