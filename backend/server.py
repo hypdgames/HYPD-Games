@@ -2311,45 +2311,46 @@ async def bulk_import_gamepix_games(
 # ==================== GAMEMONETIZE INTEGRATION ====================
 
 # GameMonetize Configuration
-GAMEMONETIZE_API_BASE = "https://gamemonetize.com/feeds"
+GAMEMONETIZE_API_BASE = "https://gamemonetize.com/rssfeed.php"
 
-# GameMonetize categories mapping
+# GameMonetize categories mapping (ID -> name)
 GAMEMONETIZE_CATEGORIES = [
-    {"id": "all", "name": "All Games", "icon": "🎮"},
-    {"id": "action", "name": "Action", "icon": "⚔️"},
-    {"id": "adventure", "name": "Adventure", "icon": "🗺️"},
-    {"id": "arcade", "name": "Arcade", "icon": "👾"},
-    {"id": "basketball", "name": "Basketball", "icon": "🏀"},
-    {"id": "beauty", "name": "Beauty", "icon": "💄"},
-    {"id": "bike", "name": "Bike", "icon": "🚴"},
-    {"id": "car", "name": "Car", "icon": "🚗"},
-    {"id": "card", "name": "Card", "icon": "🃏"},
-    {"id": "casual", "name": "Casual", "icon": "🎯"},
-    {"id": "clicker", "name": "Clicker", "icon": "👆"},
-    {"id": "controller", "name": "Controller", "icon": "🎮"},
-    {"id": "dressup", "name": "Dress Up", "icon": "👗"},
-    {"id": "driving", "name": "Driving", "icon": "🏎️"},
-    {"id": "escape", "name": "Escape", "icon": "🚪"},
-    {"id": "flash", "name": "Flash", "icon": "⚡"},
-    {"id": "fps", "name": "FPS", "icon": "🔫"},
-    {"id": "halloween", "name": "Halloween", "icon": "🎃"},
-    {"id": "horror", "name": "Horror", "icon": "👻"},
-    {"id": "io", "name": ".io", "icon": "🌐"},
-    {"id": "mahjong", "name": "Mahjong", "icon": "🀄"},
-    {"id": "minecraft", "name": "Minecraft", "icon": "⛏️"},
-    {"id": "mobile", "name": "Mobile", "icon": "📱"},
-    {"id": "multiplayer", "name": "Multiplayer", "icon": "👥"},
-    {"id": "pool", "name": "Pool", "icon": "🎱"},
-    {"id": "puzzle", "name": "Puzzle", "icon": "🧩"},
-    {"id": "racing", "name": "Racing", "icon": "🏁"},
-    {"id": "shooting", "name": "Shooting", "icon": "🎯"},
-    {"id": "soccer", "name": "Soccer", "icon": "⚽"},
-    {"id": "sports", "name": "Sports", "icon": "🏆"},
-    {"id": "stickman", "name": "Stickman", "icon": "🏃"},
-    {"id": "strategy", "name": "Strategy", "icon": "♟️"},
-    {"id": "tower-defense", "name": "Tower Defense", "icon": "🏰"},
-    {"id": "2-player", "name": "2 Player", "icon": "👫"},
-    {"id": "3d", "name": "3D", "icon": "🎲"},
+    {"id": "All", "name": "All Games", "icon": "🎮"},
+    {"id": "Action", "name": "Action", "icon": "⚔️"},
+    {"id": "Adventure", "name": "Adventure", "icon": "🗺️"},
+    {"id": "Arcade", "name": "Arcade", "icon": "👾"},
+    {"id": "Basketball", "name": "Basketball", "icon": "🏀"},
+    {"id": "Beauty", "name": "Beauty", "icon": "💄"},
+    {"id": "Bike", "name": "Bike", "icon": "🚴"},
+    {"id": "Car", "name": "Car", "icon": "🚗"},
+    {"id": "Card", "name": "Card", "icon": "🃏"},
+    {"id": "Casual", "name": "Casual", "icon": "🎯"},
+    {"id": "Clicker", "name": "Clicker", "icon": "👆"},
+    {"id": "Cooking", "name": "Cooking", "icon": "🍳"},
+    {"id": "Dressup", "name": "Dress Up", "icon": "👗"},
+    {"id": "Driving", "name": "Driving", "icon": "🏎️"},
+    {"id": "Escape", "name": "Escape", "icon": "🚪"},
+    {"id": "FPS", "name": "FPS", "icon": "🔫"},
+    {"id": "Horror", "name": "Horror", "icon": "👻"},
+    {"id": "io", "name": ".io Games", "icon": "🌐"},
+    {"id": "Mahjong", "name": "Mahjong", "icon": "🀄"},
+    {"id": "Minecraft", "name": "Minecraft", "icon": "⛏️"},
+    {"id": "Multiplayer", "name": "Multiplayer", "icon": "👥"},
+    {"id": "Pool", "name": "Pool", "icon": "🎱"},
+    {"id": "Puzzle", "name": "Puzzle", "icon": "🧩"},
+    {"id": "Racing", "name": "Racing", "icon": "🏁"},
+    {"id": "Shooting", "name": "Shooting", "icon": "🎯"},
+    {"id": "Soccer", "name": "Soccer", "icon": "⚽"},
+    {"id": "Sports", "name": "Sports", "icon": "🏆"},
+    {"id": "Stickman", "name": "Stickman", "icon": "🏃"},
+    {"id": "Strategy", "name": "Strategy", "icon": "♟️"},
+    {"id": "2 Player", "name": "2 Player", "icon": "👫"},
+    {"id": "3D", "name": "3D", "icon": "🎲"},
+    {"id": "Baby Hazel", "name": "Baby Hazel", "icon": "👶"},
+    {"id": "Bejeweled", "name": "Bejeweled", "icon": "💎"},
+    {"id": "Boys", "name": "Boys", "icon": "👦"},
+    {"id": "Girls", "name": "Girls", "icon": "👧"},
+    {"id": "Hypercasual", "name": "Hypercasual", "icon": "⚡"},
 ]
 
 class GMZGameImport(BaseModel):
@@ -2372,15 +2373,21 @@ async def browse_gamemonetize_games(
     """Browse games from GameMonetize JSON feed"""
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
-            # GameMonetize uses .json endpoint for their feed
-            url = f"{GAMEMONETIZE_API_BASE}/"
+            # Build GameMonetize feed URL
+            params = {
+                "format": "json",
+                "type": "html5",
+                "popularity": "newest",
+                "company": "All",
+                "amount": "200",  # Get more games to allow filtering
+            }
             
             if category and category.lower() != "all":
-                url += f"?category={category.lower()}"
+                params["category"] = category
             else:
-                url += "?category="
+                params["category"] = "All"
             
-            response = await client.get(url)
+            response = await client.get(GAMEMONETIZE_API_BASE, params=params)
             
             if response.status_code != 200:
                 logger.warning(f"GameMonetize API returned {response.status_code}")
@@ -2403,11 +2410,11 @@ async def browse_gamemonetize_games(
                     "title": g.get("title", "Unknown"),
                     "description": g.get("description", ""),
                     "category": g.get("category", "Action"),
-                    "thumbnail_url": g.get("thumb", ""),
+                    "thumbnail_url": g.get("thumb", "") or g.get("image", ""),
                     "play_url": g.get("url", ""),
                     "instructions": g.get("instructions", ""),
-                    "width": g.get("width"),
-                    "height": g.get("height"),
+                    "width": int(g.get("width", 800)) if g.get("width") else 800,
+                    "height": int(g.get("height", 600)) if g.get("height") else 600,
                 })
             
             return {
