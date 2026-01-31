@@ -105,6 +105,9 @@ export default function ProfilePage() {
   const [streakLeaderboard, setStreakLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [streakLoading, setStreakLoading] = useState(false);
 
+  // Pro toggle state (admin only)
+  const [togglingPro, setTogglingPro] = useState(false);
+
   // Form states
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
   const [registerForm, setRegisterForm] = useState({
