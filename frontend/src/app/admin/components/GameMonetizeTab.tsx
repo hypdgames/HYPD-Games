@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { Globe, Loader2, Plus, Check } from "lucide-react";
+import { Globe, Loader2, Plus, Check, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Game } from "./types";
 
@@ -13,6 +14,7 @@ export interface GMZGame {
   thumbnail_url: string;
   play_url: string;
   instructions?: string;
+  tags?: string;
   width?: number;
   height?: number;
 }
@@ -28,10 +30,13 @@ interface GameMonetizeTabProps {
   games: Game[];
   importing: boolean;
   onCategoryChange: (category: string) => void;
+  onSearch: (query: string) => void;
   onRefresh: () => void;
   onLoadMore: () => void;
   onToggleSelection: (id: string) => void;
   onImportSelected: () => void;
+  onSelectAll: () => void;
+  onClearSelection: () => void;
 }
 
 export function GameMonetizeTab({
@@ -44,14 +49,37 @@ export function GameMonetizeTab({
   games,
   importing,
   onCategoryChange,
+  onSearch,
   onRefresh,
   onLoadMore,
   onToggleSelection,
   onImportSelected,
+  onSelectAll,
+  onClearSelection,
 }: GameMonetizeTabProps) {
+  const [searchQuery, setSearchQuery] = useState("");
+  
   const isGmzGameImported = (id: string) => {
     return games.some(g => g.gd_game_id === `gmz-${id}`);
   };
+
+  const handleSearch = () => {
+    onSearch(searchQuery);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
+  };
+
+  const clearSearch = () => {
+    setSearchQuery("");
+    onSearch("");
+  };
+
+  // Count how many games can be selected (not already imported)
+  const selectableGames = gmzGames.filter(g => !isGmzGameImported(g.gmz_game_id));
 
   return (
     <div className="space-y-4">
@@ -72,11 +100,33 @@ export function GameMonetizeTab({
 
       {/* Filters Row */}
       <div className="flex flex-col sm:flex-row gap-3">
+        {/* Search Input */}
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="Search games by title or tags..."
+            className="w-full h-10 pl-10 pr-10 rounded-lg bg-card border border-border text-foreground placeholder:text-muted-foreground"
+            data-testid="gmz-search-input"
+          />
+          {searchQuery && (
+            <button
+              onClick={clearSearch}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+        
         {/* Category Select */}
         <select
           value={gmzCategory}
           onChange={(e) => onCategoryChange(e.target.value)}
-          className="h-10 px-4 rounded-lg bg-card border border-border text-foreground flex-1"
+          className="h-10 px-4 rounded-lg bg-card border border-border text-foreground min-w-[150px]"
           data-testid="gmz-category-select"
         >
           {gmzCategories.map((cat) => (
@@ -95,25 +145,55 @@ export function GameMonetizeTab({
         </Button>
       </div>
 
-      {selectedGmzGames.size > 0 && (
-        <div className="flex items-center justify-between bg-purple-500/10 border border-purple-500/30 rounded-lg p-3">
-          <span className="text-sm text-foreground">
-            <span className="font-bold text-purple-400">{selectedGmzGames.size}</span> games selected
-          </span>
-          <Button
-            onClick={onImportSelected}
-            disabled={importing}
-            size="sm"
-            className="bg-purple-500 text-white hover:bg-purple-600"
-            data-testid="import-gmz-selected-button"
-          >
-            {importing ? (
-              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+      {/* Selection Actions Bar */}
+      {gmzGames.length > 0 && (
+        <div className="flex items-center justify-between bg-card border border-border rounded-lg p-3">
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-muted-foreground">
+              {gmzGames.length} games loaded
+              {selectedGmzGames.size > 0 && (
+                <span className="ml-2">
+                  • <span className="font-bold text-purple-400">{selectedGmzGames.size}</span> selected
+                </span>
+              )}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            {selectedGmzGames.size > 0 ? (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onClearSelection}
+                >
+                  Clear
+                </Button>
+                <Button
+                  onClick={onImportSelected}
+                  disabled={importing}
+                  size="sm"
+                  className="bg-purple-500 text-white hover:bg-purple-600"
+                  data-testid="import-gmz-selected-button"
+                >
+                  {importing ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  ) : (
+                    <Plus className="w-4 h-4 mr-2" />
+                  )}
+                  Import {selectedGmzGames.size}
+                </Button>
+              </>
             ) : (
-              <Plus className="w-4 h-4 mr-2" />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onSelectAll}
+                disabled={selectableGames.length === 0}
+              >
+                Select All ({selectableGames.length})
+              </Button>
             )}
-            Import Selected
-          </Button>
+          </div>
         </div>
       )}
 
@@ -126,12 +206,12 @@ export function GameMonetizeTab({
           <Globe className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
           <p className="text-muted-foreground">No games found</p>
           <p className="text-sm text-muted-foreground/70">
-            Try a different category
+            {searchQuery ? "Try a different search term" : "Try a different category or refresh"}
           </p>
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {gmzGames.map((game) => {
               const imported = isGmzGameImported(game.gmz_game_id);
               const selected = selectedGmzGames.has(game.gmz_game_id);
@@ -153,9 +233,10 @@ export function GameMonetizeTab({
                 >
                   <div className="aspect-video relative">
                     <img
-                      src={game.thumbnail_url || "https://via.placeholder.com/200?text=Game"}
+                      src={game.thumbnail_url || "https://via.placeholder.com/512x384?text=Game"}
                       alt={game.title}
                       className="w-full h-full object-cover"
+                      loading="lazy"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1637734373619-af1e76434bec?w=200&q=80";
                       }}
@@ -176,14 +257,20 @@ export function GameMonetizeTab({
                     <div className="absolute bottom-2 left-2 bg-purple-500/90 text-white px-2 py-0.5 rounded text-xs font-medium">
                       GMZ
                     </div>
+                    {/* Category Badge */}
+                    <div className="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-0.5 rounded text-xs">
+                      {game.category}
+                    </div>
                   </div>
                   <div className="p-3">
-                    <h3 className="font-bold text-sm text-foreground truncate">
+                    <h3 className="font-bold text-sm text-foreground truncate" title={game.title}>
                       {game.title}
                     </h3>
-                    <p className="text-xs text-muted-foreground capitalize">
-                      {game.category}
-                    </p>
+                    {game.tags && (
+                      <p className="text-xs text-muted-foreground truncate mt-1" title={game.tags}>
+                        {game.tags.split(",").slice(0, 3).join(", ")}
+                      </p>
+                    )}
                   </div>
                 </motion.div>
               );
