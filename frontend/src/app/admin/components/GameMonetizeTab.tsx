@@ -24,12 +24,14 @@ interface GameMonetizeTabProps {
   gmzLoading: boolean;
   gmzCategory: string;
   gmzCategories: { id: string; name: string; icon: string }[];
+  gmzSort: string;
   gmzHasMore: boolean;
   gmzPage: number;
   selectedGmzGames: Set<string>;
   games: Game[];
   importing: boolean;
   onCategoryChange: (category: string) => void;
+  onSortChange: (sort: string) => void;
   onSearch: (query: string) => void;
   onRefresh: () => void;
   onLoadMore: () => void;
@@ -39,16 +41,25 @@ interface GameMonetizeTabProps {
   onClearSelection: () => void;
 }
 
+const SORT_OPTIONS = [
+  { id: "newest", name: "Newest First", icon: "🆕" },
+  { id: "oldest", name: "Oldest First", icon: "📅" },
+  { id: "title_asc", name: "Title A-Z", icon: "🔤" },
+  { id: "title_desc", name: "Title Z-A", icon: "🔠" },
+];
+
 export function GameMonetizeTab({
   gmzGames,
   gmzLoading,
   gmzCategory,
   gmzCategories,
+  gmzSort,
   gmzHasMore,
   selectedGmzGames,
   games,
   importing,
   onCategoryChange,
+  onSortChange,
   onSearch,
   onRefresh,
   onLoadMore,
