@@ -50,7 +50,8 @@ export function GamesTab({ games, loading, onToggleVisibility, onDeleteGame, onB
       await onBulkDelete(Array.from(selectedGames));
     } else {
       // Fallback: delete one by one
-      for (const gameId of selectedGames) {
+      const gameIds = Array.from(selectedGames);
+      for (const gameId of gameIds) {
         onDeleteGame(gameId);
       }
     }
