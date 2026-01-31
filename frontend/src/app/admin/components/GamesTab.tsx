@@ -56,6 +56,22 @@ export function GamesTab({ games, loading, onToggleVisibility, onDeleteGame }: G
               <h3 className="font-bold text-foreground truncate">
                 {game.title}
               </h3>
+              {/* Network Badge */}
+              {game.source === "gamepix" && (
+                <span className="text-[10px] bg-lime/20 text-lime px-1.5 py-0.5 rounded font-medium">
+                  GPX
+                </span>
+              )}
+              {game.source === "gamemonetize" && (
+                <span className="text-[10px] bg-purple-500/20 text-purple-400 px-1.5 py-0.5 rounded font-medium">
+                  GMZ
+                </span>
+              )}
+              {game.source === "custom" && (
+                <span className="text-[10px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded font-medium">
+                  Custom
+                </span>
+              )}
               {!game.is_visible && (
                 <span className="text-xs bg-muted px-2 py-0.5 rounded-full text-muted-foreground">
                   Hidden
