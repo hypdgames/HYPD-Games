@@ -2520,12 +2520,24 @@ async def browse_gamemonetize_games(
             # Format games
             games = []
             for g in page_games:
+                # Extract base URL from thumbnail to generate different sizes
+                thumb_url = g.get("thumb", "")
+                base_url = ""
+                if thumb_url:
+                    # Extract base: https://img.gamemonetize.com/{hash}/512x384.jpg -> https://img.gamemonetize.com/{hash}
+                    parts = thumb_url.rsplit("/", 1)
+                    if len(parts) == 2:
+                        base_url = parts[0]
+                
                 games.append({
                     "gmz_game_id": g.get("id", ""),
                     "title": g.get("title", "Unknown"),
                     "description": g.get("description", ""),
                     "category": g.get("category", "Action"),
-                    "thumbnail_url": g.get("thumb", ""),
+                    # Different image sizes for different use cases
+                    "thumbnail_url": f"{base_url}/512x384.jpg" if base_url else thumb_url,  # Landscape banner (4:3)
+                    "icon_url": f"{base_url}/512x512.jpg" if base_url else thumb_url,  # Square icon (1:1)
+                    "thumbnail_large_url": f"{base_url}/512x340.jpg" if base_url else thumb_url,  # Wide banner (3:2)
                     "play_url": g.get("url", ""),
                     "instructions": g.get("instructions", ""),
                     "tags": g.get("tags", ""),
