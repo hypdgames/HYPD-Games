@@ -617,34 +617,41 @@ export default function AdminDashboard() {
         <Tabs defaultValue="games" className="w-full" onValueChange={(v) => {
           if (v === "analytics") fetchAnalytics();
           if (v === "users") { fetchUsers(); fetchUserStats(); }
-          if (v === "gamemonetize") fetchGmzGames(gmzCategory);
+          if (v === "gamemonetize" && gamemonetizeEnabled) fetchGmzGames(gmzCategory);
         }}>
-          <TabsList className="grid w-full grid-cols-7 mb-6">
-            <TabsTrigger value="games" className="flex items-center gap-1 text-xs sm:text-sm">
+          <TabsList className={`grid w-full mb-6 ${
+            gamepixEnabled && gamemonetizeEnabled ? 'grid-cols-7' :
+            gamepixEnabled || gamemonetizeEnabled ? 'grid-cols-6' : 'grid-cols-5'
+          }`}>
+            <TabsTrigger value="games" className="flex items-center gap-1 text-xs sm:text-sm" data-testid="games-tab">
               <Gamepad2 className="w-4 h-4" />
               <span className="hidden sm:inline">Games</span>
             </TabsTrigger>
-            <TabsTrigger value="gamepix" className="flex items-center gap-1 text-xs sm:text-sm">
-              <Globe className="w-4 h-4 text-lime" />
-              <span className="hidden sm:inline">GamePix</span>
-            </TabsTrigger>
-            <TabsTrigger value="gamemonetize" className="flex items-center gap-1 text-xs sm:text-sm">
-              <Globe className="w-4 h-4 text-purple-500" />
-              <span className="hidden sm:inline">GMZ</span>
-            </TabsTrigger>
-            <TabsTrigger value="upload" className="flex items-center gap-1 text-xs sm:text-sm">
+            {gamepixEnabled && (
+              <TabsTrigger value="gamepix" className="flex items-center gap-1 text-xs sm:text-sm" data-testid="gamepix-tab">
+                <Globe className="w-4 h-4 text-lime" />
+                <span className="hidden sm:inline">GamePix</span>
+              </TabsTrigger>
+            )}
+            {gamemonetizeEnabled && (
+              <TabsTrigger value="gamemonetize" className="flex items-center gap-1 text-xs sm:text-sm" data-testid="gamemonetize-tab">
+                <Globe className="w-4 h-4 text-purple-500" />
+                <span className="hidden sm:inline">GMZ</span>
+              </TabsTrigger>
+            )}
+            <TabsTrigger value="upload" className="flex items-center gap-1 text-xs sm:text-sm" data-testid="upload-tab">
               <Upload className="w-4 h-4" />
               <span className="hidden sm:inline">Upload</span>
             </TabsTrigger>
-            <TabsTrigger value="users" className="flex items-center gap-1 text-xs sm:text-sm">
+            <TabsTrigger value="users" className="flex items-center gap-1 text-xs sm:text-sm" data-testid="users-tab">
               <Users className="w-4 h-4" />
               <span className="hidden sm:inline">Users</span>
             </TabsTrigger>
-            <TabsTrigger value="analytics" className="flex items-center gap-1 text-xs sm:text-sm">
+            <TabsTrigger value="analytics" className="flex items-center gap-1 text-xs sm:text-sm" data-testid="analytics-tab">
               <BarChart3 className="w-4 h-4" />
               <span className="hidden sm:inline">Stats</span>
             </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center gap-1 text-xs sm:text-sm">
+            <TabsTrigger value="settings" className="flex items-center gap-1 text-xs sm:text-sm" data-testid="settings-tab">
               <Settings className="w-4 h-4" />
               <span className="hidden sm:inline">Settings</span>
             </TabsTrigger>
@@ -660,24 +667,25 @@ export default function AdminDashboard() {
           </TabsContent>
 
           <TabsContent value="gamepix">
-            <GamePixTab
-              gpxGames={gpxGames}
-              gpxLoading={gpxLoading}
-              gpxCategory={gpxCategory}
-              gpxCategories={gpxCategories}
-              gpxHasMore={gpxHasMore}
-              gpxPage={gpxPage}
-              gpxOrder={gpxOrder}
-              selectedGpxGames={selectedGpxGames}
-              games={games}
-              importing={importing}
-              onCategoryChange={(cat) => {
-                setGpxCategory(cat);
-                fetchGpxGames(cat, 1, false, gpxOrder);
-              }}
-              onOrderChange={(order) => {
-                setGpxOrder(order);
-                fetchGpxGames(gpxCategory, 1, false, order);
+            {gamepixEnabled && (
+              <GamePixTab
+                gpxGames={gpxGames}
+                gpxLoading={gpxLoading}
+                gpxCategory={gpxCategory}
+                gpxCategories={gpxCategories}
+                gpxHasMore={gpxHasMore}
+                gpxPage={gpxPage}
+                gpxOrder={gpxOrder}
+                selectedGpxGames={selectedGpxGames}
+                games={games}
+                importing={importing}
+                onCategoryChange={(cat) => {
+                  setGpxCategory(cat);
+                  fetchGpxGames(cat, 1, false, gpxOrder);
+                }}
+                onOrderChange={(order) => {
+                  setGpxOrder(order);
+                  fetchGpxGames(gpxCategory, 1, false, order);
               }}
               onRefresh={() => fetchGpxGames(gpxCategory, 1, false, gpxOrder)}
               onLoadMore={() => fetchGpxGames(gpxCategory, gpxPage + 1, true, gpxOrder)}
