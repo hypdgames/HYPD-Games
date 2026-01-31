@@ -691,33 +691,35 @@ export default function AdminDashboard() {
               onLoadMore={() => fetchGpxGames(gpxCategory, gpxPage + 1, true, gpxOrder)}
               onToggleSelection={toggleGpxGameSelection}
               onImportSelected={importSelectedGpxGames}
-            />
+              />
+            )}
           </TabsContent>
 
           <TabsContent value="gamemonetize">
-            <GameMonetizeTab
-              gmzGames={gmzGames}
-              gmzLoading={gmzLoading}
-              gmzCategory={gmzCategory}
-              gmzCategories={gmzCategories}
-              gmzSort={gmzSort}
-              gmzHasMore={gmzHasMore}
-              gmzPage={gmzPage}
-              selectedGmzGames={selectedGmzGames}
-              games={games}
-              importing={gmzImporting}
-              onCategoryChange={(cat) => {
-                setGmzCategory(cat);
-                fetchGmzGames(cat, 1, false, gmzSearch, gmzSort);
-              }}
-              onSortChange={handleGmzSortChange}
-              onSearch={handleGmzSearch}
-              onRefresh={() => fetchGmzGames(gmzCategory, 1, false, gmzSearch, gmzSort)}
-              onLoadMore={() => fetchGmzGames(gmzCategory, gmzPage + 1, true, gmzSearch, gmzSort)}
-              onToggleSelection={toggleGmzGameSelection}
-              onImportSelected={importSelectedGmzGames}
-              onSelectAll={selectAllGmzGames}
-              onClearSelection={clearGmzSelection}
+            {gamemonetizeEnabled && (
+              <GameMonetizeTab
+                gmzGames={gmzGames}
+                gmzLoading={gmzLoading}
+                gmzCategory={gmzCategory}
+                gmzCategories={gmzCategories}
+                gmzSort={gmzSort}
+                gmzHasMore={gmzHasMore}
+                gmzPage={gmzPage}
+                selectedGmzGames={selectedGmzGames}
+                games={games}
+                importing={gmzImporting}
+                onCategoryChange={(cat) => {
+                  setGmzCategory(cat);
+                  fetchGmzGames(cat, 1, false, gmzSearch, gmzSort);
+                }}
+                onSortChange={handleGmzSortChange}
+                onSearch={handleGmzSearch}
+                onRefresh={() => fetchGmzGames(gmzCategory, 1, false, gmzSearch, gmzSort)}
+                onLoadMore={() => fetchGmzGames(gmzCategory, gmzPage + 1, true, gmzSearch, gmzSort)}
+                onToggleSelection={toggleGmzGameSelection}
+                onImportSelected={importSelectedGmzGames}
+                onSelectAll={selectAllGmzGames}
+                onClearSelection={clearGmzSelection}
             />
           </TabsContent>
 
