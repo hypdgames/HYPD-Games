@@ -2577,18 +2577,21 @@ async def import_gamemonetize_game(
     if existing:
         return {"success": False, "message": "Game already imported", "game_id": existing.id}
     
-    # Create new game
+    # Create new game with proper image URLs
     new_game = Game(
         id=str(uuid.uuid4()),
         title=game_data.title,
         description=game_data.description or "",
         category=game_data.category.title(),
-        thumbnail_url=game_data.thumbnail_url,
+        thumbnail_url=game_data.thumbnail_url,  # 512x384 landscape
+        icon_url=game_data.icon_url,  # 512x512 square
         embed_url=game_data.play_url,
         source="gamemonetize",
         gd_game_id=gd_game_id,
-        is_active=True,
-        orientation="landscape" if (game_data.width or 800) > (game_data.height or 600) else "portrait"
+        is_visible=True,
+        has_game_file=True,
+        instructions=game_data.instructions,
+        play_count=0
     )
     
     db.add(new_game)
