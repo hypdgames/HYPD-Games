@@ -1430,6 +1430,42 @@ export default function ProfilePage() {
           </motion.button>
         )}
 
+        {/* Pro Status Toggle (Admin Only) */}
+        {user.is_admin && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="mt-4 bg-gradient-to-r from-amber-500/10 to-yellow-500/10 border border-amber-500/30 rounded-xl p-4"
+            data-testid="pro-toggle-section"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 flex items-center justify-center">
+                  <Crown className="w-5 h-5 text-black" />
+                </div>
+                <div>
+                  <span className="font-bold text-foreground">Pro Mode (Testing)</span>
+                  <p className="text-xs text-muted-foreground">
+                    {user.is_ad_free ? "Ad-free gaming enabled" : "Standard mode with ads"}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {togglingPro && <Loader2 className="w-4 h-4 animate-spin text-amber-500" />}
+                <Switch
+                  checked={user.is_ad_free || false}
+                  onCheckedChange={handleTogglePro}
+                  disabled={togglingPro}
+                  data-testid="pro-toggle"
+                />
+              </div>
+            </div>
+            <p className="text-[10px] text-amber-500/70 mt-2">
+              Admin testing only: Toggle to test ad-free GamePix games
+            </p>
+          </motion.div>
+        )}
+
         {/* Hidden Admin Login Link */}
         <div className="mt-8 text-center">
           <button
