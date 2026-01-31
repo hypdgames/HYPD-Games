@@ -51,7 +51,8 @@ export default function AdminDashboard() {
   // GameMonetize state
   const [gmzGames, setGmzGames] = useState<GMZGame[]>([]);
   const [gmzLoading, setGmzLoading] = useState(false);
-  const [gmzCategory, setGmzCategory] = useState<string>("all");
+  const [gmzCategory, setGmzCategory] = useState<string>("All");
+  const [gmzSort, setGmzSort] = useState<string>("newest");
   const [gmzPage, setGmzPage] = useState(1);
   const [gmzHasMore, setGmzHasMore] = useState(false);
   const [selectedGmzGames, setSelectedGmzGames] = useState<Set<string>>(new Set());
