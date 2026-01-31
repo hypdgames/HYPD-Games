@@ -11,7 +11,7 @@ export default function GamePlayer() {
   const params = useParams();
   const router = useRouter();
   const gameId = params.gameId as string;
-  const { token, user } = useAuthStore();
+  const { token, user, refreshUser } = useAuthStore();
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const startTimeRef = useRef<number | null>(null);
@@ -23,13 +23,34 @@ export default function GamePlayer() {
   const [buttonY, setButtonY] = useState(100);
   const [isDragging, setIsDragging] = useState(false);
   const [hasDragged, setHasDragged] = useState(false);
+  const [isAdFree, setIsAdFree] = useState(false);
+  const [userChecked, setUserChecked] = useState(false);
   const dragStartY = useRef(0);
   const buttonStartY = useRef(0);
 
-  // Check if user has ad-free status (Pro user)
-  const isAdFree = user?.is_ad_free || (user?.ad_free_until && new Date(user.ad_free_until) > new Date());
-
+  // Refresh user data on mount to get latest is_ad_free status
   useEffect(() => {
+    const checkUserStatus = async () => {
+      if (token) {
+        await refreshUser();
+      }
+      setUserChecked(true);
+    };
+    checkUserStatus();
+  }, [token, refreshUser]);
+
+  // Update isAdFree when user changes
+  useEffect(() => {
+    if (userChecked) {
+      const adFree = user?.is_ad_free || (user?.ad_free_until && new Date(user.ad_free_until) > new Date());
+      setIsAdFree(!!adFree);
+    }
+  }, [user, userChecked]);
+
+  // Set game URL once we know the ad-free status
+  useEffect(() => {
+    if (!userChecked) return;
+    
     // Build game URL with noads parameter for Pro users
     let url = `${API_URL}/api/games/${gameId}/play`;
     if (isAdFree) {
@@ -37,13 +58,7 @@ export default function GamePlayer() {
     }
     setGameUrl(url);
     startTimeRef.current = Date.now();
-
-    // Cleanup: record play session on unmount
-    return () => {
-      recordPlaySession();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gameId, isAdFree]);
+  }, [gameId, isAdFree, userChecked]);
 
   const recordPlaySession = async () => {
     if (!startTimeRef.current) return;
