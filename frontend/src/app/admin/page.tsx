@@ -687,12 +687,15 @@ export default function AdminDashboard() {
               importing={gmzImporting}
               onCategoryChange={(cat) => {
                 setGmzCategory(cat);
-                fetchGmzGames(cat, 1, false);
+                fetchGmzGames(cat, 1, false, gmzSearch);
               }}
-              onRefresh={() => fetchGmzGames(gmzCategory, 1, false)}
-              onLoadMore={() => fetchGmzGames(gmzCategory, gmzPage + 1, true)}
+              onSearch={handleGmzSearch}
+              onRefresh={() => fetchGmzGames(gmzCategory, 1, false, gmzSearch)}
+              onLoadMore={() => fetchGmzGames(gmzCategory, gmzPage + 1, true, gmzSearch)}
               onToggleSelection={toggleGmzGameSelection}
               onImportSelected={importSelectedGmzGames}
+              onSelectAll={selectAllGmzGames}
+              onClearSelection={clearGmzSelection}
             />
           </TabsContent>
 
