@@ -443,7 +443,9 @@ export default function AdminDashboard() {
           title: g.title,
           description: g.description,
           category: g.category,
-          thumbnail_url: g.thumbnail_url,
+          thumbnail_url: g.thumbnail_url,  // 512x384 landscape
+          icon_url: g.icon_url,  // 512x512 square
+          thumbnail_large_url: g.thumbnail_large_url,  // 512x340 wide
           play_url: g.play_url,
           instructions: g.instructions,
           tags: g.tags,
