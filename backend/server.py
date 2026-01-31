@@ -723,13 +723,24 @@ async def get_game_meta(game_id: str, db: AsyncSession = Depends(get_db)):
     return response
 
 @api_router.get("/games/{game_id}/play")
-async def get_game_file(game_id: str, db: AsyncSession = Depends(get_db)):
-    """Serve game HTML content directly (avoids CSP issues from Supabase Storage redirect)"""
+async def get_game_file(
+    game_id: str, 
+    noads: Optional[str] = None,
+    db: AsyncSession = Depends(get_db)
+):
+    """Serve game HTML content directly (avoids CSP issues from Supabase Storage redirect)
+    
+    Query params:
+        noads: Set to "1" or "true" to disable ads (for Pro users)
+    """
     
     result = await db.execute(select(Game).where(Game.id == game_id))
     game = result.scalar_one_or_none()
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
+    
+    # Check if ad-free mode requested
+    is_ad_free = noads in ["1", "true", "yes"]
     
     # Increment play count (fire and forget - don't block response)
     await db.execute(update(Game).where(Game.id == game_id).values(play_count=Game.play_count + 1))
@@ -737,6 +748,12 @@ async def get_game_file(game_id: str, db: AsyncSession = Depends(get_db)):
     
     # Handle GamePix games - return embed wrapper with their play URL
     if game.source == "gamepix" and game.embed_url:
+        # Add noads parameter for Pro users
+        embed_url = game.embed_url
+        if is_ad_free:
+            separator = "&" if "?" in embed_url else "?"
+            embed_url = f"{embed_url}{separator}noads=1&premium=1"
+        
         gpx_html = f"""
         <!DOCTYPE html>
         <html>
@@ -773,7 +790,7 @@ async def get_game_file(game_id: str, db: AsyncSession = Depends(get_db)):
         <body>
             <div class="loader" id="loader">Loading game...</div>
             <iframe 
-                src="{game.embed_url}"
+                src="{embed_url}"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen; payment"
                 allowfullscreen
                 onload="document.getElementById('loader').style.display='none'"
@@ -782,7 +799,11 @@ async def get_game_file(game_id: str, db: AsyncSession = Depends(get_db)):
         </html>
         """
         response = HTMLResponse(content=gpx_html, media_type="text/html")
-        response.headers["Cache-Control"] = "public, max-age=3600"  # Cache for 1 hour
+        # Don't cache ad-free responses to ensure Pro status is always checked
+        if is_ad_free:
+            response.headers["Cache-Control"] = "private, no-cache"
+        else:
+            response.headers["Cache-Control"] = "public, max-age=3600"
         return response
     
     # Handle GameDistribution games - return embed wrapper
