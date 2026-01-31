@@ -2366,6 +2366,7 @@ class GMZGameImport(BaseModel):
 async def browse_gamemonetize_games(
     category: Optional[str] = None,
     search: Optional[str] = None,
+    sort: Optional[str] = "newest",  # newest, oldest, title_asc, title_desc
     page: int = 1,
     num: int = 50
 ):
@@ -2375,8 +2376,8 @@ async def browse_gamemonetize_games(
             # Build feed URL with your custom endpoint
             params = {
                 "format": "0",  # JSON format
-                "num": str(num),
-                "page": str(page),
+                "num": str(num * page),  # Get enough games for sorting/pagination
+                "page": "1",  # Always get from first page for sorting
             }
             
             response = await client.get(GAMEMONETIZE_FEED_URL, params=params)
@@ -2390,7 +2391,7 @@ async def browse_gamemonetize_games(
             if not isinstance(all_games, list):
                 all_games = []
             
-            # Apply category filter locally (since API doesn't seem to support it well)
+            # Apply category filter locally
             if category and category.lower() != "all":
                 all_games = [g for g in all_games if g.get("category", "").lower() == category.lower()]
             
@@ -2403,9 +2404,28 @@ async def browse_gamemonetize_games(
                     search_lower in g.get("description", "").lower()
                 ]
             
+            # Apply sorting
+            if sort == "newest":
+                # Sort by ID descending (higher ID = newer)
+                all_games = sorted(all_games, key=lambda x: int(x.get("id", 0)), reverse=True)
+            elif sort == "oldest":
+                # Sort by ID ascending (lower ID = older)
+                all_games = sorted(all_games, key=lambda x: int(x.get("id", 0)), reverse=False)
+            elif sort == "title_asc":
+                # Sort alphabetically A-Z
+                all_games = sorted(all_games, key=lambda x: x.get("title", "").lower())
+            elif sort == "title_desc":
+                # Sort alphabetically Z-A
+                all_games = sorted(all_games, key=lambda x: x.get("title", "").lower(), reverse=True)
+            
+            # Paginate after sorting
+            start_idx = (page - 1) * num
+            end_idx = start_idx + num
+            page_games = all_games[start_idx:end_idx]
+            
             # Format games
             games = []
-            for g in all_games:
+            for g in page_games:
                 games.append({
                     "gmz_game_id": g.get("id", ""),
                     "title": g.get("title", "Unknown"),
@@ -2421,10 +2441,10 @@ async def browse_gamemonetize_games(
             
             return {
                 "games": games,
-                "total": len(games),
+                "total": len(all_games),
                 "page": page,
                 "num": num,
-                "has_more": len(all_games) >= num  # If we got full page, might be more
+                "has_more": end_idx < len(all_games)
             }
             
     except Exception as e:
