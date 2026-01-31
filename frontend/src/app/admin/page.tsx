@@ -686,6 +686,7 @@ export default function AdminDashboard() {
               loading={loading}
               onToggleVisibility={toggleVisibility}
               onDeleteGame={deleteGame}
+              onBulkDelete={bulkDeleteGames}
             />
           </TabsContent>
 
