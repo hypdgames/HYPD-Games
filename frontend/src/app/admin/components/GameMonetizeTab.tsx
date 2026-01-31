@@ -137,12 +137,26 @@ export function GameMonetizeTab({
         <select
           value={gmzCategory}
           onChange={(e) => onCategoryChange(e.target.value)}
-          className="h-10 px-4 rounded-lg bg-card border border-border text-foreground min-w-[150px]"
+          className="h-10 px-4 rounded-lg bg-card border border-border text-foreground min-w-[140px]"
           data-testid="gmz-category-select"
         >
           {gmzCategories.map((cat) => (
             <option key={cat.id} value={cat.id}>
               {cat.icon} {cat.name}
+            </option>
+          ))}
+        </select>
+
+        {/* Sort Select */}
+        <select
+          value={gmzSort}
+          onChange={(e) => onSortChange(e.target.value)}
+          className="h-10 px-4 rounded-lg bg-card border border-border text-foreground min-w-[140px]"
+          data-testid="gmz-sort-select"
+        >
+          {SORT_OPTIONS.map((opt) => (
+            <option key={opt.id} value={opt.id}>
+              {opt.icon} {opt.name}
             </option>
           ))}
         </select>
