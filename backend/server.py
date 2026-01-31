@@ -2447,7 +2447,9 @@ class GMZGameImport(BaseModel):
     title: str
     description: Optional[str] = None
     category: str = "Action"
-    thumbnail_url: Optional[str] = None
+    thumbnail_url: Optional[str] = None  # 512x384 landscape banner
+    icon_url: Optional[str] = None  # 512x512 square icon
+    thumbnail_large_url: Optional[str] = None  # 512x340 wide banner
     play_url: str
     instructions: Optional[str] = None
     width: Optional[int] = None
