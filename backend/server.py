@@ -818,6 +818,56 @@ async def get_game_file(game_id: str, db: AsyncSession = Depends(get_db)):
         """
         return HTMLResponse(content=gd_html, media_type="text/html")
     
+    # Handle GameMonetize games - return embed wrapper
+    if game.source == "gamemonetize" and game.embed_url:
+        gmz_html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+            <title>{game.title}</title>
+            <link rel="preconnect" href="https://html5.gamemonetize.com">
+            <link rel="dns-prefetch" href="https://html5.gamemonetize.com">
+            <style>
+                * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+                html, body {{ 
+                    width: 100%; 
+                    height: 100%; 
+                    overflow: hidden;
+                    background: #0a0a0a;
+                }}
+                iframe {{
+                    width: 100%;
+                    height: 100%;
+                    border: none;
+                }}
+                .loader {{
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    color: #ccff00;
+                    font-family: system-ui, sans-serif;
+                    font-size: 16px;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="loader" id="loader">Loading game...</div>
+            <iframe 
+                src="{game.embed_url}"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen; payment"
+                allowfullscreen
+                onload="document.getElementById('loader').style.display='none'"
+            ></iframe>
+        </body>
+        </html>
+        """
+        response = HTMLResponse(content=gmz_html, media_type="text/html")
+        response.headers["Cache-Control"] = "public, max-age=3600"  # Cache for 1 hour
+        return response
+    
     # Try to get game content from Supabase Storage
     if game.game_file_url and supabase_client:
         try:
