@@ -992,7 +992,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <Tabs defaultValue="streak" className="w-full">
+        <Tabs defaultValue={defaultTab} className="w-full">
           <TabsList className="grid w-full grid-cols-5 mb-4">
             <TabsTrigger value="streak" className="flex items-center gap-1" data-testid="streak-tab">
               <Flame className="w-4 h-4" />
