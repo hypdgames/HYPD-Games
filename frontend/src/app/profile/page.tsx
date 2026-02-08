@@ -988,7 +988,7 @@ export default function ProfilePage() {
         </div>
 
         <Tabs defaultValue="streak" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-4">
+          <TabsList className="grid w-full grid-cols-5 mb-4">
             <TabsTrigger value="streak" className="flex items-center gap-1" data-testid="streak-tab">
               <Flame className="w-4 h-4" />
               <span className="hidden sm:inline">Streak</span>
@@ -996,6 +996,10 @@ export default function ProfilePage() {
             <TabsTrigger value="games" className="flex items-center gap-1">
               <Heart className="w-4 h-4" />
               <span className="hidden sm:inline">Games</span>
+            </TabsTrigger>
+            <TabsTrigger value="wallet" className="flex items-center gap-1" data-testid="wallet-tab">
+              <Coins className="w-4 h-4" />
+              <span className="hidden sm:inline">Coins</span>
             </TabsTrigger>
             <TabsTrigger value="friends" className="flex items-center gap-1">
               <Users className="w-4 h-4" />
