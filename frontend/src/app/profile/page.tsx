@@ -140,6 +140,16 @@ export default function ProfilePage() {
   // Pro toggle state (admin only)
   const [togglingPro, setTogglingPro] = useState(false);
 
+  // Wallet state
+  const [walletPackages, setWalletPackages] = useState<CoinPackage[]>([]);
+  const [adFreeOptions, setAdFreeOptions] = useState<AdFreeOption[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [walletLoading, setWalletLoading] = useState(false);
+  const [purchasing, setPurchasing] = useState<string | null>(null);
+  const [spending, setSpending] = useState<string | null>(null);
+  const [walletTab, setWalletTab] = useState<"buy" | "spend" | "history">("buy");
+  const [purchasesEnabled, setPurchasesEnabled] = useState(false);
+
   // Form states
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
   const [registerForm, setRegisterForm] = useState({
