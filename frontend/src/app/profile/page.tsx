@@ -228,6 +228,131 @@ export default function ProfilePage() {
     setStreakLoading(false);
   };
 
+  // Wallet functions
+  const fetchWalletData = async () => {
+    setWalletLoading(true);
+    try {
+      const [packagesRes, optionsRes] = await Promise.all([
+        fetch(`${API_URL}/api/wallet/packages`),
+        fetch(`${API_URL}/api/wallet/ad-free-options`),
+      ]);
+
+      if (packagesRes.ok) {
+        const data = await packagesRes.json();
+        setWalletPackages(data.packages || []);
+        setPurchasesEnabled(data.purchases_enabled || false);
+      }
+      if (optionsRes.ok) {
+        const data = await optionsRes.json();
+        setAdFreeOptions(data.options || []);
+      }
+    } catch (e) {
+      console.error("Error fetching wallet data:", e);
+    }
+    setWalletLoading(false);
+  };
+
+  const fetchTransactions = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_URL}/api/wallet/transactions?limit=20`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setTransactions(data.transactions || []);
+      }
+    } catch (e) {
+      console.error("Error fetching transactions:", e);
+    }
+  };
+
+  const handlePurchase = async (packageId: string) => {
+    if (!token) {
+      toast.error("Please login to purchase coins");
+      return;
+    }
+
+    setPurchasing(packageId);
+    try {
+      const res = await fetch(`${API_URL}/api/wallet/purchase`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          package_id: packageId,
+          origin_url: window.location.origin,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        window.location.href = data.checkout_url;
+      } else {
+        const error = await res.json();
+        toast.error(error.detail || "Failed to create checkout");
+      }
+    } catch {
+      toast.error("Failed to initiate purchase");
+    }
+    setPurchasing(null);
+  };
+
+  const handleSpendAdFree = async (optionId: string) => {
+    if (!token) {
+      toast.error("Please login first");
+      return;
+    }
+
+    const option = adFreeOptions.find((o) => o.option_id === optionId);
+    if (!option) return;
+
+    if ((user?.coin_balance || 0) < option.coins) {
+      toast.error("Not enough coins!");
+      setWalletTab("buy");
+      return;
+    }
+
+    setSpending(optionId);
+    try {
+      const res = await fetch(`${API_URL}/api/wallet/spend`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          spend_type: "ad_free",
+          option_id: optionId,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        toast.success(data.message);
+        refreshUser();
+        fetchTransactions();
+      } else {
+        const error = await res.json();
+        toast.error(error.detail || "Failed to purchase ad-free");
+      }
+    } catch {
+      toast.error("Failed to spend coins");
+    }
+    setSpending(null);
+  };
+
+  const formatTxDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
   const searchUsers = async (query: string) => {
     if (query.length < 2) {
       setSearchResults([]);
