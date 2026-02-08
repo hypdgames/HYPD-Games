@@ -9,7 +9,7 @@ import { useAuthStore } from "@/store";
 const navItems = [
   { path: "/", icon: Home, label: "Feed" },
   { path: "/explore", icon: Compass, label: "Explore" },
-  { path: "/wallet", icon: Coins, label: "Wallet" },
+  { path: "/profile?tab=wallet", icon: Coins, label: "Coins" },
   { path: "/leaderboard", icon: Trophy, label: "Leaders" },
   { path: "/profile", icon: User, label: "Profile" },
 ];
@@ -30,8 +30,8 @@ export default function BottomNav() {
     >
       <div className="flex justify-around max-w-md mx-auto py-3">
         {navItems.map(({ path, icon: Icon, label }) => {
-          const isActive = pathname === path;
-          const isWallet = path === "/wallet";
+          const isActive = pathname === path || (path.includes("?tab=wallet") && pathname === "/profile");
+          const isCoins = label === "Coins";
           
           return (
             <Link
@@ -49,7 +49,7 @@ export default function BottomNav() {
                 className={cn(
                   "w-5 h-5 transition-transform duration-200",
                   isActive && "scale-110",
-                  isWallet && "text-yellow-500"
+                  isCoins && "text-yellow-500"
                 )}
                 strokeWidth={isActive ? 2.5 : 1.5}
               />
@@ -62,7 +62,7 @@ export default function BottomNav() {
                 {label}
               </span>
               {/* Show coin balance indicator */}
-              {isWallet && user && (user.coin_balance || 0) > 0 && (
+              {isCoins && user && (user.coin_balance || 0) > 0 && (
                 <span className="absolute -top-1 -right-1 bg-yellow-500 text-black text-[8px] font-bold px-1 rounded-full min-w-[16px] text-center">
                   {(user.coin_balance || 0) > 999 ? "999+" : user.coin_balance}
                 </span>
