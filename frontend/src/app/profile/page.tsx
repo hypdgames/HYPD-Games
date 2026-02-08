@@ -89,9 +89,36 @@ interface LeaderboardEntry {
   streak_points: number;
 }
 
+interface CoinPackage {
+  package_id: string;
+  name: string;
+  coins: number;
+  bonus_coins: number;
+  total_coins: number;
+  price_usd: number;
+  is_popular: boolean;
+}
+
+interface AdFreeOption {
+  option_id: string;
+  label: string;
+  coins: number;
+  hours: number;
+}
+
+interface Transaction {
+  id: string;
+  transaction_type: string;
+  status: string;
+  coins: number;
+  amount_usd?: number;
+  description?: string;
+  created_at: string;
+}
+
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, token, login, register, logout, settings } = useAuthStore();
+  const { user, token, login, register, logout, settings, refreshUser } = useAuthStore();
   
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
