@@ -452,6 +452,8 @@ export default function ProfilePage() {
       fetchSavedGames();
       fetchFriends();
       fetchStreakData();
+      fetchWalletData();
+      fetchTransactions();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, token]);
