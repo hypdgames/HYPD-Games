@@ -118,7 +118,12 @@ interface Transaction {
 
 export default function ProfilePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab");
   const { user, token, login, register, logout, settings, refreshUser } = useAuthStore();
+  
+  // Determine default tab based on URL param
+  const defaultTab = tabParam === "wallet" ? "wallet" : "streak";
   
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
