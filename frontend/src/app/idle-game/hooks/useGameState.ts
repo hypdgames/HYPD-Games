@@ -4,52 +4,57 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuthStore } from "@/store";
 import {
   ANIMALS,
-  GRID_SIZE,
-  calculateTotalCps,
-  getBuyCost,
+  getUpgradeCost,
+  getAnimalDps,
+  xpForLevel,
+  getTargetMaxHp,
+  getTargetReward,
   getPrestigeBonus,
-  getCpsUpgradeCost,
 } from "../data/animals";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
-const SAVE_INTERVAL = 30000; // Auto-save every 30 seconds
-const TICK_INTERVAL = 100; // Update coins every 100ms for smooth display
+const SAVE_INTERVAL = 30000;
+const TICK_MS = 100;
 
 export interface GameState {
-  grid: (number | null)[]; // tier numbers or null
   coins: number;
   totalEarned: number;
-  totalPurchased: number;
+  playerLevel: number;
+  playerXp: number;
+  // animalId -> level (only entries for unlocked animals, level >= 1)
+  animals: Record<string, number>;
+  targetHp: number;
+  targetMaxHp: number;
+  targetsDestroyed: number;
   prestigeLevel: number;
   prestigeMultiplier: number;
-  highestTier: number;
-  cpsUpgradeLevel: number;
-  lastTick: number; // timestamp ms
+  lastTick: number;
 }
 
 const DEFAULT_STATE: GameState = {
-  grid: Array(GRID_SIZE).fill(null),
-  coins: 50,
+  coins: 0,
   totalEarned: 0,
-  totalPurchased: 0,
+  playerLevel: 1,
+  playerXp: 0,
+  animals: { bunny: 1 }, // Start with Bunny at level 1
+  targetHp: 10,
+  targetMaxHp: 10,
+  targetsDestroyed: 0,
   prestigeLevel: 0,
   prestigeMultiplier: 1,
-  highestTier: 0,
-  cpsUpgradeLevel: 0,
   lastTick: Date.now(),
 };
 
-const LOCAL_KEY = "petIdle_gameState";
+const LOCAL_KEY = "petIdle_v2";
 
-function loadLocalState(): GameState | null {
+function loadLocal(): GameState | null {
   try {
     const saved = localStorage.getItem(LOCAL_KEY);
     if (saved) return JSON.parse(saved);
   } catch {}
   return null;
 }
-
-function saveLocalState(state: GameState) {
+function saveLocal(state: GameState) {
   try {
     localStorage.setItem(LOCAL_KEY, JSON.stringify(state));
   } catch {}
@@ -57,31 +62,32 @@ function saveLocalState(state: GameState) {
 
 export function useGameState() {
   const { token } = useAuthStore();
-  const [gameState, setGameState] = useState<GameState>(DEFAULT_STATE);
+  const [state, setState] = useState<GameState>(DEFAULT_STATE);
   const [loaded, setLoaded] = useState(false);
-  const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
-  const stateRef = useRef(gameState);
-  stateRef.current = gameState;
+  const ref = useRef(state);
+  ref.current = state;
 
-  // Computed values
-  const totalCps = calculateTotalCps(
-    gameState.grid,
-    gameState.prestigeMultiplier,
-    gameState.cpsUpgradeLevel
+  // ---- Computed ----
+  const totalDps = Object.entries(state.animals).reduce((sum, [id, lvl]) => {
+    const def = ANIMALS.find((a) => a.id === id);
+    if (!def) return sum;
+    return sum + getAnimalDps(def, lvl, state.prestigeMultiplier);
+  }, 0);
+
+  const xpNeeded = xpForLevel(state.playerLevel);
+
+  const unlockedAnimals = ANIMALS.filter(
+    (a) => a.unlockLevel <= state.playerLevel
   );
-  const buyCost = getBuyCost(gameState.totalPurchased, gameState.prestigeLevel);
-  const canBuy = gameState.coins >= buyCost && gameState.grid.includes(null);
-  const prestigeBonus = getPrestigeBonus(gameState.totalEarned);
+  const nextUnlock = ANIMALS.find((a) => a.unlockLevel > state.playerLevel);
+
+  const prestigeBonus = getPrestigeBonus(state.totalEarned);
   const canPrestige = prestigeBonus > 0;
-  const cpsUpgradeCost = getCpsUpgradeCost(gameState.cpsUpgradeLevel);
-  const canUpgradeCps = gameState.coins >= cpsUpgradeCost;
 
-  // Load state on mount
+  // ---- Load ----
   useEffect(() => {
-    const loadState = async () => {
-      let state: GameState | null = null;
-
-      // Try backend first if logged in
+    const load = async () => {
+      let s: GameState | null = null;
       if (token) {
         try {
           const res = await fetch(`${API_URL}/api/idle-game/state`, {
@@ -89,64 +95,109 @@ export function useGameState() {
           });
           if (res.ok) {
             const data = await res.json();
-            if (data.state) state = data.state;
+            if (data.state) s = data.state;
           }
         } catch {}
       }
-
-      // Fallback to localStorage
-      if (!state) state = loadLocalState();
-
-      if (state) {
-        // Calculate offline earnings
+      if (!s) s = loadLocal();
+      if (s) {
+        // offline earnings
         const now = Date.now();
-        const elapsed = (now - state.lastTick) / 1000;
+        const elapsed = (now - s.lastTick) / 1000;
         if (elapsed > 1) {
-          const cps = calculateTotalCps(
-            state.grid,
-            state.prestigeMultiplier,
-            state.cpsUpgradeLevel
-          );
-          const offlineEarnings = Math.floor(cps * elapsed * 0.5); // 50% offline rate
-          state.coins += offlineEarnings;
-          state.totalEarned += offlineEarnings;
+          const dps = Object.entries(s.animals).reduce((sum, [id, lvl]) => {
+            const def = ANIMALS.find((a) => a.id === id);
+            return def ? sum + getAnimalDps(def, lvl, s!.prestigeMultiplier) : sum;
+          }, 0);
+          const offlineCoins = Math.floor(dps * elapsed * 0.5);
+          s.coins += offlineCoins;
+          s.totalEarned += offlineCoins;
         }
-        state.lastTick = now;
-        setGameState(state);
+        s.lastTick = now;
+        setState(s);
       }
       setLoaded(true);
     };
-    loadState();
+    load();
   }, [token]);
 
-  // Game tick - earn coins
+  // ---- Game tick ----
   useEffect(() => {
     if (!loaded) return;
-    const interval = setInterval(() => {
-      setGameState((prev) => {
-        const cps = calculateTotalCps(
-          prev.grid,
-          prev.prestigeMultiplier,
-          prev.cpsUpgradeLevel
-        );
-        if (cps === 0) return prev;
-        const earned = cps / (1000 / TICK_INTERVAL);
+    const tick = setInterval(() => {
+      setState((prev) => {
+        const dps = Object.entries(prev.animals).reduce((sum, [id, lvl]) => {
+          const def = ANIMALS.find((a) => a.id === id);
+          return def ? sum + getAnimalDps(def, lvl, prev.prestigeMultiplier) : sum;
+        }, 0);
+        if (dps === 0) return prev;
+
+        const dmg = dps * (TICK_MS / 1000);
+        let newHp = prev.targetHp - dmg;
+        let newCoins = prev.coins;
+        let newTotal = prev.totalEarned;
+        let newDestroyed = prev.targetsDestroyed;
+        let newXp = prev.playerXp;
+        let newLevel = prev.playerLevel;
+        let newAnimals = prev.animals;
+
+        // Target destroyed
+        if (newHp <= 0) {
+          const reward = getTargetReward(prev.targetsDestroyed);
+          newCoins += reward;
+          newTotal += reward;
+          newDestroyed += 1;
+          newXp += 1;
+
+          // Level up check
+          const xpReq = xpForLevel(newLevel);
+          while (newXp >= xpReq) {
+            newXp -= xpForLevel(newLevel);
+            newLevel += 1;
+
+            // Auto-unlock new animals at level-up
+            const newUnlocks = ANIMALS.filter(
+              (a) => a.unlockLevel === newLevel && !(a.id in prev.animals)
+            );
+            if (newUnlocks.length > 0) {
+              newAnimals = { ...newAnimals };
+              newUnlocks.forEach((a) => {
+                newAnimals[a.id] = 1;
+              });
+            }
+          }
+
+          // Spawn new target
+          const nextMaxHp = getTargetMaxHp(newDestroyed);
+          return {
+            ...prev,
+            coins: newCoins,
+            totalEarned: newTotal,
+            targetHp: nextMaxHp,
+            targetMaxHp: nextMaxHp,
+            targetsDestroyed: newDestroyed,
+            playerXp: newXp,
+            playerLevel: newLevel,
+            animals: newAnimals,
+            lastTick: Date.now(),
+          };
+        }
+
         return {
           ...prev,
-          coins: prev.coins + earned,
-          totalEarned: prev.totalEarned + earned,
+          targetHp: newHp,
           lastTick: Date.now(),
         };
       });
-    }, TICK_INTERVAL);
-    return () => clearInterval(interval);
+    }, TICK_MS);
+    return () => clearInterval(tick);
   }, [loaded]);
 
-  // Auto-save
+  // ---- Auto-save ----
   useEffect(() => {
     if (!loaded) return;
-    const interval = setInterval(() => {
-      saveLocalState(stateRef.current);
+    const iv = setInterval(() => {
+      saveLocal(ref.current);
       if (token) {
         fetch(`${API_URL}/api/idle-game/save`, {
           method: "POST",
@@ -154,135 +205,119 @@ export function useGameState() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ state: stateRef.current }),
+          body: JSON.stringify({ state: ref.current }),
         }).catch(() => {});
       }
     }, SAVE_INTERVAL);
-    return () => clearInterval(interval);
+    return () => clearInterval(iv);
   }, [loaded, token]);
 
-  // Save on state change (debounced via localStorage)
+  // Save locally on every change
   useEffect(() => {
-    if (loaded) saveLocalState(gameState);
-  }, [gameState, loaded]);
+    if (loaded) saveLocal(state);
+  }, [state, loaded]);
 
-  const buyAnimal = useCallback(() => {
-    setGameState((prev) => {
-      const cost = getBuyCost(prev.totalPurchased, prev.prestigeLevel);
-      if (prev.coins < cost) return prev;
-      const emptySlot = prev.grid.indexOf(null);
-      if (emptySlot === -1) return prev;
+  // ---- Actions ----
+  const tapTarget = useCallback(() => {
+    setState((prev) => {
+      // Tap damage = 1 + 5% of total DPS
+      const dps = Object.entries(prev.animals).reduce((sum, [id, lvl]) => {
+        const def = ANIMALS.find((a) => a.id === id);
+        return def ? sum + getAnimalDps(def, lvl, prev.prestigeMultiplier) : sum;
+      }, 0);
+      const tapDmg = Math.max(1, Math.floor(dps * 0.05) + 1);
+      let newHp = prev.targetHp - tapDmg;
+      let newCoins = prev.coins;
+      let newTotal = prev.totalEarned;
+      let newDestroyed = prev.targetsDestroyed;
+      let newXp = prev.playerXp;
+      let newLevel = prev.playerLevel;
+      let newAnimals = prev.animals;
 
-      const newGrid = [...prev.grid];
-      newGrid[emptySlot] = 1; // Always buy tier 1
-      return {
-        ...prev,
-        grid: newGrid,
-        coins: prev.coins - cost,
-        totalPurchased: prev.totalPurchased + 1,
-        highestTier: Math.max(prev.highestTier, 1),
-      };
-    });
-  }, []);
+      if (newHp <= 0) {
+        const reward = getTargetReward(prev.targetsDestroyed);
+        newCoins += reward;
+        newTotal += reward;
+        newDestroyed += 1;
+        newXp += 1;
 
-  const handleSlotClick = useCallback((index: number) => {
-    setGameState((prev) => {
-      const clickedTier = prev.grid[index];
+        const xpReq = xpForLevel(newLevel);
+        while (newXp >= xpReq) {
+          newXp -= xpForLevel(newLevel);
+          newLevel += 1;
+          const newUnlocks = ANIMALS.filter(
+            (a) => a.unlockLevel === newLevel && !(a.id in prev.animals)
+          );
+          if (newUnlocks.length > 0) {
+            newAnimals = { ...newAnimals };
+            newUnlocks.forEach((a) => {
+              newAnimals[a.id] = 1;
+            });
+          }
+        }
 
-      // If no animal in slot, do nothing
-      if (clickedTier === null) {
-        setSelectedSlot(null);
-        return prev;
-      }
-
-      // If no slot selected, select this one
-      if (selectedSlot === null) {
-        setSelectedSlot(index);
-        return prev;
-      }
-
-      // If same slot clicked, deselect
-      if (selectedSlot === index) {
-        setSelectedSlot(null);
-        return prev;
-      }
-
-      const selectedTier = prev.grid[selectedSlot];
-
-      // If tiers match, merge!
-      if (selectedTier === clickedTier && clickedTier < ANIMALS.length) {
-        const newGrid = [...prev.grid];
-        newGrid[selectedSlot] = null; // Clear source
-        newGrid[index] = clickedTier + 1; // Upgrade target
-        setSelectedSlot(null);
+        const nextMaxHp = getTargetMaxHp(newDestroyed);
         return {
           ...prev,
-          grid: newGrid,
-          highestTier: Math.max(prev.highestTier, clickedTier + 1),
+          coins: newCoins,
+          totalEarned: newTotal,
+          targetHp: nextMaxHp,
+          targetMaxHp: nextMaxHp,
+          targetsDestroyed: newDestroyed,
+          playerXp: newXp,
+          playerLevel: newLevel,
+          animals: newAnimals,
+          lastTick: Date.now(),
         };
       }
 
-      // If tiers don't match, swap positions
-      if (selectedTier !== null) {
-        const newGrid = [...prev.grid];
-        newGrid[selectedSlot] = clickedTier;
-        newGrid[index] = selectedTier;
-        setSelectedSlot(null);
-        return { ...prev, grid: newGrid };
-      }
-
-      setSelectedSlot(index);
-      return prev;
+      return { ...prev, targetHp: newHp, lastTick: Date.now() };
     });
-  }, [selectedSlot]);
+  }, []);
 
-  const upgradeCps = useCallback(() => {
-    setGameState((prev) => {
-      const cost = getCpsUpgradeCost(prev.cpsUpgradeLevel);
+  const upgradeAnimal = useCallback((animalId: string) => {
+    setState((prev) => {
+      const currentLvl = prev.animals[animalId];
+      if (!currentLvl) return prev;
+      const def = ANIMALS.find((a) => a.id === animalId);
+      if (!def) return prev;
+      const cost = getUpgradeCost(def, currentLvl);
       if (prev.coins < cost) return prev;
       return {
         ...prev,
         coins: prev.coins - cost,
-        cpsUpgradeLevel: prev.cpsUpgradeLevel + 1,
+        animals: { ...prev.animals, [animalId]: currentLvl + 1 },
       };
     });
   }, []);
 
   const prestige = useCallback(() => {
-    setGameState((prev) => {
+    setState((prev) => {
       const bonus = getPrestigeBonus(prev.totalEarned);
       if (bonus <= 0) return prev;
+      const initMaxHp = getTargetMaxHp(0);
       return {
         ...DEFAULT_STATE,
-        coins: 50,
         prestigeLevel: prev.prestigeLevel + 1,
         prestigeMultiplier: prev.prestigeMultiplier + bonus,
-        highestTier: 0,
+        targetHp: initMaxHp,
+        targetMaxHp: initMaxHp,
         lastTick: Date.now(),
       };
     });
-    setSelectedSlot(null);
-  }, []);
-
-  const clearSelection = useCallback(() => {
-    setSelectedSlot(null);
   }, []);
 
   return {
-    gameState,
+    state,
     loaded,
-    selectedSlot,
-    totalCps,
-    buyCost,
-    canBuy,
+    totalDps,
+    xpNeeded,
+    unlockedAnimals,
+    nextUnlock,
     prestigeBonus,
     canPrestige,
-    cpsUpgradeCost,
-    canUpgradeCps,
-    buyAnimal,
-    handleSlotClick,
-    upgradeCps,
+    tapTarget,
+    upgradeAnimal,
     prestige,
-    clearSelection,
   };
 }
