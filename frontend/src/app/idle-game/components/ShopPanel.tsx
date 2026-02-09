@@ -22,7 +22,6 @@ interface ShopPanelProps {
   cpsUpgradeLevel: number;
   prestigeBonus: number;
   canPrestige: boolean;
-  prestigeLevel: number;
   prestigeMultiplier: number;
   onBuy: () => void;
   onUpgradeCps: () => void;
