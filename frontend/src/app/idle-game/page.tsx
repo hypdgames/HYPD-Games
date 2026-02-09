@@ -8,13 +8,13 @@ import {
   TrendingUp,
   RotateCcw,
   Star,
+  Crosshair,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import BottomNav from "@/components/bottom-nav";
 import { useGameState } from "./hooks/useGameState";
-import { BattleArena } from "./components/BattleArena";
-import { AnimalRoster } from "./components/AnimalRoster";
-import { formatNumber, ANIMALS } from "./data/animals";
+import { AnimalLaneList } from "./components/AnimalLaneList";
+import { formatNumber, getTargetReward } from "./data/animals";
 
 export default function IdleGamePage() {
   const {
@@ -40,31 +40,22 @@ export default function IdleGamePage() {
     );
   }
 
-  // Find the highest-level unlocked animal to display in the arena
-  const sortedOwned = Object.entries(state.animals)
-    .map(([id, lvl]) => ({ def: ANIMALS.find((a) => a.id === id), lvl }))
-    .filter((x) => x.def)
-    .sort((a, b) => b.lvl - a.lvl);
-  const activeAnimal = sortedOwned[0]?.def;
-
-  const xpPct = (state.playerXp / xpNeeded) * 100;
+  const hpPct = Math.max(0, (state.targetHp / state.targetMaxHp) * 100);
+  const reward = getTargetReward(state.targetsDestroyed);
 
   return (
     <div
       className="min-h-screen bg-background flex flex-col pb-20"
       data-testid="idle-game-page"
     >
-      {/* Top Bar - Coins + DPS */}
+      {/* ── Top Bar: Coins + DPS ── */}
       <div className="px-4 pt-3 pb-1" data-testid="idle-game-header">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-full bg-amber-500/20 flex items-center justify-center">
               <Coins className="w-4 h-4 text-amber-400" />
             </div>
-            <span
-              className="text-2xl font-heading text-foreground tabular-nums"
-              data-testid="idle-coin-display"
-            >
+            <span className="text-2xl font-heading text-foreground tabular-nums" data-testid="idle-coin-display">
               {formatNumber(state.coins)}
             </span>
           </div>
@@ -76,7 +67,7 @@ export default function IdleGamePage() {
             {canPrestige && (
               <button
                 onClick={() => setShowPrestige(true)}
-                className="flex items-center gap-1 text-xs text-purple-400 hover:text-purple-300 bg-purple-500/10 px-2 py-1 rounded-full"
+                className="flex items-center gap-1 text-xs text-purple-400 bg-purple-500/10 px-2 py-1 rounded-full"
                 data-testid="prestige-button"
               >
                 <RotateCcw className="w-3 h-3" />
@@ -86,69 +77,93 @@ export default function IdleGamePage() {
           </div>
         </div>
 
-        {/* Player Level + XP */}
-        <div className="mt-2">
-          <div className="flex items-center justify-between text-[10px] mb-0.5">
-            <span className="text-lime font-bold" data-testid="player-level">
-              Level {state.playerLevel}
-            </span>
-            {nextUnlock && (
-              <span className="text-muted-foreground">
-                Next: {nextUnlock.emoji} {nextUnlock.name} @ Lv.{nextUnlock.unlockLevel}
-              </span>
-            )}
-          </div>
-          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-            <motion.div
-              className="h-full bg-lime rounded-full"
-              style={{ width: `${xpPct}%` }}
-              transition={{ duration: 0.2 }}
-            />
-          </div>
-          <div className="text-[9px] text-muted-foreground text-right mt-0.5">
-            {state.playerXp}/{xpNeeded} XP
-          </div>
-        </div>
-
         {state.prestigeLevel > 0 && (
-          <div className="text-[10px] text-purple-400 flex items-center gap-1">
+          <div className="text-[10px] text-purple-400 flex items-center gap-1 mt-0.5">
             <Star className="w-3 h-3" />
             Prestige {state.prestigeLevel} ({state.prestigeMultiplier.toFixed(1)}x)
           </div>
         )}
       </div>
 
-      {/* Battle Arena */}
-      <BattleArena
-        targetHp={state.targetHp}
-        targetMaxHp={state.targetMaxHp}
-        targetsDestroyed={state.targetsDestroyed}
-        totalDps={totalDps}
-        onTap={tapTarget}
-        activeAnimalEmoji={activeAnimal?.emoji || "🐰"}
-        activeAnimalImage={activeAnimal?.imageUrl}
-      />
+      {/* ── Global Target HP + Player Level ── */}
+      <div className="px-4 pb-2">
+        {/* Target HP */}
+        <div
+          className="bg-card border border-border rounded-xl p-3 mb-2 cursor-pointer"
+          onClick={tapTarget}
+          data-testid="global-target"
+        >
+          <div className="flex items-center justify-between mb-1.5">
+            <div className="flex items-center gap-2">
+              <Crosshair className="w-4 h-4 text-red-400" />
+              <span className="text-xs font-bold text-foreground">
+                Target #{state.targetsDestroyed + 1}
+              </span>
+            </div>
+            <span className="text-[10px] text-amber-400 font-bold">
+              +{formatNumber(reward)} coins
+            </span>
+          </div>
+          <div className="h-3 bg-muted rounded-full overflow-hidden">
+            <motion.div
+              className="h-full rounded-full"
+              style={{
+                width: `${hpPct}%`,
+                background:
+                  hpPct > 50
+                    ? "linear-gradient(90deg, #22c55e, #4ade80)"
+                    : hpPct > 25
+                      ? "linear-gradient(90deg, #f59e0b, #fbbf24)"
+                      : "linear-gradient(90deg, #ef4444, #f87171)",
+              }}
+              transition={{ duration: 0.1 }}
+            />
+          </div>
+          <div className="flex items-center justify-between mt-1">
+            <span className="text-[9px] text-muted-foreground">
+              {formatNumber(state.targetHp)} / {formatNumber(state.targetMaxHp)} HP
+            </span>
+            <span className="text-[9px] text-muted-foreground">
+              Tap for bonus damage
+            </span>
+          </div>
+        </div>
 
-      {/* Roster Label */}
-      <div className="px-4 pt-3 pb-1 flex items-center justify-between">
-        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-          Your Animals ({Object.keys(state.animals).length})
-        </h3>
-        <span className="text-[10px] text-muted-foreground">
-          {state.targetsDestroyed} targets destroyed
-        </span>
+        {/* Player Level + XP */}
+        <div className="flex items-center justify-between text-[10px] mb-0.5">
+          <span className="text-lime font-bold" data-testid="player-level">
+            Level {state.playerLevel}
+          </span>
+          {nextUnlock && (
+            <span className="text-muted-foreground">
+              Next: {nextUnlock.emoji} {nextUnlock.name} @ Lv.{nextUnlock.unlockLevel}
+            </span>
+          )}
+        </div>
+        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+          <motion.div
+            className="h-full bg-lime rounded-full"
+            style={{ width: `${(state.playerXp / xpNeeded) * 100}%` }}
+            transition={{ duration: 0.2 }}
+          />
+        </div>
+        <div className="flex items-center justify-between text-[9px] text-muted-foreground mt-0.5">
+          <span>{state.playerXp}/{xpNeeded} XP</span>
+          <span>{state.targetsDestroyed} targets destroyed</span>
+        </div>
       </div>
 
-      {/* Animal Roster - scrollable list */}
-      <AnimalRoster
+      {/* ── Animal Lanes (each animal has its own shooting scene) ── */}
+      <AnimalLaneList
         animals={state.animals}
         playerLevel={state.playerLevel}
         coins={state.coins}
         prestigeMultiplier={state.prestigeMultiplier}
         onUpgrade={upgradeAnimal}
+        onTapTarget={tapTarget}
       />
 
-      {/* Prestige Modal */}
+      {/* ── Prestige Modal ── */}
       <AnimatePresence>
         {showPrestige && (
           <motion.div
@@ -170,49 +185,30 @@ export default function IdleGamePage() {
                 <div className="w-14 h-14 rounded-full bg-purple-500/20 flex items-center justify-center mx-auto mb-3">
                   <RotateCcw className="w-7 h-7 text-purple-400" />
                 </div>
-                <h3 className="font-heading text-xl text-foreground">
-                  Prestige?
-                </h3>
+                <h3 className="font-heading text-xl text-foreground">Prestige?</h3>
                 <p className="text-sm text-muted-foreground mt-1">
                   Reset all progress for a permanent multiplier boost.
                 </p>
               </div>
-
               <div className="bg-muted/50 rounded-lg p-3 mb-4 text-sm space-y-1">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Current Multiplier</span>
-                  <span className="text-foreground font-bold">
-                    {state.prestigeMultiplier.toFixed(1)}x
-                  </span>
+                  <span className="text-foreground font-bold">{state.prestigeMultiplier.toFixed(1)}x</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Bonus</span>
-                  <span className="text-purple-400 font-bold">
-                    +{prestigeBonus.toFixed(1)}x
-                  </span>
+                  <span className="text-purple-400 font-bold">+{prestigeBonus.toFixed(1)}x</span>
                 </div>
                 <div className="flex justify-between pt-1 border-t border-border">
                   <span className="text-muted-foreground">New Multiplier</span>
-                  <span className="text-lime font-bold">
-                    {(state.prestigeMultiplier + prestigeBonus).toFixed(1)}x
-                  </span>
+                  <span className="text-lime font-bold">{(state.prestigeMultiplier + prestigeBonus).toFixed(1)}x</span>
                 </div>
               </div>
-
               <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => setShowPrestige(false)}
-                >
-                  Cancel
-                </Button>
+                <Button variant="outline" className="flex-1" onClick={() => setShowPrestige(false)}>Cancel</Button>
                 <Button
                   className="flex-1 bg-purple-500 hover:bg-purple-600"
-                  onClick={() => {
-                    prestige();
-                    setShowPrestige(false);
-                  }}
+                  onClick={() => { prestige(); setShowPrestige(false); }}
                   data-testid="confirm-prestige"
                 >
                   Prestige!
