@@ -14,7 +14,6 @@ import { Button } from "@/components/ui/button";
 import { formatNumber, getAnimalByTier } from "../data/animals";
 
 interface ShopPanelProps {
-  coins: number;
   buyCost: number;
   canBuy: boolean;
   cpsUpgradeCost: number;
