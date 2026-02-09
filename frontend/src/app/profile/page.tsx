@@ -297,9 +297,7 @@ export default function ProfilePage() {
       <AuthView
         settings={settings}
         onLogin={(form) => login(form)}
-        onRegister={(form) =>
-          register({ ...form, confirmPassword: form.password })
-        }
+        onRegister={(form) => register(form)}
       />
     );
   }
