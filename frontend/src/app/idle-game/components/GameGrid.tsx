@@ -44,10 +44,19 @@ function AnimalSlot({
         <>
           {/* Animal display */}
           <div
-            className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-2xl sm:text-3xl"
-            style={{ backgroundColor: animal.bgColor }}
+            className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center overflow-hidden"
+            style={{ backgroundColor: animal.imageUrl ? "transparent" : animal.bgColor }}
           >
-            {animal.emoji}
+            {animal.imageUrl ? (
+              <img
+                src={animal.imageUrl}
+                alt={animal.name}
+                className="w-full h-full object-contain"
+                draggable={false}
+              />
+            ) : (
+              <span className="text-2xl sm:text-3xl">{animal.emoji}</span>
+            )}
           </div>
           {/* Tier badge */}
           <span className="text-[9px] font-bold text-muted-foreground leading-none">
