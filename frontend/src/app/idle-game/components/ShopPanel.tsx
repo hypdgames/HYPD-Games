@@ -30,6 +30,7 @@ interface ShopPanelProps {
 }
 
 export function ShopPanel({
+  coins,
   buyCost,
   canBuy,
   cpsUpgradeCost,
@@ -37,7 +38,6 @@ export function ShopPanel({
   cpsUpgradeLevel,
   prestigeBonus,
   canPrestige,
-  prestigeLevel,
   prestigeMultiplier,
   onBuy,
   onUpgradeCps,

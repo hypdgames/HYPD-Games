@@ -56,7 +56,7 @@ function saveLocalState(state: GameState) {
 }
 
 export function useGameState() {
-  const { user, token } = useAuthStore();
+  const { token } = useAuthStore();
   const [gameState, setGameState] = useState<GameState>(DEFAULT_STATE);
   const [loaded, setLoaded] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
