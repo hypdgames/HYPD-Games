@@ -133,7 +133,7 @@ export function useGameState() {
         if (dps === 0) return prev;
 
         const dmg = dps * (TICK_MS / 1000);
-        let newHp = prev.targetHp - dmg;
+        const newHp = prev.targetHp - dmg;
         let newCoins = prev.coins;
         let newTotal = prev.totalEarned;
         let newDestroyed = prev.targetsDestroyed;
@@ -226,7 +226,7 @@ export function useGameState() {
         return def ? sum + getAnimalDps(def, lvl, prev.prestigeMultiplier) : sum;
       }, 0);
       const tapDmg = Math.max(1, Math.floor(dps * 0.05) + 1);
-      let newHp = prev.targetHp - tapDmg;
+      const newHp = prev.targetHp - tapDmg;
       let newCoins = prev.coins;
       let newTotal = prev.totalEarned;
       let newDestroyed = prev.targetsDestroyed;

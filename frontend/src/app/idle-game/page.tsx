@@ -14,7 +14,7 @@ import BottomNav from "@/components/bottom-nav";
 import { useGameState } from "./hooks/useGameState";
 import { BattleArena } from "./components/BattleArena";
 import { AnimalRoster } from "./components/AnimalRoster";
-import { formatNumber, xpForLevel, ANIMALS } from "./data/animals";
+import { formatNumber, ANIMALS } from "./data/animals";
 
 export default function IdleGamePage() {
   const {
