@@ -39,6 +39,10 @@ const nextConfig = {
         protocol: "https",
         hostname: "img.gamemonetize.com",
       },
+      {
+        protocol: "https",
+        hostname: "static.prod-images.emergentagent.com",
+      },
     ],
     // Optimize images with these formats
     formats: ["image/avif", "image/webp"],
