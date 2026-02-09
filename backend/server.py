@@ -4061,11 +4061,11 @@ class IdleGameSaveRequest(BaseModel):
 
 @app.get("/api/idle-game/state")
 async def get_idle_game_state(
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Load the user's idle game state"""
-    user_id = current_user["user_id"]
+    user_id = current_user.id
     result = await db.execute(
         select(IdleGameState).where(IdleGameState.user_id == user_id)
     )
@@ -4077,11 +4077,11 @@ async def get_idle_game_state(
 @app.post("/api/idle-game/save")
 async def save_idle_game_state(
     request: IdleGameSaveRequest,
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Save the user's idle game state"""
-    user_id = current_user["user_id"]
+    user_id = current_user.id
     result = await db.execute(
         select(IdleGameState).where(IdleGameState.user_id == user_id)
     )
