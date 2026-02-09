@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, memo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, memo } from "react";
+import { motion } from "framer-motion";
 import {
   Coins,
   TrendingUp,
