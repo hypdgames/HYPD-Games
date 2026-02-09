@@ -4054,6 +4054,54 @@ app.add_middleware(
 )
 
 # Initialize storage buckets (sync function for startup)
+# ==================== IDLE GAME ENDPOINTS ====================
+
+class IdleGameSaveRequest(BaseModel):
+    state: dict
+
+@app.get("/api/idle-game/state")
+async def get_idle_game_state(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Load the user's idle game state"""
+    user_id = current_user["user_id"]
+    result = await db.execute(
+        select(IdleGameState).where(IdleGameState.user_id == user_id)
+    )
+    game_state = result.scalar_one_or_none()
+    if game_state:
+        return {"state": game_state.state_json}
+    return {"state": None}
+
+@app.post("/api/idle-game/save")
+async def save_idle_game_state(
+    request: IdleGameSaveRequest,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Save the user's idle game state"""
+    user_id = current_user["user_id"]
+    result = await db.execute(
+        select(IdleGameState).where(IdleGameState.user_id == user_id)
+    )
+    game_state = result.scalar_one_or_none()
+    
+    if game_state:
+        game_state.state_json = request.state
+        game_state.updated_at = datetime.now(timezone.utc)
+    else:
+        game_state = IdleGameState(
+            user_id=user_id,
+            state_json=request.state,
+        )
+        db.add(game_state)
+    
+    await db.commit()
+    return {"success": True}
+
+# ==================== END IDLE GAME ====================
+
 def init_storage_buckets():
     """Create storage buckets if they don't exist"""
     if not supabase_client:
