@@ -64,7 +64,6 @@ export default function IdleGamePage() {
 
       {/* Shop Panel at bottom */}
       <ShopPanel
-        coins={gameState.coins}
         buyCost={buyCost}
         canBuy={canBuy}
         cpsUpgradeCost={cpsUpgradeCost}
