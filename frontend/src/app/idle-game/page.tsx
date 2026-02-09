@@ -72,7 +72,6 @@ export default function IdleGamePage() {
         cpsUpgradeLevel={gameState.cpsUpgradeLevel}
         prestigeBonus={prestigeBonus}
         canPrestige={canPrestige}
-        prestigeLevel={gameState.prestigeLevel}
         prestigeMultiplier={gameState.prestigeMultiplier}
         onBuy={buyAnimal}
         onUpgradeCps={upgradeCps}
