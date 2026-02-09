@@ -6,80 +6,61 @@ Build "Hypd Games," a mobile-first instant gaming website with a vertical, "TikT
 ## Core Features Implemented
 - **Game Feed**: TikTok-style vertical scroll with game cards
 - **Multi-Network Game Integration**: GamePix and GameMonetize providers
-- **Admin Dashboard**: Game management (search, filter, sort, bulk import/delete), network settings
+- **Admin Dashboard**: Game management, network settings, bulk operations
 - **Daily Login Streaks**: Track and reward consecutive daily logins
-- **Consolidated Profile Page**: Tabs for Streak, Games, Wallet/Coins, Friends, PRO plans (refactored to child components)
+- **Consolidated Profile Page**: Refactored into 10 child components (Streak, Games, Wallet, Friends, PRO tabs)
 - **Wallet/Coin System**: Coin balance, packages, ad-free purchases (Stripe MOCKED/disabled)
 - **Ad-Free for Pro Users (GamePix only)**: Disable ads via URL params
-- **Admin Pro Toggle**: Admin can toggle Pro status for testing
-- **Friends System**: Search, add, accept/decline requests, remove friends
-- **Google AdSense**: Site verification and ads.txt
-- **Pet Idle Game (Gun Idle style)**: Auto-attack idle game with 50 animal tiers, battle arena, target HP system, animal roster with upgrade buttons, player level progression, tap-to-attack, prestige, offline earnings
+- **Friends System**: Search, add, accept/decline, remove
+- **Pet Idle Game (Gun Idle style)**: Each animal has its own shooting lane, scrollable vertically. Auto-attack targets, upgrade animals, unlock new ones at player level milestones, prestige system, offline earnings.
 
-## Tech Stack
-- **Frontend**: Next.js 14, React, Tailwind CSS, Shadcn/UI, Zustand, Framer Motion
-- **Backend**: FastAPI, Python, SQLAlchemy (async)
-- **Database**: PostgreSQL via Supabase
-- **3rd Party**: GamePix, GameMonetize, Google AdSense, Stripe (disabled)
+## Pet Idle Game Architecture
+Each animal has its own **shooting lane card**:
+- Animal character on left with recoil animation
+- Green projectile dots flying to target on right
+- Target crosshair on right side
+- Level Up button at bottom of each card
+- Global target HP bar at top of page
+- Player level + XP bar for unlocking new animals
+- Tap target for bonus damage
 
 ## Architecture
 ```
 /app/
 ├── backend/
 │   ├── server.py (includes idle game save/load endpoints)
-│   ├── models.py (includes IdleGameState model)
+│   ├── models.py (IdleGameState model)
 │   └── database.py
-├── frontend/
-│   ├── src/app/
-│   │   ├── admin/
-│   │   ├── explore/
-│   │   ├── idle-game/
-│   │   │   ├── page.tsx (main game: arena + roster + prestige)
-│   │   │   ├── components/
-│   │   │   │   ├── BattleArena.tsx (animal, projectiles, target, HP bar, tap damage)
-│   │   │   │   └── AnimalRoster.tsx (scrollable upgrade list)
-│   │   │   ├── data/
-│   │   │   │   └── animals.ts (50 animals: unlock levels, DPS, costs, images)
-│   │   │   └── hooks/
-│   │   │       └── useGameState.ts (tick loop, tap, upgrade, prestige, save/load)
-│   │   ├── play/[gameId]/
-│   │   ├── profile/ (refactored: 10 child components)
-│   │   └── wallet/ (deprecated)
-│   ├── src/components/ (navbar, bottom-nav w/ center Pet Idle, ui/)
-│   └── src/store/ (auth-store, theme-store)
+├── frontend/src/app/
+│   ├── idle-game/
+│   │   ├── page.tsx (main: top bar + target HP + XP + lane list)
+│   │   ├── components/
+│   │   │   └── AnimalLaneList.tsx (each animal = own shooting scene card)
+│   │   ├── data/
+│   │   │   └── animals.ts (50 animals, unlock levels, DPS, costs, images)
+│   │   └── hooks/
+│   │       └── useGameState.ts (tick loop, tap, upgrade, prestige, save/load)
+│   ├── profile/ (10 refactored child components)
+│   ├── admin/ (7 tab components)
+│   └── ...
 ```
-
-## Latest Implemented (Feb 9, 2026)
-- [x] Pet Idle Game rebuilt as Gun Idle-style auto-attack game (NOT merge grid)
-- [x] Battle arena: animal shoots projectiles at target, target has HP, destroyed targets give coins+XP
-- [x] Animal roster: scrollable list with upgrade buttons, locked animals show unlock requirements
-- [x] Player level system: XP from destroying targets, new animals unlock at milestones
-- [x] Tap-to-attack: bonus damage with floating damage text
-- [x] Prestige system: reset for permanent DPS multiplier
-- [x] Offline earnings (50% rate)
-- [x] 12 custom character images, 38 emoji fallbacks
-- [x] Profile page refactored from 1913 lines into 10 component files
 
 ## Prioritized Backlog
 ### P0
-- Enable Wallet System with Stripe (needs valid STRIPE_API_KEY)
+- Enable Wallet System with Stripe
 
 ### P1
 - Generate remaining character images (tiers 13-50)
-- Implement "Featured Games" section on home feed
+- Featured Games section on home feed
 - Video Previews for games
 
 ### P2
-- Social Feature Enhancements (friend challenges, game sharing)
-- User Notifications
-- "Flappy Bird" style custom game
-- Custom fonts
-- SEO meta tags customization
+- Social features, notifications, custom game, fonts, SEO
 
 ## Key Credentials
 - Admin: admin@hypd.games / admin123
 
 ## Known Limitations
 - Ad-free is GamePix ONLY
-- Stripe payments are MOCKED/disabled
-- Animal character images available for tiers 1-12 only (13-50 use emoji)
+- Stripe payments MOCKED/disabled
+- Animal images for tiers 1-12 only (13-50 use emoji)
