@@ -1,0 +1,91 @@
+{
+  "summary": "Pet Idle v3 (Gun Idle style) complete testing. New layout with individual shooting lanes for each animal. All features working: scrollable animal lanes with character images + projectile animations, global target HP, tap bonus damage, coin earning, player level progression, animal unlocking (Kitty @ Lv.3), upgrade system, and backend save/load APIs.",
+  
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  
+  "frontend_issues": {
+    "critical": [],
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  
+  "passed_tests": [
+    "Game page loads at /idle-game with data-testid='idle-game-page'",
+    "Top bar shows coins and DPS (data-testid='idle-coin-display', 'idle-dps-display')",
+    "Global target HP bar shows at top with Target # and coin reward",
+    "Player Level displayed with XP progress bar (data-testid='player-level')",
+    "Animal lane list is scrollable (data-testid='animal-lane-list')",
+    "Bunny has its own shooting lane (data-testid='animal-lane-bunny')",
+    "Bunny lane shows character image on left, projectile dots flying right to target",
+    "Bunny lane has Level Up button with cost (data-testid='upgrade-bunny')",
+    "Tapping global target deals bonus damage",
+    "Target HP decreases from both auto-attack and tap damage",
+    "When target HP reaches 0: coins earned, XP gained, new stronger target spawns",
+    "Coins increase from destroying targets (verified 0 -> 112 coins)",
+    "DPS display increases when animals upgraded (1/s -> 2/s -> 4/s)",
+    "Upgrade button deducts coins and increases animal level/DPS",
+    "Player XP increases when targets destroyed",
+    "Player levels up when XP fills (Level 1 -> 2 -> 3)",
+    "Kitty unlocks at player Level 3 and gets its own shooting lane",
+    "Kitty lane shows cat character image with projectile animation",
+    "Locked animals show lock icon and unlock level requirement (Pigy @ Lv.5)",
+    "Next unlock indicator in header (e.g., 'Next: Kitty @ Lv.3' -> 'Next: Pigy @ Lv.5')",
+    "Bottom navigation Pet Idle center button works and has elevated styling",
+    "Navigation between Pet Idle and other pages works correctly",
+    "Backend GET /api/idle-game/state requires auth (returns 401)",
+    "Backend GET /api/idle-game/state returns state for logged-in user",
+    "Backend POST /api/idle-game/save requires auth (returns 401)",
+    "Backend POST /api/idle-game/save saves v3 game state with animal levels",
+    "Backend state persistence verified (save -> get returns matching data)",
+    "Backend validates request body (returns 422 for missing 'state' key)",
+    "Backend prestige data persists correctly (prestigeLevel, prestigeMultiplier)"
+  ],
+  
+  "test_report_links": [
+    "/app/backend/tests/test_idle_game_v3.py",
+    "/app/test_reports/pytest/pytest_idle_game_v3.xml"
+  ],
+  
+  "action_items": [],
+  
+  "critical_code_review_comments": [
+    "Gun Idle style layout implemented correctly - each animal has own shooting lane/card",
+    "Projectile animation (green dots flying from animal to target) visible and working",
+    "50 animals defined with progressive unlock levels - good progression curve",
+    "Character images display correctly for first 12 tiers, higher tiers use emoji",
+    "Auto-save interval set to 30 seconds - appropriate for idle game",
+    "localStorage key 'petIdle_v2' differentiates from old merge-grid version",
+    "All interactive elements have proper data-testid attributes for testing"
+  ],
+  
+  "updated_files": [
+    "/app/backend/tests/test_idle_game_v3.py"
+  ],
+  
+  "success_rate": {
+    "backend": "100% (8/8 tests passed)",
+    "frontend": "100% (All features tested and working)"
+  },
+  
+  "test_credentials": {
+    "admin_email": "admin@hypd.games",
+    "admin_password": "admin123"
+  },
+  
+  "seed_data_creation": "None - used existing admin account",
+  
+  "retest_needed": false,
+  
+  "should_main_agent_self_test": false,
+  
+  "context_for_next_testing_agent": "Pet Idle v3 (Gun Idle style) is fully functional with new shooting lane layout. Key layout changes from v2: (1) Each animal now has its OWN shooting lane card instead of single battle arena, (2) Each lane shows animal character on left, projectiles flying to target icon on right, (3) Lane card has header with animal name + level + DPS and bottom upgrade button, (4) Vertical scroll through animal lanes. Mechanics: Auto-attack reduces global target HP, tap target for bonus damage, destroying targets earns coins/XP, player levels up to unlock new animals (Kitty@Lv.3, Pigy@Lv.5, S-Whaly@Lv.8). Backend APIs at /api/idle-game/state (GET) and /api/idle-game/save (POST) work for logged-in users. localStorage key is 'petIdle_v2'. First 12 animal tiers have custom images from Supabase Storage.",
+  
+  "mocked_apis": {
+    "has_mocked_apis": false,
+    "note": "All idle game APIs are real - no mocking"
+  }
+}
