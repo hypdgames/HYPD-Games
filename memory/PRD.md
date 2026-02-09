@@ -14,7 +14,7 @@ Build "Hypd Games," a mobile-first instant gaming website with a vertical, "TikT
 - **Admin Pro Toggle**: Admin can toggle Pro status for testing
 - **Friends System**: Search, add, accept/decline requests, remove friends
 - **Google AdSense**: Site verification and ads.txt
-- **Pet Idle Game**: Merge idle game with 50 animal tiers, buy/merge mechanics, CPS system, prestige, offline earnings, localStorage + backend persistence
+- **Pet Idle Game (Gun Idle style)**: Auto-attack idle game with 50 animal tiers, battle arena, target HP system, animal roster with upgrade buttons, player level progression, tap-to-attack, prestige, offline earnings
 
 ## Tech Stack
 - **Frontend**: Next.js 14, React, Tailwind CSS, Shadcn/UI, Zustand, Framer Motion
@@ -26,42 +26,38 @@ Build "Hypd Games," a mobile-first instant gaming website with a vertical, "TikT
 ```
 /app/
 ├── backend/
-│   ├── server.py
+│   ├── server.py (includes idle game save/load endpoints)
 │   ├── models.py (includes IdleGameState model)
 │   └── database.py
 ├── frontend/
 │   ├── src/app/
-│   │   ├── admin/ (dashboard with GamesTab, GameMonetizeTab, SettingsTab)
+│   │   ├── admin/
 │   │   ├── explore/
 │   │   ├── idle-game/
-│   │   │   ├── page.tsx (main game page)
+│   │   │   ├── page.tsx (main game: arena + roster + prestige)
 │   │   │   ├── components/
-│   │   │   │   ├── GameGrid.tsx (4x5 grid with animal slots)
-│   │   │   │   ├── GameHeader.tsx (coin + CPS display)
-│   │   │   │   └── ShopPanel.tsx (buy, upgrades, prestige)
+│   │   │   │   ├── BattleArena.tsx (animal, projectiles, target, HP bar, tap damage)
+│   │   │   │   └── AnimalRoster.tsx (scrollable upgrade list)
 │   │   │   ├── data/
-│   │   │   │   └── animals.ts (50 animal tiers, images, CPS values)
+│   │   │   │   └── animals.ts (50 animals: unlock levels, DPS, costs, images)
 │   │   │   └── hooks/
-│   │   │       └── useGameState.ts (game state management)
-│   │   ├── play/[gameId]/ (game-player.tsx)
-│   │   ├── profile/
-│   │   │   ├── page.tsx (orchestrator ~420 lines)
-│   │   │   ├── layout.tsx
-│   │   │   ├── types.ts
-│   │   │   └── components/ (AuthView, ProfileHeader, StreakTab, GamesTab, FriendsTab, WalletTab, ProTab, AdminSection)
+│   │   │       └── useGameState.ts (tick loop, tap, upgrade, prestige, save/load)
+│   │   ├── play/[gameId]/
+│   │   ├── profile/ (refactored: 10 child components)
 │   │   └── wallet/ (deprecated)
-│   ├── src/components/ (navbar, bottom-nav with center Pet Idle icon, ui/)
+│   ├── src/components/ (navbar, bottom-nav w/ center Pet Idle, ui/)
 │   └── src/store/ (auth-store, theme-store)
 ```
 
 ## Latest Implemented (Feb 9, 2026)
-- [x] Pet Idle Game - Full merge idle game with 50 animal tiers
-- [x] Generated character images for tiers 1-12 (higher tiers use emoji fallback)
-- [x] Game mechanics: buy, merge, CPS earning, upgrades, prestige
-- [x] Center paw icon in bottom navigation for Pet Idle
-- [x] Backend save/load API for logged-in users
-- [x] localStorage persistence for guest users
+- [x] Pet Idle Game rebuilt as Gun Idle-style auto-attack game (NOT merge grid)
+- [x] Battle arena: animal shoots projectiles at target, target has HP, destroyed targets give coins+XP
+- [x] Animal roster: scrollable list with upgrade buttons, locked animals show unlock requirements
+- [x] Player level system: XP from destroying targets, new animals unlock at milestones
+- [x] Tap-to-attack: bonus damage with floating damage text
+- [x] Prestige system: reset for permanent DPS multiplier
 - [x] Offline earnings (50% rate)
+- [x] 12 custom character images, 38 emoji fallbacks
 - [x] Profile page refactored from 1913 lines into 10 component files
 
 ## Prioritized Backlog
@@ -86,4 +82,4 @@ Build "Hypd Games," a mobile-first instant gaming website with a vertical, "TikT
 ## Known Limitations
 - Ad-free is GamePix ONLY
 - Stripe payments are MOCKED/disabled
-- Animal character images available for tiers 1-12 only (tiers 13-50 use emoji)
+- Animal character images available for tiers 1-12 only (13-50 use emoji)
