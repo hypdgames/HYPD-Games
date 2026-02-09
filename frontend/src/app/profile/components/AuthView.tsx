@@ -25,12 +25,12 @@ import type { AppSettings } from "@/types";
 
 interface AuthViewProps {
   settings: AppSettings | null;
-  onLogin: (form: { email: string; password: string }) => Promise<void>;
+  onLogin: (form: { email: string; password: string }) => Promise<unknown>;
   onRegister: (form: {
     username: string;
     email: string;
     password: string;
-  }) => Promise<void>;
+  }) => Promise<unknown>;
 }
 
 export function AuthView({ settings, onLogin, onRegister }: AuthViewProps) {
