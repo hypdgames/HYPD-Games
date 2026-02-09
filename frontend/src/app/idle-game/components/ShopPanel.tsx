@@ -29,7 +29,6 @@ interface ShopPanelProps {
 }
 
 export function ShopPanel({
-  coins,
   buyCost,
   canBuy,
   cpsUpgradeCost,
