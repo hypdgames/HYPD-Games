@@ -11,7 +11,7 @@ Build "Hypd Games," a mobile-first instant gaming website with a vertical, "TikT
 - **Consolidated Profile Page**: Refactored into child components (Streak, Games, Wallet, Friends tabs)
 - **Wallet/Coin System**: Coin balance, packages (Stripe MOCKED/disabled)
 - **Friends System**: Search, add, accept/decline, remove
-- **Pet Idle Game (Gun Idle style)**: Each animal has its own shooting lane, scrollable vertically. Auto-attack targets, upgrade animals, unlock new ones at player level milestones, prestige system, offline earnings.
+- **Base Defence Game (Tower Defense)**: Canvas-based pixel art survival game replacing the old Pet Idle. Features: auto-attacking archer tower, enemy waves (5 types), 15-minute survival timer, XP gem/gold coin drops with tap-to-collect, level-up with 15 upgrade choices, lobby with 12 permanent upgrades, game speed toggle (1x/2x/3x), victory/defeat screens. State persists to backend.
 
 ## Hidden/Disabled Features
 - **Pro/Ad-Free features**: All Pro-related UI has been hidden (PRO tab, ad-free purchases, ad-free badge in game player, Pro page redirects to home). Can be re-enabled in the future.
@@ -66,5 +66,5 @@ Each animal has its own **shooting lane card**:
 
 ## Known Limitations
 - Stripe payments MOCKED/disabled
-- Animal images for tiers 1-12 only (13-50 use emoji)
 - Pro/Ad-Free features hidden (can be re-enabled later)
+- Base Defence first run is challenging by design - lobby upgrades improve subsequent runs
