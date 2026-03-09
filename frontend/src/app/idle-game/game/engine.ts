@@ -40,8 +40,7 @@ export interface GameSave {
 }
 
 // ===== CONSTANTS =====
-export const GW = 480, GH = 480
-export const CX = GW / 2, CY = GH / 2
+export const GW_DEFAULT = 480, GH_DEFAULT = 480
 export const DURATION = 900
 export const ARROW_SPEED = 280
 export const TOWER_R = 16
@@ -135,11 +134,20 @@ export class GameEngine {
   gameSpeed = 1
   towerLevel = 1
   _nextId = 0
+  // Dynamic dimensions
+  gw: number
+  gh: number
+  cx: number
+  cy: number
 
   onLevelUp?: (choices: UpgradeDef[]) => void
   onGameEnd?: (victory: boolean) => void
 
-  constructor(public save: GameSave) {
+  constructor(public save: GameSave, gw = GW_DEFAULT, gh = GH_DEFAULT) {
+    this.gw = gw
+    this.gh = gh
+    this.cx = gw / 2
+    this.cy = gh / 2
     this.stats = { ...BASE_STATS }
     for (const upg of LOBBY_UPGRADES) {
       const lvl = save.lobbyLevels[upg.id] || 0
@@ -223,10 +231,10 @@ export class GameEngine {
     const m = 20
     let x: number, y: number
     switch (side) {
-      case 0: x = -m; y = Math.random() * GH; break
-      case 1: x = GW + m; y = Math.random() * GH; break
-      case 2: x = Math.random() * GW; y = -m; break
-      default: x = Math.random() * GW; y = GH + m; break
+      case 0: x = -m; y = Math.random() * this.gh; break
+      case 1: x = this.gw + m; y = Math.random() * this.gh; break
+      case 2: x = Math.random() * this.gw; y = -m; break
+      default: x = Math.random() * this.gw; y = this.gh + m; break
     }
     this.enemies.push({
       id: this.nextId(), x, y, type,
@@ -244,7 +252,7 @@ export class GameEngine {
     let nearDist = Infinity
     for (const e of this.enemies) {
       if (e.hp <= 0) continue
-      const dx = e.x - CX, dy = e.y - CY
+      const dx = e.x - this.cx, dy = e.y - this.cy
       const dist = Math.sqrt(dx * dx + dy * dy)
       if (dist <= this.stats.range && dist < nearDist) {
         nearest = e; nearDist = dist
@@ -253,8 +261,8 @@ export class GameEngine {
     if (!nearest) return
     this.attackTimer = 1 / this.stats.attackSpeed
     const count = this.stats.multiShot
-    const spawnX = CX
-    const spawnY = CY - 20
+    const spawnX = this.cx
+    const spawnY = this.cy - 20
     // Aim from the actual arrow spawn point, not tower center
     const baseAngle = Math.atan2(nearest.y - spawnY, nearest.x - spawnX)
     const spread = count > 1 ? 0.15 : 0
@@ -273,7 +281,7 @@ export class GameEngine {
   updateProjectiles(dt: number) {
     this.projectiles = this.projectiles.filter(p => {
       p.x += p.vx * dt; p.y += p.vy * dt
-      if (p.x < -30 || p.x > GW + 30 || p.y < -30 || p.y > GH + 30) return false
+      if (p.x < -30 || p.x > this.gw + 30 || p.y < -30 || p.y > this.gh + 30) return false
       for (const e of this.enemies) {
         if (e.hp <= 0 || p.hitEnemies.has(e.id)) continue
         const dx = p.x - e.x, dy = p.y - e.y
@@ -315,7 +323,7 @@ export class GameEngine {
         e.x += e.kbVx * dt; e.y += e.kbVy * dt
         e.kbVx *= 0.85; e.kbVy *= 0.85
       }
-      const dx = CX - e.x, dy = CY - e.y
+      const dx = this.cx - e.x, dy = this.cy - e.y
       const dist = Math.sqrt(dx * dx + dy * dy)
       if (dist > TOWER_R + e.radius) {
         const spd = e.slowTimer > 0 ? e.speed : e.baseSpeed
