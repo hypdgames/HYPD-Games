@@ -204,7 +204,7 @@ export class GameEngine {
     // Age pickups & auto-collect after 0.6s
     for (let i = this.pickups.length - 1; i >= 0; i--) {
       this.pickups[i].age += dt
-      if (this.pickups[i].age >= 0.6) {
+      if (this.pickups[i].age >= 1.0) {
         this.collectPickup(this.pickups[i])
         this.pickups.splice(i, 1)
       }
