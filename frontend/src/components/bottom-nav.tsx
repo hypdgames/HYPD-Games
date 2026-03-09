@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Compass, Trophy, User, PawPrint } from "lucide-react";
+import { Home, Compass, Trophy, User, Crosshair } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { path: "/", icon: Home, label: "Feed" },
   { path: "/explore", icon: Compass, label: "Explore" },
-  { path: "/idle-game", icon: PawPrint, label: "Pet Idle", isCenter: true },
+  { path: "/idle-game", icon: Crosshair, label: "Defence", isCenter: true },
   { path: "/leaderboard", icon: Trophy, label: "Leaders" },
   { path: "/profile", icon: User, label: "Profile" },
 ];
