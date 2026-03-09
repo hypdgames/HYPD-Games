@@ -201,8 +201,14 @@ export class GameEngine {
     this.dmgNumbers = this.dmgNumbers.filter(d => {
       d.age += dt; d.y -= 20 * dt; return d.age < 0.8
     })
-    // Age pickups
-    this.pickups = this.pickups.filter(p => { p.age += dt; return p.age < 20 })
+    // Age pickups & auto-collect after 0.6s
+    for (let i = this.pickups.length - 1; i >= 0; i--) {
+      this.pickups[i].age += dt
+      if (this.pickups[i].age >= 0.6) {
+        this.collectPickup(this.pickups[i])
+        this.pickups.splice(i, 1)
+      }
+    }
 
     // Tower visual level
     if (this.level >= 15) this.towerLevel = 4
