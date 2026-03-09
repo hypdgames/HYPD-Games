@@ -248,13 +248,25 @@ export class GameEngine {
   updateAttack(dt: number) {
     this.attackTimer -= dt
     if (this.attackTimer > 0) return
+    // Priority: enemies touching the tower (dealing damage) first, then nearest in range
     let nearest: Enemy | null = null
     let nearDist = Infinity
+    let hasTowerEnemy = false
     for (const e of this.enemies) {
       if (e.hp <= 0) continue
       const dx = e.x - this.cx, dy = e.y - this.cy
       const dist = Math.sqrt(dx * dx + dy * dy)
-      if (dist <= this.stats.range && dist < nearDist) {
+      const atTower = dist <= TOWER_R + e.radius + 2
+      // If we already found an enemy at tower, skip non-tower enemies
+      if (hasTowerEnemy && !atTower) continue
+      // If this is the first tower enemy, reset search to tower-only
+      if (atTower && !hasTowerEnemy) {
+        hasTowerEnemy = true
+        nearest = e
+        nearDist = dist
+        continue
+      }
+      if (dist < nearDist && (atTower || dist <= this.stats.range)) {
         nearest = e; nearDist = dist
       }
     }
