@@ -253,14 +253,17 @@ export class GameEngine {
     if (!nearest) return
     this.attackTimer = 1 / this.stats.attackSpeed
     const count = this.stats.multiShot
-    const baseAngle = Math.atan2(nearest.y - CY, nearest.x - CX)
+    const spawnX = CX
+    const spawnY = CY - 20
+    // Aim from the actual arrow spawn point, not tower center
+    const baseAngle = Math.atan2(nearest.y - spawnY, nearest.x - spawnX)
     const spread = count > 1 ? 0.15 : 0
     for (let i = 0; i < count; i++) {
       const angle = baseAngle + (i - (count - 1) / 2) * spread
       const isCrit = Math.random() * 100 < this.stats.critChance
       const dmg = isCrit ? Math.floor(this.stats.damage * this.stats.critDamage) : this.stats.damage
       this.projectiles.push({
-        id: this.nextId(), x: CX, y: CY - 20,
+        id: this.nextId(), x: spawnX, y: spawnY,
         vx: Math.cos(angle) * ARROW_SPEED, vy: Math.sin(angle) * ARROW_SPEED,
         damage: dmg, pierceLeft: this.stats.pierce, hitEnemies: new Set(), isCrit,
       })
