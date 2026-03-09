@@ -4,8 +4,6 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import {
   Loader2,
-  Crown,
-  Clock,
   Coins,
   ShoppingCart,
   History,
@@ -15,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import type { User } from "@/types";
-import type { CoinPackage, AdFreeOption, Transaction } from "../types";
+import type { CoinPackage, Transaction } from "../types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
@@ -23,12 +21,9 @@ interface WalletTabProps {
   user: User;
   token: string;
   walletPackages: CoinPackage[];
-  adFreeOptions: AdFreeOption[];
   transactions: Transaction[];
   walletLoading: boolean;
   purchasesEnabled: boolean;
-  onRefreshUser: () => void;
-  onRefreshTransactions: () => void;
 }
 
 function formatTxDate(dateStr: string) {
@@ -44,18 +39,12 @@ export function WalletTab({
   user,
   token,
   walletPackages,
-  adFreeOptions,
   transactions,
   walletLoading,
   purchasesEnabled,
-  onRefreshUser,
-  onRefreshTransactions,
 }: WalletTabProps) {
-  const [walletTab, setWalletTab] = useState<"buy" | "spend" | "history">(
-    "buy"
-  );
+  const [walletTab, setWalletTab] = useState<"buy" | "history">("buy");
   const [purchasing, setPurchasing] = useState<string | null>(null);
-  const [spending, setSpending] = useState<string | null>(null);
 
   const handlePurchase = async (packageId: string) => {
     setPurchasing(packageId);
@@ -83,45 +72,6 @@ export function WalletTab({
       toast.error("Failed to initiate purchase");
     }
     setPurchasing(null);
-  };
-
-  const handleSpendAdFree = async (optionId: string) => {
-    const option = adFreeOptions.find((o) => o.option_id === optionId);
-    if (!option) return;
-
-    if ((user?.coin_balance || 0) < option.coins) {
-      toast.error("Not enough coins!");
-      setWalletTab("buy");
-      return;
-    }
-
-    setSpending(optionId);
-    try {
-      const res = await fetch(`${API_URL}/api/wallet/spend`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          spend_type: "ad_free",
-          option_id: optionId,
-        }),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        toast.success(data.message);
-        onRefreshUser();
-        onRefreshTransactions();
-      } else {
-        const error = await res.json();
-        toast.error(error.detail || "Failed to purchase ad-free");
-      }
-    } catch {
-      toast.error("Failed to spend coins");
-    }
-    setSpending(null);
   };
 
   if (walletLoading) {
@@ -152,7 +102,7 @@ export function WalletTab({
         </div>
       </motion.div>
 
-      {/* Sub-tabs for Buy / Spend / History */}
+      {/* Sub-tabs for Buy / History */}
       <div className="flex gap-2 p-1 bg-card border border-border rounded-lg">
         <button
           onClick={() => setWalletTab("buy")}
@@ -164,17 +114,6 @@ export function WalletTab({
         >
           <ShoppingCart className="w-4 h-4" />
           Buy
-        </button>
-        <button
-          onClick={() => setWalletTab("spend")}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
-            walletTab === "spend"
-              ? "bg-lime text-black"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <Gift className="w-4 h-4" />
-          Spend
         </button>
         <button
           onClick={() => setWalletTab("history")}
@@ -250,67 +189,6 @@ export function WalletTab({
               </div>
             </motion.div>
           ))}
-        </div>
-      )}
-
-      {/* Spend Coins Section */}
-      {walletTab === "spend" && (
-        <div className="space-y-3">
-          <div className="bg-gradient-to-r from-violet-500/10 to-purple-500/10 border border-violet-500/30 rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Crown className="w-5 h-5 text-violet-400" />
-              <h3 className="font-heading text-lg text-foreground">
-                Ad-Free Gaming
-              </h3>
-            </div>
-            <p className="text-sm text-muted-foreground mb-3">
-              Remove ads from GamePix games for a limited time
-            </p>
-            {adFreeOptions.map((option) => (
-              <div
-                key={option.option_id}
-                className="flex items-center justify-between py-2 border-t border-border first:border-0"
-              >
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-foreground">{option.label}</span>
-                </div>
-                <Button
-                  size="sm"
-                  onClick={() => handleSpendAdFree(option.option_id)}
-                  disabled={
-                    spending === option.option_id ||
-                    (user?.coin_balance || 0) < option.coins
-                  }
-                  variant={
-                    (user?.coin_balance || 0) >= option.coins
-                      ? "default"
-                      : "outline"
-                  }
-                  className={
-                    (user?.coin_balance || 0) >= option.coins
-                      ? "bg-violet-500 hover:bg-violet-600"
-                      : ""
-                  }
-                >
-                  {spending === option.option_id ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <>
-                      <Coins className="w-3 h-3 mr-1" />
-                      {option.coins}
-                    </>
-                  )}
-                </Button>
-              </div>
-            ))}
-          </div>
-
-          <div className="text-center py-4">
-            <p className="text-xs text-muted-foreground">
-              More ways to spend coins coming soon!
-            </p>
-          </div>
         </div>
       )}
 

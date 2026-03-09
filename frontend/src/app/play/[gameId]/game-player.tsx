@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Loader2, Crown } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { useAuthStore } from "@/store";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
@@ -11,7 +11,7 @@ export default function GamePlayer() {
   const params = useParams();
   const router = useRouter();
   const gameId = params.gameId as string;
-  const { token, user, refreshUser } = useAuthStore();
+  const { token } = useAuthStore();
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const startTimeRef = useRef<number | null>(null);
@@ -23,42 +23,15 @@ export default function GamePlayer() {
   const [buttonY, setButtonY] = useState(100);
   const [isDragging, setIsDragging] = useState(false);
   const [hasDragged, setHasDragged] = useState(false);
-  const [isAdFree, setIsAdFree] = useState(false);
-  const [userChecked, setUserChecked] = useState(false);
   const dragStartY = useRef(0);
   const buttonStartY = useRef(0);
 
-  // Refresh user data on mount to get latest is_ad_free status
+  // Set game URL on mount
   useEffect(() => {
-    const checkUserStatus = async () => {
-      if (token) {
-        await refreshUser();
-      }
-      setUserChecked(true);
-    };
-    checkUserStatus();
-  }, [token, refreshUser]);
-
-  // Update isAdFree when user changes
-  useEffect(() => {
-    if (userChecked) {
-      const adFree = user?.is_ad_free || (user?.ad_free_until && new Date(user.ad_free_until) > new Date());
-      setIsAdFree(!!adFree);
-    }
-  }, [user, userChecked]);
-
-  // Set game URL once we know the ad-free status
-  useEffect(() => {
-    if (!userChecked) return;
-    
-    // Build game URL with noads parameter for Pro users
-    let url = `${API_URL}/api/games/${gameId}/play`;
-    if (isAdFree) {
-      url += "?noads=1";
-    }
+    const url = `${API_URL}/api/games/${gameId}/play`;
     setGameUrl(url);
     startTimeRef.current = Date.now();
-  }, [gameId, isAdFree, userChecked]);
+  }, [gameId]);
 
   // Cleanup: record play session on unmount
   useEffect(() => {
@@ -205,17 +178,6 @@ export default function GamePlayer() {
             setLoading(false);
           }}
         />
-      )}
-
-      {/* Ad-Free Badge for Pro Users */}
-      {isAdFree && !loading && (
-        <div 
-          className="fixed top-4 right-4 z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500/90 to-yellow-500/90 text-black text-xs font-bold shadow-lg"
-          data-testid="ad-free-badge"
-        >
-          <Crown className="w-3.5 h-3.5" />
-          Ad-Free
-        </div>
       )}
 
       {/* Draggable Back Button */}

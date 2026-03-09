@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Flame, Heart, Coins, Users, Crown } from "lucide-react";
+import { Flame, Heart, Coins, Users } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuthStore } from "@/store";
 import BottomNav from "@/components/bottom-nav";
@@ -16,7 +16,6 @@ import type {
   StreakData,
   LeaderboardEntry,
   CoinPackage,
-  AdFreeOption,
   Transaction,
 } from "./types";
 
@@ -26,7 +25,6 @@ import { StreakTab } from "./components/StreakTab";
 import { GamesTab } from "./components/GamesTab";
 import { FriendsTab } from "./components/FriendsTab";
 import { WalletTab } from "./components/WalletTab";
-import { ProTab } from "./components/ProTab";
 import { AdminSection } from "./components/AdminSection";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
@@ -35,7 +33,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
-  const { user, token, login, register, logout, settings, refreshUser } =
+  const { user, token, login, register, logout, settings } =
     useAuthStore();
 
   const defaultTab = tabParam === "wallet" ? "wallet" : "streak";
@@ -59,7 +57,6 @@ export default function ProfilePage() {
 
   // Wallet state
   const [walletPackages, setWalletPackages] = useState<CoinPackage[]>([]);
-  const [adFreeOptions, setAdFreeOptions] = useState<AdFreeOption[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [walletLoading, setWalletLoading] = useState(false);
   const [purchasesEnabled, setPurchasesEnabled] = useState(false);
@@ -132,18 +129,11 @@ export default function ProfilePage() {
   const fetchWalletData = async () => {
     setWalletLoading(true);
     try {
-      const [packagesRes, optionsRes] = await Promise.all([
-        fetch(`${API_URL}/api/wallet/packages`),
-        fetch(`${API_URL}/api/wallet/ad-free-options`),
-      ]);
+      const packagesRes = await fetch(`${API_URL}/api/wallet/packages`);
       if (packagesRes.ok) {
         const data = await packagesRes.json();
         setWalletPackages(data.packages || []);
         setPurchasesEnabled(data.purchases_enabled || false);
-      }
-      if (optionsRes.ok) {
-        const data = await optionsRes.json();
-        setAdFreeOptions(data.options || []);
       }
     } catch (e) {
       console.error("Error fetching wallet data:", e);
@@ -317,7 +307,7 @@ export default function ProfilePage() {
 
       <div className="px-6">
         <Tabs defaultValue={defaultTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5 mb-4">
+          <TabsList className="grid w-full grid-cols-4 mb-4">
             <TabsTrigger
               value="streak"
               className="flex items-center gap-1"
@@ -346,10 +336,6 @@ export default function ProfilePage() {
                 </span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="pro" className="flex items-center gap-1">
-              <Crown className="w-4 h-4" />
-              <span className="hidden sm:inline">PRO</span>
-            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="streak" data-testid="streak-tab-content">
@@ -370,12 +356,9 @@ export default function ProfilePage() {
               user={user}
               token={token!}
               walletPackages={walletPackages}
-              adFreeOptions={adFreeOptions}
               transactions={transactions}
               walletLoading={walletLoading}
               purchasesEnabled={purchasesEnabled}
-              onRefreshUser={refreshUser}
-              onRefreshTransactions={fetchTransactions}
             />
           </TabsContent>
 
@@ -394,14 +377,10 @@ export default function ProfilePage() {
               onRemoveFriend={removeFriend}
             />
           </TabsContent>
-
-          <TabsContent value="pro">
-            <ProTab />
-          </TabsContent>
         </Tabs>
 
         {/* Admin sections */}
-        {user.is_admin && <AdminSection user={user} token={token!} />}
+        {user.is_admin && <AdminSection />}
 
         {/* Hidden Admin Login Link */}
         <div className="mt-8 text-center">

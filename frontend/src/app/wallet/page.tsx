@@ -7,12 +7,10 @@ import {
   Coins,
   ShoppingCart,
   History,
-  Zap,
   Gift,
   Loader2,
   Sparkles,
   Clock,
-  Shield,
   ArrowLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -33,13 +31,6 @@ interface CoinPackage {
   is_popular: boolean;
 }
 
-interface AdFreeOption {
-  option_id: string;
-  label: string;
-  coins: number;
-  hours: number;
-}
-
 interface Transaction {
   id: string;
   transaction_type: string;
@@ -56,12 +47,10 @@ export default function WalletPage() {
   const { user, token, settings, refreshUser } = useAuthStore();
 
   const [packages, setPackages] = useState<CoinPackage[]>([]);
-  const [adFreeOptions, setAdFreeOptions] = useState<AdFreeOption[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState<string | null>(null);
-  const [spending, setSpending] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"buy" | "spend" | "history">("buy");
+  const [activeTab, setActiveTab] = useState<"buy" | "history">("buy");
   const [purchasesEnabled, setPurchasesEnabled] = useState(false);
 
   const fetchTransactions = useCallback(async () => {
@@ -134,19 +123,11 @@ export default function WalletPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [packagesRes, optionsRes] = await Promise.all([
-        fetch(`${API_URL}/api/wallet/packages`),
-        fetch(`${API_URL}/api/wallet/ad-free-options`),
-      ]);
-
+      const packagesRes = await fetch(`${API_URL}/api/wallet/packages`);
       if (packagesRes.ok) {
         const data = await packagesRes.json();
         setPackages(data.packages || []);
         setPurchasesEnabled(data.purchases_enabled || false);
-      }
-      if (optionsRes.ok) {
-        const data = await optionsRes.json();
-        setAdFreeOptions(data.options || []);
       }
     } catch (e) {
       console.error("Error fetching wallet data:", e);
@@ -194,51 +175,6 @@ export default function WalletPage() {
       toast.error("Failed to initiate purchase");
     }
     setPurchasing(null);
-  };
-
-  const handleSpendAdFree = async (optionId: string) => {
-    if (!token) {
-      toast.error("Please login first");
-      router.push("/profile");
-      return;
-    }
-
-    const option = adFreeOptions.find((o) => o.option_id === optionId);
-    if (!option) return;
-
-    if ((user?.coin_balance || 0) < option.coins) {
-      toast.error("Not enough coins!");
-      setActiveTab("buy");
-      return;
-    }
-
-    setSpending(optionId);
-    try {
-      const res = await fetch(`${API_URL}/api/wallet/spend`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          spend_type: "ad_free",
-          option_id: optionId,
-        }),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        toast.success(data.message);
-        refreshUser();
-        fetchTransactions();
-      } else {
-        const error = await res.json();
-        toast.error(error.detail || "Failed to purchase ad-free");
-      }
-    } catch {
-      toast.error("Failed to spend coins");
-    }
-    setSpending(null);
   };
 
   const formatDate = (dateStr: string) => {
@@ -331,14 +267,6 @@ export default function WalletPage() {
             </div>
           </div>
 
-          {user.is_ad_free && user.ad_free_until && (
-            <div className="mt-4 flex items-center gap-2 bg-green-500/20 px-3 py-2 rounded-lg">
-              <Shield className="w-4 h-4 text-green-500" />
-              <span className="text-sm text-green-400">
-                Ad-free until {new Date(user.ad_free_until).toLocaleDateString()}
-              </span>
-            </div>
-          )}
         </motion.div>
 
         {/* Tabs */}
@@ -354,18 +282,6 @@ export default function WalletPage() {
           >
             <ShoppingCart className="w-4 h-4" />
             Buy Coins
-          </button>
-          <button
-            onClick={() => setActiveTab("spend")}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-colors ${
-              activeTab === "spend"
-                ? "bg-lime text-black"
-                : "bg-card border border-border text-muted-foreground"
-            }`}
-            data-testid="spend-tab"
-          >
-            <Zap className="w-4 h-4" />
-            Spend
           </button>
           <button
             onClick={() => setActiveTab("history")}
@@ -483,60 +399,6 @@ export default function WalletPage() {
               </div>
             )}
 
-            {/* Spend Coins Tab */}
-            {activeTab === "spend" && (
-              <div className="space-y-4" data-testid="spend-coins-section">
-                {/* Ad-Free Section */}
-                <div>
-                  <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
-                    <Shield className="w-4 h-4" />
-                    Remove Ads
-                  </h3>
-                  <div className="grid grid-cols-2 gap-3">
-                    {adFreeOptions.map((option) => (
-                      <motion.button
-                        key={option.option_id}
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        onClick={() => handleSpendAdFree(option.option_id)}
-                        disabled={spending === option.option_id || (user?.coin_balance || 0) < option.coins}
-                        className={`bg-card border rounded-xl p-4 text-left transition-colors ${
-                          (user?.coin_balance || 0) >= option.coins
-                            ? "border-border hover:border-lime/50"
-                            : "border-border opacity-50"
-                        }`}
-                        data-testid={`adfree-${option.option_id}`}
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <Clock className="w-5 h-5 text-blue-500" />
-                          {spending === option.option_id && (
-                            <Loader2 className="w-4 h-4 animate-spin text-lime" />
-                          )}
-                        </div>
-                        <p className="font-bold text-foreground">{option.label}</p>
-                        <p className="text-sm text-yellow-500 font-heading">{option.coins} coins</p>
-                      </motion.button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Premium Games Section - Placeholder */}
-                <div className="mt-6">
-                  <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
-                    <Sparkles className="w-4 h-4" />
-                    Premium Games
-                  </h3>
-                  <div className="bg-card border border-border rounded-xl p-6 text-center">
-                    <Sparkles className="w-10 h-10 text-muted-foreground mx-auto mb-3 opacity-50" />
-                    <p className="text-muted-foreground text-sm">Coming Soon!</p>
-                    <p className="text-xs text-muted-foreground/70">
-                      Unlock exclusive premium games with your coins
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* Transaction History Tab */}
             {activeTab === "history" && (
               <div data-testid="history-section">
@@ -570,7 +432,7 @@ export default function WalletPage() {
                             {tx.coins > 0 ? (
                               <Coins className="w-5 h-5 text-green-500" />
                             ) : (
-                              <Zap className="w-5 h-5 text-red-500" />
+                              <ShoppingCart className="w-5 h-5 text-red-500" />
                             )}
                           </div>
                           <div>

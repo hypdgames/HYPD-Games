@@ -8,11 +8,6 @@ import {
   Eye,
   EyeOff,
   Loader2,
-  Crown,
-  Check,
-  Zap,
-  Shield,
-  Star,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -98,20 +93,6 @@ export function AuthView({ settings, onLogin, onRegister }: AuthViewProps) {
       </div>
 
       <div className="p-6 max-w-md mx-auto">
-        <Tabs defaultValue="auth" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger value="auth" className="flex items-center gap-2">
-              <User className="w-4 h-4" />
-              Account
-            </TabsTrigger>
-            <TabsTrigger value="pro" className="flex items-center gap-2">
-              <Crown className="w-4 h-4" />
-              PRO
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Auth Tab */}
-          <TabsContent value="auth">
             <div className="text-center mb-8">
               <div className="w-20 h-20 rounded-full bg-card border border-border flex items-center justify-center mx-auto mb-4">
                 <User className="w-10 h-10 text-muted-foreground" />
@@ -315,150 +296,8 @@ export function AuthView({ settings, onLogin, onRegister }: AuthViewProps) {
                 </form>
               </TabsContent>
             </Tabs>
-          </TabsContent>
-
-          {/* PRO Tab for logged out users */}
-          <TabsContent value="pro">
-            <ProPlansDisplay />
-          </TabsContent>
-        </Tabs>
       </div>
       <BottomNav />
     </div>
-  );
-}
-
-export function ProPlansDisplay() {
-  return (
-    <>
-      {/* Hero */}
-      <div className="text-center mb-6">
-        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-lime/20 to-violet/20 border-2 border-lime flex items-center justify-center mx-auto mb-3">
-          <Crown className="w-8 h-8 text-lime" />
-        </div>
-        <h2 className="font-heading text-2xl text-foreground mb-1">
-          Upgrade to PRO
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          Remove ads and unlock exclusive features
-        </p>
-      </div>
-
-      {/* Plans */}
-      <div className="space-y-3">
-        {/* Free Plan */}
-        <div className="bg-card border border-border rounded-xl p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <h3 className="font-heading text-lg text-foreground">Free</h3>
-              <p className="text-muted-foreground text-sm">$0/forever</p>
-            </div>
-            <span className="text-xs bg-muted text-muted-foreground px-3 py-1 rounded-full">
-              Current Plan
-            </span>
-          </div>
-          <ul className="space-y-2">
-            {["Access to all games", "Basic save progress", "Standard quality"].map(
-              (f) => (
-                <li
-                  key={f}
-                  className="flex items-center gap-2 text-sm text-foreground"
-                >
-                  <Check className="w-4 h-4 text-lime flex-shrink-0" />
-                  {f}
-                </li>
-              )
-            )}
-          </ul>
-        </div>
-
-        {/* PRO Plan */}
-        <div className="relative bg-card border-2 border-lime rounded-xl p-4">
-          <div className="absolute -top-2.5 left-4">
-            <span className="bg-lime text-black text-xs font-bold px-2 py-0.5 rounded-full">
-              POPULAR
-            </span>
-          </div>
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <h3 className="font-heading text-lg text-foreground">PRO</h3>
-              <p className="text-lime text-sm font-bold">$4.99/month</p>
-            </div>
-            <Button disabled className="bg-lime/50 text-black">
-              Coming Soon
-            </Button>
-          </div>
-          <ul className="grid grid-cols-2 gap-2">
-            {[
-              "Ad-free experience",
-              "Cloud save sync",
-              "HD quality games",
-              "Early access",
-              "Exclusive badges",
-            ].map((f) => (
-              <li
-                key={f}
-                className="flex items-center gap-2 text-sm text-foreground"
-              >
-                <Check className="w-4 h-4 text-lime flex-shrink-0" />
-                {f}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* PRO+ Plan */}
-        <div className="bg-card border border-border rounded-xl p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <h3 className="font-heading text-lg text-foreground">PRO+</h3>
-              <p className="text-muted-foreground text-sm">$9.99/month</p>
-            </div>
-            <Button variant="outline" disabled>
-              Coming Soon
-            </Button>
-          </div>
-          <ul className="grid grid-cols-2 gap-2">
-            {[
-              "Everything in PRO",
-              "Priority support",
-              "Beta testing",
-              "Custom themes",
-              "Monthly credits",
-            ].map((f) => (
-              <li
-                key={f}
-                className="flex items-center gap-2 text-sm text-foreground"
-              >
-                <Check className="w-4 h-4 text-lime flex-shrink-0" />
-                {f}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-
-      {/* Benefits */}
-      <div className="mt-6 grid grid-cols-3 gap-3">
-        <div className="text-center">
-          <div className="w-10 h-10 rounded-full bg-lime/10 flex items-center justify-center mx-auto mb-2">
-            <Zap className="w-5 h-5 text-lime" />
-          </div>
-          <p className="text-xs text-muted-foreground">No Ads</p>
-        </div>
-        <div className="text-center">
-          <div className="w-10 h-10 rounded-full bg-lime/10 flex items-center justify-center mx-auto mb-2">
-            <Shield className="w-5 h-5 text-lime" />
-          </div>
-          <p className="text-xs text-muted-foreground">Cloud Saves</p>
-        </div>
-        <div className="text-center">
-          <div className="w-10 h-10 rounded-full bg-lime/10 flex items-center justify-center mx-auto mb-2">
-            <Star className="w-5 h-5 text-lime" />
-          </div>
-          <p className="text-xs text-muted-foreground">Early Access</p>
-        </div>
-      </div>
-    </>
   );
 }
