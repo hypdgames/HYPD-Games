@@ -57,11 +57,11 @@ export const BASE_STATS: PlayerStats = {
 export const ENEMY_DATA: Record<EnemyType, {
   hp: number; speed: number; damage: number; radius: number; xp: number; goldChance: number
 }> = {
-  goblin:   { hp: 20,  speed: 38, damage: 5,  radius: 6,  xp: 2,  goldChance: 0.1 },
-  skeleton: { hp: 35,  speed: 30, damage: 8,  radius: 7,  xp: 4,  goldChance: 0.15 },
-  orc:      { hp: 80,  speed: 20, damage: 15, radius: 10, xp: 8,  goldChance: 0.2 },
-  bat:      { hp: 12,  speed: 52, damage: 3,  radius: 5,  xp: 1,  goldChance: 0.05 },
-  demon:    { hp: 200, speed: 16, damage: 25, radius: 12, xp: 20, goldChance: 0.5 },
+  goblin:   { hp: 20,  speed: 38, damage: 5,  radius: 6,  xp: 2,  goldChance: 0.2 },
+  skeleton: { hp: 35,  speed: 30, damage: 8,  radius: 7,  xp: 4,  goldChance: 0.25 },
+  orc:      { hp: 80,  speed: 20, damage: 15, radius: 10, xp: 8,  goldChance: 0.3 },
+  bat:      { hp: 12,  speed: 52, damage: 3,  radius: 5,  xp: 1,  goldChance: 0.15 },
+  demon:    { hp: 200, speed: 16, damage: 25, radius: 12, xp: 20, goldChance: 0.6 },
 }
 
 export function xpForLevel(lvl: number) {
