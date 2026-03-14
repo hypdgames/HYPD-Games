@@ -165,7 +165,7 @@ function VideoCard({
       </div>
 
       {/* Bottom info — left-aligned, clear of navbar (~70px) and side buttons */}
-      <div className="absolute bottom-0 left-0 right-20 z-30 px-5 pb-20">
+      <div className="absolute bottom-0 left-0 right-20 z-30 px-5 pb-24">
         {/* Category tag */}
         <div className="flex items-center gap-2 mb-2">
           <span className="text-xs font-bold uppercase tracking-wider text-lime bg-lime/15 px-2.5 py-1 rounded-full border border-lime/30">
@@ -182,6 +182,13 @@ function VideoCard({
         <h2 className="text-white font-bold text-xl leading-tight drop-shadow-lg">
           {game.title}
         </h2>
+
+        {/* Description */}
+        {game.description && (
+          <p className="text-white/60 text-sm mt-1 line-clamp-2 leading-snug">
+            {game.description}
+          </p>
+        )}
       </div>
 
       {/* Scroll hint (first card only) */}
