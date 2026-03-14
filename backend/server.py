@@ -317,6 +317,9 @@ class GameResponse(BaseModel):
     category: str
     thumbnail_url: Optional[str] = None
     icon_url: Optional[str] = None
+    thumbnail_wide_url: Optional[str] = None
+    logo_url: Optional[str] = None
+    banner_url: Optional[str] = None
     video_preview_url: Optional[str] = None
     gif_preview_url: Optional[str] = None
     preview_type: str = "image"
@@ -2540,6 +2543,25 @@ class GMZGameImport(BaseModel):
     height: Optional[int] = None
     tags: Optional[str] = None
 
+def _derive_gmz_image_urls(thumbnail_url: Optional[str]) -> dict:
+    """Derive all GameMonetize image URLs from the thumbnail URL hash."""
+    result = {"thumbnail_wide_url": None, "logo_url": None, "banner_url": None}
+    if not thumbnail_url:
+        return result
+    # Extract hash from URL like https://img.gamemonetize.com/{hash}/512x384.jpg
+    try:
+        parts = thumbnail_url.split("/")
+        # Find the hash (the part before the filename)
+        hash_idx = -2  # e.g. [..., 'img.gamemonetize.com', '{hash}', '512x384.jpg']
+        game_hash = parts[hash_idx]
+        if game_hash and len(game_hash) > 10:
+            result["thumbnail_wide_url"] = f"https://img.gamemonetize.com/{game_hash}/512x340.jpg"
+            result["logo_url"] = f"https://uncached.gamemonetize.co/{game_hash}/@base/logo.png"
+            result["banner_url"] = f"https://uncached.gamemonetize.co/{game_hash}/@base/banner.jpg"
+    except (IndexError, AttributeError):
+        pass
+    return result
+
 @api_router.get("/gamemonetize/browse")
 async def browse_gamemonetize_games(
     category: Optional[str] = None,
@@ -2639,6 +2661,7 @@ async def import_gamemonetize_game(
         return {"success": False, "message": "Game already imported", "game_id": existing.id}
     
     # Create new game with proper image URLs
+    extra_imgs = _derive_gmz_image_urls(game_data.thumbnail_url)
     new_game = Game(
         id=str(uuid.uuid4()),
         title=game_data.title,
@@ -2646,6 +2669,9 @@ async def import_gamemonetize_game(
         category=game_data.category.title(),
         thumbnail_url=game_data.thumbnail_url,  # 512x384 landscape
         icon_url=game_data.icon_url,  # 512x512 square
+        thumbnail_wide_url=extra_imgs["thumbnail_wide_url"],  # 512x340 wide
+        logo_url=extra_imgs["logo_url"],  # transparent logo
+        banner_url=extra_imgs["banner_url"],  # hero banner
         embed_url=game_data.play_url,
         source="gamemonetize",
         gd_game_id=gd_game_id,
@@ -2684,6 +2710,7 @@ async def bulk_import_gamemonetize_games(
             continue
         
         # Create new game with proper image URLs
+        extra_imgs = _derive_gmz_image_urls(game_data.thumbnail_url)
         new_game = Game(
             id=str(uuid.uuid4()),
             title=game_data.title,
@@ -2691,6 +2718,9 @@ async def bulk_import_gamemonetize_games(
             category=game_data.category.title(),
             thumbnail_url=game_data.thumbnail_url,  # 512x384 landscape banner
             icon_url=game_data.icon_url,  # 512x512 square icon
+            thumbnail_wide_url=extra_imgs["thumbnail_wide_url"],  # 512x340 wide
+            logo_url=extra_imgs["logo_url"],  # transparent logo
+            banner_url=extra_imgs["banner_url"],  # hero banner
             embed_url=game_data.play_url,
             source="gamemonetize",
             gd_game_id=gd_game_id,

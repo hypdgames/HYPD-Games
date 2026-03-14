@@ -4,8 +4,11 @@ export interface Game {
   title: string;
   description: string;
   category: string;
-  thumbnail_url?: string;  // Banner/cover image (landscape)
-  icon_url?: string;       // Square icon image (for grids)
+  thumbnail_url?: string;  // Banner/cover image (landscape 512x384)
+  icon_url?: string;       // Square icon image (512x512)
+  thumbnail_wide_url?: string;  // Wide banner (512x340)
+  logo_url?: string;       // Transparent game logo
+  banner_url?: string;     // Hero banner image
   video_preview_url?: string;
   gif_preview_url?: string;
   preview_type: 'video' | 'gif' | 'image';

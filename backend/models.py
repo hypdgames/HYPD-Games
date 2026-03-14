@@ -307,6 +307,9 @@ class Game(Base):
     category = Column(String(100), nullable=False, index=True)
     thumbnail_url = Column(Text, nullable=True)  # Banner/cover image (landscape)
     icon_url = Column(Text, nullable=True)  # Square icon image (for grids)
+    thumbnail_wide_url = Column(Text, nullable=True)  # Wide banner (512x340, ~3:2)
+    logo_url = Column(Text, nullable=True)  # Transparent game logo
+    banner_url = Column(Text, nullable=True)  # Hero banner image
     video_preview_url = Column(Text, nullable=True)
     gif_preview_url = Column(Text, nullable=True)
     preview_type = Column(String(20), default='image')  # 'video', 'gif', 'image'
@@ -334,6 +337,9 @@ class Game(Base):
             "category": self.category,
             "thumbnail_url": self.thumbnail_url,
             "icon_url": self.icon_url,
+            "thumbnail_wide_url": self.thumbnail_wide_url,
+            "logo_url": self.logo_url,
+            "banner_url": self.banner_url,
             "video_preview_url": self.video_preview_url,
             "gif_preview_url": self.gif_preview_url,
             "preview_type": self.preview_type,
