@@ -136,7 +136,7 @@ SUPABASE_URL="https://kmgymgivnactoigjfbbh.supabase.co"
 SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImttZ3ltZ2l2bmFjdG9pZ2pmYmJoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg3MjM1MzAsImV4cCI6MjA4NDI5OTUzMH0.eVYznZ-NerDI0EIR_iUImy82P1QgM06CsKKGWl81Few"
 SUPABASE_SERVICE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImttZ3ltZ2l2bmFjdG9pZ2pmYmJoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2ODcyMzUzMCwiZXhwIjoyMDg0Mjk5NTMwfQ.zgSM7WsCOSqB3O3jV5_HWL1VSqfys9SFKHILzRjTP-U"
 
-CORS_ORIGINS="https://game-feed-1.preview.emergentagent.com,http://localhost:3000"
+CORS_ORIGINS="https://game-feed-2.preview.emergentagent.com,http://localhost:3000"
 JWT_SECRET="hypd-games-prod-secret-key-xK9mP2nQ7vL4wR8t"
 STRIPE_API_KEY=sk_test_emergent
 
@@ -144,7 +144,7 @@ STRIPE_API_KEY=sk_test_emergent
 FILE: /app/frontend/.env
 ================================================================================
 
-NEXT_PUBLIC_API_URL=https://game-feed-1.preview.emergentagent.com
+NEXT_PUBLIC_API_URL=https://game-feed-2.preview.emergentagent.com
 
 ================================================================================
 FILE: /app/frontend/package.json

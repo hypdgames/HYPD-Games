@@ -7,7 +7,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('NEXT_PUBLIC_API_URL', os.environ.get('REACT_APP_BACKEND_URL', 'https://game-feed-1.preview.emergentagent.com'))
+BASE_URL = os.environ.get('NEXT_PUBLIC_API_URL', os.environ.get('REACT_APP_BACKEND_URL', 'https://game-feed-2.preview.emergentagent.com'))
 if BASE_URL:
     BASE_URL = BASE_URL.rstrip('/')
 
