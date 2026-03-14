@@ -132,10 +132,8 @@ function VideoCard({
         </>
       )}
 
-      {/* Dark gradient overlay at bottom */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent pointer-events-none z-20" />
-      {/* Slight top gradient for header legibility */}
-      <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-black/50 to-transparent pointer-events-none z-20" />
+      {/* Bottom gradient — only enough to make text readable */}
+      <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-t from-black/80 to-transparent pointer-events-none z-20" />
 
       {/* Side action buttons */}
       <div className="absolute right-4 bottom-36 flex flex-col gap-4 z-30">
