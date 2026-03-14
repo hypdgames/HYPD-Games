@@ -32,6 +32,7 @@ export function GamesTab({ user, savedGames }: GamesTabProps) {
             >
               <img
                 src={
+                  game.icon_url ||
                   game.thumbnail_url ||
                   "https://images.unsplash.com/photo-1637734373619-af1e76434bec?w=100&q=80"
                 }

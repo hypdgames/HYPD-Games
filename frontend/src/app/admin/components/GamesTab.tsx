@@ -161,6 +161,7 @@ export function GamesTab({ games, loading, onToggleVisibility, onDeleteGame, onB
 
           <img
             src={
+              game.icon_url ||
               game.thumbnail_url ||
               "https://images.unsplash.com/photo-1637734373619-af1e76434bec?w=100&q=80"
             }
