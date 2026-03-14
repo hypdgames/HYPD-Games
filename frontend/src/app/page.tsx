@@ -133,8 +133,8 @@ function VideoCard({
       {/* Bottom gradient — only enough to make text readable */}
       <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-black/70 to-transparent pointer-events-none z-20" />
 
-      {/* Side action buttons — Save + Play */}
-      <div className="absolute right-4 bottom-28 flex flex-col gap-4 z-30">
+      {/* Side action buttons — Save + Play, sitting above the navbar */}
+      <div className="absolute right-4 bottom-24 flex flex-col gap-4 z-30">
         <motion.button
           whileTap={{ scale: 0.85 }}
           onClick={onSave}
@@ -164,8 +164,8 @@ function VideoCard({
         </motion.button>
       </div>
 
-      {/* Bottom info */}
-      <div className="absolute bottom-0 left-0 right-16 z-30 px-5 pb-8 pt-4">
+      {/* Bottom info — left-aligned, clear of navbar (~70px) and side buttons */}
+      <div className="absolute bottom-0 left-0 right-20 z-30 px-5 pb-20">
         {/* Category tag */}
         <div className="flex items-center gap-2 mb-2">
           <span className="text-xs font-bold uppercase tracking-wider text-lime bg-lime/15 px-2.5 py-1 rounded-full border border-lime/30">
