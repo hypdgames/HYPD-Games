@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Globe, Loader2, Plus, Check, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,9 +11,9 @@ export interface GMZGame {
   title: string;
   description: string;
   category: string;
-  thumbnail_url: string;  // 512x384 landscape banner
-  icon_url?: string;  // 512x512 square icon
-  thumbnail_large_url?: string;  // 512x340 wide banner
+  thumbnail_url: string;
+  icon_url?: string;
+  thumbnail_large_url?: string;
   play_url: string;
   instructions?: string;
   tags?: string;
@@ -28,6 +28,7 @@ interface GameMonetizeTabProps {
   gmzCategories: { id: string; name: string; icon: string }[];
   gmzSort: string;
   gmzHasMore: boolean;
+  gmzTotal: number;
   gmzPage: number;
   selectedGmzGames: Set<string>;
   games: Game[];
@@ -44,10 +45,10 @@ interface GameMonetizeTabProps {
 }
 
 const SORT_OPTIONS = [
-  { id: "newest", name: "Newest First", icon: "🆕" },
-  { id: "oldest", name: "Oldest First", icon: "📅" },
-  { id: "title_asc", name: "Title A-Z", icon: "🔤" },
-  { id: "title_desc", name: "Title Z-A", icon: "🔠" },
+  { id: "newest", name: "Newest First", icon: "New" },
+  { id: "oldest", name: "Oldest First", icon: "Old" },
+  { id: "title_asc", name: "Title A-Z", icon: "A-Z" },
+  { id: "title_desc", name: "Title Z-A", icon: "Z-A" },
 ];
 
 export function GameMonetizeTab({
@@ -57,6 +58,7 @@ export function GameMonetizeTab({
   gmzCategories,
   gmzSort,
   gmzHasMore,
+  gmzTotal,
   selectedGmzGames,
   games,
   importing,
@@ -71,27 +73,29 @@ export function GameMonetizeTab({
   onClearSelection,
 }: GameMonetizeTabProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
   
   const isGmzGameImported = (id: string) => {
     return games.some(g => g.gd_game_id === `gmz-${id}`);
   };
 
-  const handleSearch = () => {
-    onSearch(searchQuery);
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleSearch();
-    }
-  };
+  // Debounced search — fires 500ms after the user stops typing
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      onSearch(searchQuery);
+    }, 500);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery]);
 
   const clearSearch = () => {
     setSearchQuery("");
     onSearch("");
   };
 
-  // Count how many games can be selected (not already imported)
   const selectableGames = gmzGames.filter(g => !isGmzGameImported(g.gmz_game_id));
 
   return (
@@ -105,7 +109,10 @@ export function GameMonetizeTab({
           <div>
             <h3 className="font-bold text-foreground">GameMonetize Network</h3>
             <p className="text-sm text-muted-foreground">
-              Browse and import games from GameMonetize. Games will use the GameMonetize SDK for ads.
+              Browse and import games from GameMonetize.
+              {gmzTotal > 0 && (
+                <span className="font-semibold text-purple-400"> {gmzTotal.toLocaleString()} games available.</span>
+              )}
             </p>
           </div>
         </div>
@@ -120,8 +127,7 @@ export function GameMonetizeTab({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Search games by title or tags..."
+            placeholder="Search all games by title or tags..."
             className="w-full h-10 pl-10 pr-10 rounded-lg bg-card border border-border text-foreground placeholder:text-muted-foreground"
             data-testid="gmz-search-input"
           />
@@ -177,10 +183,19 @@ export function GameMonetizeTab({
         <div className="flex items-center justify-between bg-card border border-border rounded-lg p-3">
           <div className="flex items-center gap-3">
             <span className="text-sm text-muted-foreground">
-              {gmzGames.length} games loaded
+              Showing <span className="font-bold text-foreground">{gmzGames.length}</span>
+              {gmzTotal > 0 && (
+                <> of <span className="font-bold text-purple-400">{gmzTotal.toLocaleString()}</span></>
+              )}
+              {" "}games
+              {searchQuery && (
+                <span className="ml-1 text-purple-400">
+                  matching &quot;{searchQuery}&quot;
+                </span>
+              )}
               {selectedGmzGames.size > 0 && (
                 <span className="ml-2">
-                  • <span className="font-bold text-purple-400">{selectedGmzGames.size}</span> selected
+                  | <span className="font-bold text-purple-400">{selectedGmzGames.size}</span> selected
                 </span>
               )}
             </span>
@@ -225,15 +240,16 @@ export function GameMonetizeTab({
       )}
 
       {gmzLoading && gmzGames.length === 0 ? (
-        <div className="flex justify-center py-12">
+        <div className="flex flex-col items-center justify-center py-12 gap-3">
           <Loader2 className="w-8 h-8 text-purple-500 animate-spin" />
+          <p className="text-sm text-muted-foreground">Loading games from GameMonetize catalog...</p>
         </div>
       ) : gmzGames.length === 0 ? (
         <div className="text-center py-12 bg-card rounded-xl border border-border">
           <Globe className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
           <p className="text-muted-foreground">No games found</p>
           <p className="text-sm text-muted-foreground/70">
-            {searchQuery ? "Try a different search term" : "Try a different category or refresh"}
+            {searchQuery ? `No results for "${searchQuery}" — try a different search term` : "Try a different category or refresh"}
           </p>
         </div>
       ) : (
@@ -280,11 +296,9 @@ export function GameMonetizeTab({
                         <Check className="w-4 h-4 text-white" />
                       </div>
                     )}
-                    {/* Network Badge */}
                     <div className="absolute bottom-2 left-2 bg-purple-500/90 text-white px-2 py-0.5 rounded text-xs font-medium">
                       GMZ
                     </div>
-                    {/* Category Badge */}
                     <div className="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-0.5 rounded text-xs">
                       {game.category}
                     </div>

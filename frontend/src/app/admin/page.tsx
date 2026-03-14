@@ -55,6 +55,7 @@ export default function AdminDashboard() {
   const [gmzSort, setGmzSort] = useState<string>("newest");
   const [gmzPage, setGmzPage] = useState(1);
   const [gmzHasMore, setGmzHasMore] = useState(false);
+  const [gmzTotal, setGmzTotal] = useState(0);
   const [selectedGmzGames, setSelectedGmzGames] = useState<Set<string>>(new Set());
   const [gmzCategories, setGmzCategories] = useState<{id: string; name: string; icon: string}[]>([]);
   const [gmzImporting, setGmzImporting] = useState(false);
@@ -363,7 +364,7 @@ export default function AdminDashboard() {
       if (search) params.append("search", search);
       if (sort) params.append("sort", sort);
       params.append("page", String(page));
-      params.append("num", "50");
+      params.append("num", "100");
       
       const res = await fetch(`${API_URL}/api/gamemonetize/browse?${params}`);
       if (res.ok) {
@@ -374,6 +375,7 @@ export default function AdminDashboard() {
           setGmzGames(data.games || []);
         }
         setGmzHasMore(data.has_more || false);
+        setGmzTotal(data.total || 0);
         setGmzPage(page);
       }
     } catch (error) {
@@ -730,6 +732,7 @@ export default function AdminDashboard() {
                 gmzCategories={gmzCategories}
                 gmzSort={gmzSort}
                 gmzHasMore={gmzHasMore}
+                gmzTotal={gmzTotal}
                 gmzPage={gmzPage}
                 selectedGmzGames={selectedGmzGames}
                 games={games}
