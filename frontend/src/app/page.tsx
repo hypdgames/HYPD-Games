@@ -131,65 +131,57 @@ function VideoCard({
       )}
 
       {/* Bottom gradient — only enough to make text readable */}
-      <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-t from-black/80 to-transparent pointer-events-none z-20" />
+      <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-black/70 to-transparent pointer-events-none z-20" />
 
-      {/* Side action buttons */}
-      <div className="absolute right-4 bottom-36 flex flex-col gap-4 z-30">
+      {/* Side action buttons — Save + Play */}
+      <div className="absolute right-4 bottom-28 flex flex-col gap-4 z-30">
         <motion.button
           whileTap={{ scale: 0.85 }}
           onClick={onSave}
           className="flex flex-col items-center gap-1"
           data-testid={`save-game-btn-${game.id}`}
         >
-          <div className={`w-12 h-12 rounded-full flex items-center justify-center backdrop-blur-sm border transition-all ${
+          <div className={`w-14 h-14 rounded-full flex items-center justify-center backdrop-blur-sm border transition-all ${
             isSaved
               ? "bg-red-500/80 border-red-400"
               : "bg-white/10 border-white/20 hover:bg-white/20"
           }`}>
             <Heart className={`w-6 h-6 ${isSaved ? "fill-white text-white" : "text-white"}`} />
           </div>
-          <span className="text-white/80 text-xs font-medium">Save</span>
+          <span className="text-white/70 text-xs font-medium">Save</span>
         </motion.button>
 
-        {/* Share button removed */}
+        <motion.button
+          whileTap={{ scale: 0.85 }}
+          onClick={onPlay}
+          className="flex flex-col items-center gap-1"
+          data-testid={`play-now-btn-${game.id}`}
+        >
+          <div className="w-14 h-14 rounded-full bg-lime flex items-center justify-center shadow-lg shadow-lime/30">
+            <Play className="w-7 h-7 fill-black text-black ml-0.5" />
+          </div>
+          <span className="text-white/70 text-xs font-medium">Play</span>
+        </motion.button>
       </div>
 
-      {/* Bottom info + play button */}
-      <div className="absolute bottom-0 left-0 right-0 z-30 px-5 pb-24 pt-4">
+      {/* Bottom info */}
+      <div className="absolute bottom-0 left-0 right-16 z-30 px-5 pb-8 pt-4">
         {/* Category tag */}
         <div className="flex items-center gap-2 mb-2">
           <span className="text-xs font-bold uppercase tracking-wider text-lime bg-lime/15 px-2.5 py-1 rounded-full border border-lime/30">
             {game.category}
           </span>
           {game.source === "gamemonetize" && hash && (
-            <span className="text-[10px] font-medium text-white/50 uppercase tracking-wider">
+            <span className="text-[10px] font-medium text-white/40 uppercase tracking-wider">
               Video Preview
             </span>
           )}
         </div>
 
         {/* Title */}
-        <h2 className="text-white font-bold text-2xl leading-tight mb-1 drop-shadow-lg">
+        <h2 className="text-white font-bold text-xl leading-tight drop-shadow-lg">
           {game.title}
         </h2>
-
-        {/* Description */}
-        {game.description && (
-          <p className="text-white/60 text-sm line-clamp-2 mb-4 leading-snug">
-            {game.description}
-          </p>
-        )}
-
-        {/* Play Now Button */}
-        <motion.button
-          onClick={onPlay}
-          whileTap={{ scale: 0.96 }}
-          className="flex items-center justify-center gap-3 w-full py-4 rounded-2xl bg-lime text-black font-bold text-base uppercase tracking-widest shadow-lg shadow-lime/25 active:shadow-none transition-shadow"
-          data-testid={`play-now-btn-${game.id}`}
-        >
-          <Play className="w-5 h-5 fill-black" />
-          Play Now
-        </motion.button>
       </div>
 
       {/* Scroll hint (first card only) */}
@@ -198,14 +190,14 @@ function VideoCard({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 2 }}
-          className="absolute bottom-44 left-1/2 -translate-x-1/2 flex flex-col items-center text-white/40 z-30 pointer-events-none"
+          className="absolute bottom-36 left-1/2 -translate-x-1/2 flex flex-col items-center text-white/30 z-30 pointer-events-none"
         >
           <motion.div
             animate={{ y: [0, 8, 0] }}
             transition={{ repeat: Infinity, duration: 1.6, ease: "easeInOut" }}
-            className="w-5 h-9 rounded-full border-2 border-white/25 flex items-start justify-center p-1"
+            className="w-5 h-9 rounded-full border-2 border-white/20 flex items-start justify-center p-1"
           >
-            <div className="w-1 h-2.5 bg-white/40 rounded-full" />
+            <div className="w-1 h-2.5 bg-white/30 rounded-full" />
           </motion.div>
           <span className="text-xs mt-2 tracking-wide">Swipe up</span>
         </motion.div>
