@@ -16,6 +16,7 @@ export interface Game {
   game_file_url?: string;
   has_game_file: boolean;
   is_visible: boolean;
+  show_in_feed: boolean;
   play_count: number;
   created_at: string;
   // Game network fields

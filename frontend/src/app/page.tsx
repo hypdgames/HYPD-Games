@@ -2,214 +2,312 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { useVirtualizer } from "@tanstack/react-virtual";
-import { useDrag } from "@use-gesture/react";
 import { Play, Heart, Share2, Loader2, RefreshCw } from "lucide-react";
 import { useAuthStore } from "@/store";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { precacheGame } from "@/components/service-worker";
 import { toast } from "sonner";
 import type { Game, FeedItem } from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
-
-// Insert ad every N games
 const AD_FREQUENCY = 6;
-const PULL_THRESHOLD = 80; // pixels to pull before refresh triggers
+const PULL_THRESHOLD = 80;
 
-// Blur placeholder for images (tiny base64 placeholder)
-const BLUR_PLACEHOLDER = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMCwsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wAARCAAIAAoDASIAAhEBAxEB/8QAFgABAQEAAAAAAAAAAAAAAAAAAAkH/8QAIhAAAQMDBAMAAAAAAAAAAAAAAQIDBAAFEQYSITEHQVH/xAAVAQEBAAAAAAAAAAAAAAAAAAADBP/EABkRAAIDAQAAAAAAAAAAAAAAAAECAAMRIf/aAAwDAQACEQMRAD8AoNtFwbuUGJcGWnGW5TKHW0O43hKgCAcZHBrRdM+O7Jp2wQLQxKuC2IbKGEKdlOrUQlIGSVKJJ9kk0pU1WTkyTIc2f//Z";
+// Extract the GMZ hash from embed_url for video player
+function getGMZHash(embedUrl?: string): string | null {
+  if (!embedUrl) return null;
+  try {
+    const parts = embedUrl.replace(/\/$/, "").split("/");
+    const hash = parts[parts.length - 1];
+    return hash && hash.length > 10 ? hash : null;
+  } catch {
+    return null;
+  }
+}
+
+// Build the srcdoc HTML for the GMZ video player (each iframe has its own window context)
+function buildVideoSrcdoc(hash: string, color = "#ccff00"): string {
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:100%;height:100%;background:#000;overflow:hidden;}
+#gamemonetize-video{width:100%;height:100%;}
+</style></head><body>
+<div id="gamemonetize-video"></div>
+<script>
+window.VIDEO_OPTIONS={gameid:"${hash}",width:"100%",height:"100%",color:"${color}",getAds:"false"};
+(function(a,b,c){var d=a.getElementsByTagName(b)[0];a.getElementById(c)||(a=a.createElement(b),a.id=c,a.src="https://api.gamemonetize.com/video.js",d.parentNode.insertBefore(a,d))})(document,"script","gamemonetize-video-api");
+</script>
+</body></html>`;
+}
+
+// Single video card — loads video only when in viewport
+function VideoCard({
+  game,
+  isActive,
+  onPlay,
+  onSave,
+  onShare,
+  isSaved,
+  showScrollHint,
+}: {
+  game: Game;
+  isActive: boolean;
+  onPlay: () => void;
+  onSave: (e: React.MouseEvent) => void;
+  onShare: (e: React.MouseEvent) => void;
+  isSaved: boolean;
+  showScrollHint: boolean;
+}) {
+  const hash = getGMZHash(game.embed_url);
+  const hasVideo = game.source === "gamemonetize" && !!hash;
+  const [videoLoaded, setVideoLoaded] = useState(false);
+
+  // Load video iframe only when card becomes active
+  useEffect(() => {
+    if (isActive && hasVideo) {
+      setVideoLoaded(true);
+    }
+  }, [isActive, hasVideo]);
+
+  return (
+    <div className="relative w-full h-full bg-black overflow-hidden">
+      {/* Background — video or image */}
+      {videoLoaded && hash ? (
+        // GMZ video player via srcdoc (isolated window context per iframe)
+        <iframe
+          srcDoc={buildVideoSrcdoc(hash)}
+          className="absolute inset-0 w-full h-full border-0"
+          allow="autoplay"
+          sandbox="allow-scripts allow-same-origin"
+          title={`${game.title} preview`}
+        />
+      ) : (
+        // Thumbnail background with blur
+        <>
+          {/* Blurred background fill */}
+          <div
+            className="absolute inset-0 bg-cover bg-center scale-110"
+            style={{
+              backgroundImage: `url(${game.thumbnail_url || game.banner_url || ""})`,
+              filter: "blur(20px) brightness(0.4)",
+            }}
+          />
+          {/* Centered thumbnail */}
+          {game.thumbnail_url && (
+            <img
+              src={game.thumbnail_url}
+              alt={game.title}
+              className="absolute inset-0 w-full h-full object-contain z-10"
+              loading={isActive ? "eager" : "lazy"}
+            />
+          )}
+          {/* Loading spinner for GMZ cards waiting for video */}
+          {hasVideo && !videoLoaded && (
+            <div className="absolute inset-0 flex items-center justify-center z-20">
+              <Loader2 className="w-10 h-10 text-lime/60 animate-spin" />
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Dark gradient overlay at bottom */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent pointer-events-none z-20" />
+      {/* Slight top gradient for header legibility */}
+      <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-black/50 to-transparent pointer-events-none z-20" />
+
+      {/* Side action buttons */}
+      <div className="absolute right-4 bottom-36 flex flex-col gap-4 z-30">
+        <motion.button
+          whileTap={{ scale: 0.85 }}
+          onClick={onSave}
+          className="flex flex-col items-center gap-1"
+          data-testid={`save-game-btn-${game.id}`}
+        >
+          <div className={`w-12 h-12 rounded-full flex items-center justify-center backdrop-blur-sm border transition-all ${
+            isSaved
+              ? "bg-red-500/80 border-red-400"
+              : "bg-white/10 border-white/20 hover:bg-white/20"
+          }`}>
+            <Heart className={`w-6 h-6 ${isSaved ? "fill-white text-white" : "text-white"}`} />
+          </div>
+          <span className="text-white/80 text-xs font-medium">Save</span>
+        </motion.button>
+
+        <motion.button
+          whileTap={{ scale: 0.85 }}
+          onClick={onShare}
+          className="flex flex-col items-center gap-1"
+          data-testid={`share-game-btn-${game.id}`}
+        >
+          <div className="w-12 h-12 rounded-full bg-white/10 border border-white/20 flex items-center justify-center backdrop-blur-sm hover:bg-white/20 transition-all">
+            <Share2 className="w-6 h-6 text-white" />
+          </div>
+          <span className="text-white/80 text-xs font-medium">Share</span>
+        </motion.button>
+      </div>
+
+      {/* Bottom info + play button */}
+      <div className="absolute bottom-0 left-0 right-0 z-30 px-5 pb-24 pt-4">
+        {/* Category tag */}
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-xs font-bold uppercase tracking-wider text-lime bg-lime/15 px-2.5 py-1 rounded-full border border-lime/30">
+            {game.category}
+          </span>
+          {game.source === "gamemonetize" && hash && (
+            <span className="text-[10px] font-medium text-white/50 uppercase tracking-wider">
+              Video Preview
+            </span>
+          )}
+        </div>
+
+        {/* Title */}
+        <h2 className="text-white font-bold text-2xl leading-tight mb-1 drop-shadow-lg">
+          {game.title}
+        </h2>
+
+        {/* Description */}
+        {game.description && (
+          <p className="text-white/60 text-sm line-clamp-2 mb-4 leading-snug">
+            {game.description}
+          </p>
+        )}
+
+        {/* Play Now Button */}
+        <motion.button
+          onClick={onPlay}
+          whileTap={{ scale: 0.96 }}
+          className="flex items-center justify-center gap-3 w-full py-4 rounded-2xl bg-lime text-black font-bold text-base uppercase tracking-widest shadow-lg shadow-lime/25 active:shadow-none transition-shadow"
+          data-testid={`play-now-btn-${game.id}`}
+        >
+          <Play className="w-5 h-5 fill-black" />
+          Play Now
+        </motion.button>
+      </div>
+
+      {/* Scroll hint (first card only) */}
+      {showScrollHint && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 2 }}
+          className="absolute bottom-44 left-1/2 -translate-x-1/2 flex flex-col items-center text-white/40 z-30 pointer-events-none"
+        >
+          <motion.div
+            animate={{ y: [0, 8, 0] }}
+            transition={{ repeat: Infinity, duration: 1.6, ease: "easeInOut" }}
+            className="w-5 h-9 rounded-full border-2 border-white/25 flex items-start justify-center p-1"
+          >
+            <div className="w-1 h-2.5 bg-white/40 rounded-full" />
+          </motion.div>
+          <span className="text-xs mt-2 tracking-wide">Swipe up</span>
+        </motion.div>
+      )}
+    </div>
+  );
+}
 
 export default function GameFeed() {
   const router = useRouter();
   const { user, token, settings } = useAuthStore();
-  
+
   const [games, setGames] = useState<Game[]>([]);
   const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [pullDistance, setPullDistance] = useState(0);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [savedGames, setSavedGames] = useState<Set<string>>(new Set());
-  
+
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const precachedRef = useRef<Set<string>>(new Set());
+  const isScrollingRef = useRef(false);
+  const touchStartRef = useRef<{ y: number; time: number } | null>(null);
 
-  // Fetch games function (reusable for refresh)
   const fetchGames = useCallback(async (showToast = false) => {
     try {
-      const res = await fetch(`${API_URL}/api/games`, {
-        cache: "no-store",  // Always fetch fresh data
-      });
+      const res = await fetch(`${API_URL}/api/games`, { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
         setGames(data);
-        
-        // Create feed items with ad placeholders
         const items: FeedItem[] = [];
         data.forEach((game: Game, index: number) => {
           items.push({ type: "game", data: game });
-          // Insert ad placeholder every AD_FREQUENCY games
           if ((index + 1) % AD_FREQUENCY === 0 && index < data.length - 1) {
             items.push({ type: "ad", adType: "video" });
           }
         });
         setFeedItems(items);
-        
-        if (showToast) {
-          toast.success("Feed refreshed!");
-        }
+        if (showToast) toast.success("Feed refreshed!");
       }
-    } catch (e) {
-      console.error("Error fetching games:", e);
-      if (showToast) {
-        toast.error("Failed to refresh");
-      }
+    } catch {
+      if (showToast) toast.error("Failed to refresh");
     }
   }, []);
 
-  // Initial fetch - only on mount
   useEffect(() => {
-    const init = async () => {
-      await fetchGames();
-      setLoading(false);
-    };
-    init();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    fetchGames().then(() => setLoading(false));
+  }, [fetchGames]);
 
-  // Sync saved games from user
   useEffect(() => {
-    if (user?.saved_games) {
-      setSavedGames(new Set(user.saved_games));
-    }
+    if (user?.saved_games) setSavedGames(new Set(user.saved_games));
   }, [user]);
 
-  // Pre-cache next games when index changes
-  useEffect(() => {
-    // Pre-cache next 2 games for smooth transitions
-    for (let i = 1; i <= 2; i++) {
-      const nextIndex = currentIndex + i;
-      if (nextIndex < feedItems.length) {
-        const item = feedItems[nextIndex];
-        if (item.type === "game" && item.data && !precachedRef.current.has(item.data.id)) {
-          precacheGame(item.data.id);
-          precachedRef.current.add(item.data.id);
-        }
-      }
-    }
-  }, [currentIndex, feedItems]);
-
-  // Virtual list for performance
-  const virtualizer = useVirtualizer({
-    count: feedItems.length,
-    getScrollElement: () => containerRef.current,
-    estimateSize: () => window.innerHeight,
-    overscan: 1,
-  });
-
-  // Handle scroll with snap behavior
-  const handleScroll = useCallback(() => {
+  // Snap scroll to specific index
+  const scrollToIndex = useCallback((index: number) => {
     if (!containerRef.current) return;
-    
-    // Fast debounce for responsive feel
-    if (scrollTimeoutRef.current) {
-      clearTimeout(scrollTimeoutRef.current);
-    }
-    
+    isScrollingRef.current = true;
+    containerRef.current.scrollTo({
+      top: index * window.innerHeight,
+      behavior: "smooth",
+    });
+    setCurrentIndex(index);
+    setTimeout(() => { isScrollingRef.current = false; }, 500);
+  }, []);
+
+  // Track scroll position to update currentIndex
+  const handleScroll = useCallback(() => {
+    if (!containerRef.current || isScrollingRef.current) return;
+    if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
     scrollTimeoutRef.current = setTimeout(() => {
       if (!containerRef.current) return;
-      const scrollTop = containerRef.current.scrollTop;
-      const itemHeight = window.innerHeight;
-      const newIndex = Math.round(scrollTop / itemHeight);
-      
-      if (newIndex !== currentIndex && newIndex >= 0 && newIndex < feedItems.length) {
-        setCurrentIndex(newIndex);
-      }
-    }, 50);
-  }, [currentIndex, feedItems.length]);
+      const idx = Math.round(containerRef.current.scrollTop / window.innerHeight);
+      if (idx !== currentIndex) setCurrentIndex(idx);
+    }, 100);
+  }, [currentIndex]);
 
-  // Handle pull-to-refresh
-  const handleRefresh = useCallback(async () => {
-    if (refreshing) return;
-    setRefreshing(true);
-    await fetchGames(true); // Refresh on manual pull
-    setRefreshing(false);
-    setPullDistance(0);
-    // Reset to top
-    if (containerRef.current) {
-      containerRef.current.scrollTo({ top: 0, behavior: "smooth" });
-      setCurrentIndex(0);
-    }
-  }, [refreshing, fetchGames]);
+  // Touch-based swipe navigation
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartRef.current = { y: e.touches[0].clientY, time: Date.now() };
+  }, []);
 
-  // Gesture handling for swipe and pull-to-refresh
-  const bind = useDrag(
-    ({ movement: [, my], velocity: [, vy], last }) => {
-      if (!containerRef.current) return;
-      
-      const scrollTop = containerRef.current.scrollTop;
-      const isAtTop = scrollTop <= 0;
-      
-      // Pull-to-refresh logic (only when at top and pulling down)
-      if (isAtTop && my > 0 && currentIndex === 0) {
-        if (!last) {
-          // While dragging down at top
-          const pull = Math.min(my * 0.5, PULL_THRESHOLD + 20);
-          setPullDistance(pull);
-        } else {
-          // On release
-          if (pullDistance >= PULL_THRESHOLD) {
-            handleRefresh();
-          } else {
-            setPullDistance(0);
-          }
-        }
-        return;
-      }
-      
-      // Normal swipe navigation
-      if (!last) return;
-      
-      // Lower threshold = more responsive swipes
-      const velocityThreshold = 0.15;
-      const distanceThreshold = 50;
-      
-      // Trigger on velocity OR sufficient distance
-      if (Math.abs(vy) > velocityThreshold || Math.abs(my) > distanceThreshold) {
-        const direction = my < 0 || (vy > velocityThreshold && my === 0) ? 1 : -1;
-        const newIndex = direction > 0 
-          ? Math.min(feedItems.length - 1, currentIndex + 1)
-          : Math.max(0, currentIndex - 1);
-        
-        if (newIndex !== currentIndex) {
-          setCurrentIndex(newIndex);
-          // Instant scroll - CSS snap handles the animation
-          containerRef.current.scrollTo({
-            top: newIndex * window.innerHeight,
-            behavior: "instant",
-          });
-        }
-      }
-    },
-    { axis: "y", filterTaps: true, threshold: 5 }
-  );
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (!touchStartRef.current || !containerRef.current) return;
+    const deltaY = touchStartRef.current.y - e.changedTouches[0].clientY;
+    const elapsed = Date.now() - touchStartRef.current.time;
+    const velocity = Math.abs(deltaY) / elapsed;
 
-  const playGame = (gameId: string) => {
-    router.push(`/play/${gameId}`);
-  };
-
-  const toggleSave = async (gameId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!user) {
-      toast.error("Please login to save games");
-      router.push("/profile");
+    // Pull-to-refresh when at top
+    if (currentIndex === 0 && deltaY < -PULL_THRESHOLD && !refreshing) {
+      setRefreshing(true);
+      fetchGames(true).then(() => {
+        setRefreshing(false);
+        scrollToIndex(0);
+      });
       return;
     }
 
+    if (Math.abs(deltaY) > 40 || velocity > 0.3) {
+      const direction = deltaY > 0 ? 1 : -1;
+      const newIndex = Math.max(0, Math.min(feedItems.length - 1, currentIndex + direction));
+      scrollToIndex(newIndex);
+    }
+    touchStartRef.current = null;
+  }, [currentIndex, feedItems.length, refreshing, fetchGames, scrollToIndex]);
+
+  const playGame = (gameId: string) => router.push(`/play/${gameId}`);
+
+  const toggleSave = async (gameId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user) { toast.error("Please login to save games"); router.push("/profile"); return; }
     const isSaved = savedGames.has(gameId);
     try {
       const res = await fetch(`${API_URL}/api/auth/save-game/${gameId}`, {
@@ -217,303 +315,125 @@ export default function GameFeed() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
-        setSavedGames((prev) => {
+        setSavedGames(prev => {
           const next = new Set(prev);
-          if (isSaved) next.delete(gameId);
-          else next.add(gameId);
+          if (isSaved) next.delete(gameId); else next.add(gameId);
           return next;
         });
         toast.success(isSaved ? "Removed from saved" : "Game saved!");
       }
-    } catch {
-      toast.error("Failed to save game");
-    }
+    } catch { toast.error("Failed to save game"); }
   };
 
   const shareGame = async (game: Game, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
       if (navigator.share) {
-        await navigator.share({
-          title: game.title,
-          text: game.description,
-          url: `${window.location.origin}/play/${game.id}`,
-        });
+        await navigator.share({ title: game.title, text: game.description, url: `${window.location.origin}/play/${game.id}` });
       } else {
-        await navigator.clipboard.writeText(
-          `${window.location.origin}/play/${game.id}`
-        );
-        toast.success("Link copied to clipboard!");
+        await navigator.clipboard.writeText(`${window.location.origin}/play/${game.id}`);
+        toast.success("Link copied!");
       }
-    } catch (e) {
-      console.error("Share error:", e);
-    }
+    } catch { /* user cancelled share */ }
   };
 
   if (loading) {
     return (
-      <div className="h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-10 h-10 text-lime animate-spin" />
+      <div className="h-screen flex items-center justify-center bg-black">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-10 h-10 text-lime animate-spin" />
+          <p className="text-white/40 text-sm tracking-wider uppercase">Loading feed</p>
+        </div>
       </div>
     );
   }
 
   if (games.length === 0) {
     return (
-      <div className="h-screen flex flex-col items-center justify-center bg-background p-8 text-center">
-        <div className="w-20 h-20 rounded-full bg-card flex items-center justify-center mb-6">
+      <div className="h-screen flex flex-col items-center justify-center bg-black p-8 text-center">
+        <div className="w-20 h-20 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-6">
           <Play className="w-10 h-10 text-lime" />
         </div>
-        <h2 className="text-2xl font-heading text-foreground mb-2">No Games Yet</h2>
-        <p className="text-muted-foreground mb-6">
-          Games will appear here once added by admin
-        </p>
+        <h2 className="text-2xl font-bold text-white mb-2">No Games Yet</h2>
+        <p className="text-white/40">Games will appear here once added by admin</p>
       </div>
     );
   }
 
   return (
-    <div
-      ref={containerRef}
-      className="snap-container hide-scrollbar"
-      onScroll={handleScroll}
-      data-testid="game-feed"
-      {...bind()}
-    >
-      {/* Pull-to-Refresh Indicator */}
-      <AnimatePresence>
-        {(pullDistance > 0 || refreshing) && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed top-16 left-1/2 -translate-x-1/2 z-50"
-          >
-            <motion.div
-              animate={{
-                scale: pullDistance >= PULL_THRESHOLD || refreshing ? 1 : pullDistance / PULL_THRESHOLD,
-                rotate: refreshing ? 360 : 0,
-              }}
-              transition={{
-                rotate: { repeat: refreshing ? Infinity : 0, duration: 1, ease: "linear" },
-              }}
-              className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                pullDistance >= PULL_THRESHOLD || refreshing
-                  ? "bg-lime text-black"
-                  : "bg-card text-foreground border border-border"
-              }`}
-            >
-              <RefreshCw className="w-5 h-5" />
-            </motion.div>
-            {pullDistance > 20 && !refreshing && (
-              <motion.p
-                initial={{ opacity: 0, y: -5 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-xs text-center mt-2 text-white/70"
-              >
-                {pullDistance >= PULL_THRESHOLD ? "Release to refresh" : "Pull to refresh"}
-              </motion.p>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Header */}
-      <div className="fixed top-0 left-0 right-0 z-40 p-4 flex justify-between items-center bg-background/80 backdrop-blur-sm">
+    <div className="relative h-screen bg-black overflow-hidden" data-testid="game-feed">
+      {/* Fixed Header */}
+      <div className="fixed top-0 left-0 right-0 z-50 p-4 flex justify-between items-center">
         {settings?.logo_url ? (
-          <img 
-            src={settings.logo_url} 
+          <img
+            src={settings.logo_url}
             alt={settings?.site_name || "Logo"}
-            style={{ height: settings.logo_height ? `${settings.logo_height}px` : '32px' }}
+            style={{ height: settings.logo_height ? `${settings.logo_height}px` : "32px" }}
             className="object-contain"
           />
         ) : (
-          <h1 className="font-heading text-xl text-lime tracking-tight">
+          <h1 className="font-bold text-xl text-lime tracking-tight drop-shadow-lg">
             {settings?.site_name || "HYPD"}
           </h1>
         )}
         <ThemeToggle />
       </div>
 
-      {/* Virtual Feed Items */}
+      {/* Pull-to-refresh indicator */}
+      <AnimatePresence>
+        {refreshing && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed top-16 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-lime text-black px-4 py-2 rounded-full font-bold text-sm shadow-lg"
+          >
+            <RefreshCw className="w-4 h-4 animate-spin" />
+            Refreshing
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Scrollable feed container */}
       <div
-        style={{
-          height: `${virtualizer.getTotalSize()}px`,
-          width: "100%",
-          position: "relative",
-        }}
+        ref={containerRef}
+        className="h-screen overflow-y-scroll snap-y snap-mandatory hide-scrollbar"
+        onScroll={handleScroll}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        style={{ scrollSnapType: "y mandatory" }}
       >
-        {virtualizer.getVirtualItems().map((virtualItem) => {
-          const item = feedItems[virtualItem.index];
-          
-          // Ad placeholder
-          if (item.type === "ad") {
-            return (
-              <div
-                key={`ad-${virtualItem.index}`}
-                className="snap-item h-[100dvh] w-full absolute top-0 left-0 flex items-center justify-center bg-gradient-to-br from-violet/20 to-lime/10"
-                style={{
-                  transform: `translateY(${virtualItem.start}px)`,
-                }}
-              >
+        {feedItems.map((item, index) => (
+          <div
+            key={item.type === "ad" ? `ad-${index}` : item.data!.id}
+            className="snap-start h-screen w-full flex-shrink-0"
+            style={{ scrollSnapAlign: "start" }}
+            data-testid={item.type === "game" ? `game-card-${index}` : `ad-card-${index}`}
+          >
+            {item.type === "ad" ? (
+              // Ad placeholder
+              <div className="w-full h-full bg-gradient-to-br from-black to-zinc-900 flex items-center justify-center">
                 <div className="text-center p-8">
-                  <div className="w-16 h-16 rounded-full bg-card border border-border flex items-center justify-center mx-auto mb-4">
+                  <div className="w-16 h-16 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-4">
                     <Play className="w-8 h-8 text-lime" />
                   </div>
-                  <p className="text-muted-foreground text-sm">Ad Placeholder</p>
-                  <p className="text-xs text-muted-foreground/50 mt-2">
-                    Video ad will appear here
-                  </p>
+                  <p className="text-white/30 text-sm">Advertisement</p>
                 </div>
               </div>
-            );
-          }
-          
-          // Game card
-          const game = item.data!;
-          
-          return (
-            <div
-              key={game.id}
-              className="snap-item h-[100dvh] w-full absolute top-0 left-0 overflow-hidden bg-background"
-              style={{
-                transform: `translateY(${virtualItem.start}px)`,
-              }}
-              data-testid={`game-card-${virtualItem.index}`}
-            >
-              {/* Animated Background Pattern */}
-              <div className="absolute inset-0 overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-lime/5 via-background to-violet/5" />
-                {/* Dark mode pattern - lime on dark */}
-                <div 
-                  className="absolute inset-0 opacity-[0.03] dark:block hidden"
-                  style={{
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ccff00' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-                  }}
-                />
-                {/* Light mode pattern - darker green for visibility */}
-                <div 
-                  className="absolute inset-0 opacity-[0.15] dark:hidden block"
-                  style={{
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23336600' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-                  }}
-                />
-              </div>
-
-              {/* Centered Card Content */}
-              <div className="relative h-full flex flex-col items-center justify-center px-6 pb-20 pt-16">
-                {/* Game Image Card */}
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="w-full max-w-sm"
-                >
-                  <div className="relative rounded-3xl overflow-hidden border border-border bg-card shadow-2xl">
-                    {/* Game Thumbnail */}
-                    <div className="aspect-[4/3] relative">
-                      <Image
-                        src={game.thumbnail_url || "https://images.unsplash.com/photo-1637734373619-af1e76434bec?w=800&q=80"}
-                        alt={game.title}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 640px) 100vw, 384px"
-                        loading={virtualItem.index < 3 ? "eager" : "lazy"}
-                        placeholder="blur"
-                        blurDataURL={BLUR_PLACEHOLDER}
-                      />
-                      {/* Play overlay on hover */}
-                      <div className="absolute inset-0 bg-black/0 hover:bg-black/30 transition-colors flex items-center justify-center group cursor-pointer"
-                           onClick={() => playGame(game.id)}>
-                        <div className="w-16 h-16 rounded-full bg-lime/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity scale-90 group-hover:scale-100">
-                          <Play className="w-8 h-8 text-black ml-1" fill="black" />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Game Info */}
-                    <div className="p-5">
-                      <div className="flex items-start justify-between gap-3 mb-3">
-                        <div className="flex-1 min-w-0">
-                          <span className="inline-block px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-lime/10 text-lime rounded-full mb-2">
-                            {game.category}
-                          </span>
-                          <h2 className="font-heading text-xl text-foreground leading-tight truncate">
-                            {game.title}
-                          </h2>
-                        </div>
-                        {/* Action Buttons */}
-                        <div className="flex gap-2">
-                          <button
-                            onClick={(e) => toggleSave(game.id, e)}
-                            className="w-10 h-10 rounded-full bg-muted flex items-center justify-center touch-target transition-all hover:bg-muted/80 active:scale-95"
-                            data-testid={`save-game-${virtualItem.index}`}
-                          >
-                            <Heart
-                              className={`w-5 h-5 transition-colors ${
-                                savedGames.has(game.id)
-                                  ? "fill-red-500 text-red-500"
-                                  : "text-muted-foreground"
-                              }`}
-                            />
-                          </button>
-                          <button
-                            onClick={(e) => shareGame(game, e)}
-                            className="w-10 h-10 rounded-full bg-muted flex items-center justify-center touch-target transition-all hover:bg-muted/80 active:scale-95"
-                            data-testid={`share-game-${virtualItem.index}`}
-                          >
-                            <Share2 className="w-5 h-5 text-muted-foreground" />
-                          </button>
-                        </div>
-                      </div>
-                      
-                      <p className="text-muted-foreground text-sm line-clamp-2 mb-4">
-                        {game.description}
-                      </p>
-
-                      {/* Play Button */}
-                      <button
-                        onClick={() => playGame(game.id)}
-                        onMouseEnter={() => {
-                          const link = document.createElement('link');
-                          link.rel = 'prefetch';
-                          link.href = `${API_URL}/api/games/${game.id}/play`;
-                          document.head.appendChild(link);
-                        }}
-                        className="w-full py-3.5 bg-lime text-black font-heading text-sm uppercase tracking-widest rounded-xl transition-all hover:bg-lime/90 active:scale-[0.98]"
-                        data-testid={`play-button-${virtualItem.index}`}
-                      >
-                        Play Now
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-
-                {/* Scroll Indicator (first item only) */}
-                {virtualItem.index === 0 && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 1.5 }}
-                    className="absolute bottom-28 left-1/2 -translate-x-1/2 flex flex-col items-center text-muted-foreground"
-                  >
-                    <motion.div
-                      animate={{ y: [0, 6, 0] }}
-                      transition={{ repeat: Infinity, duration: 1.5 }}
-                      className="w-5 h-8 rounded-full border-2 border-muted-foreground/30 flex items-start justify-center p-1"
-                    >
-                      <div className="w-1 h-2 bg-muted-foreground/50 rounded-full" />
-                    </motion.div>
-                    <span className="text-xs mt-2">Swipe for more</span>
-                  </motion.div>
-                )}
-              </div>
-            </div>
-          );
-        })}
+            ) : (
+              <VideoCard
+                game={item.data!}
+                isActive={currentIndex === index}
+                onPlay={() => playGame(item.data!.id)}
+                onSave={(e) => toggleSave(item.data!.id, e)}
+                onShare={(e) => shareGame(item.data!, e)}
+                isSaved={savedGames.has(item.data!.id)}
+                showScrollHint={index === 0}
+              />
+            )}
+          </div>
+        ))}
       </div>
-
-      {/* Bottom Padding for Nav */}
-      <div className="h-20" />
     </div>
   );
 }

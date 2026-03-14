@@ -326,6 +326,7 @@ class GameResponse(BaseModel):
     game_file_url: Optional[str] = None  # Supabase Storage URL or GD embed URL
     has_game_file: bool = False
     is_visible: bool = True
+    show_in_feed: bool = True
     play_count: int = 0
     created_at: Optional[str] = None
     # GameDistribution fields
@@ -700,15 +701,18 @@ async def unsave_game(game_id: str, user: User = Depends(get_current_user), db: 
 async def get_games(
     category: Optional[str] = None,
     visible_only: bool = True,
+    feed_only: bool = True,
     db: AsyncSession = Depends(get_db)
 ):
-    """Get all games - no caching for real-time updates"""
+    """Get all games for the feed - no caching for real-time updates"""
     query = select(Game)
     
     if category and category != "all":
         query = query.where(Game.category == category)
     if visible_only:
         query = query.where(Game.is_visible.is_(True))
+    if feed_only:
+        query = query.where(Game.show_in_feed.is_not(False))
     
     query = query.order_by(Game.created_at.desc())
     result = await db.execute(query)
@@ -1134,6 +1138,29 @@ async def admin_toggle_visibility(
     await db.commit()
     
     return {"success": True, "is_visible": visibility.get("is_visible", True)}
+
+
+@api_router.patch("/admin/games/{game_id}/feed-visibility")
+async def admin_toggle_feed_visibility(
+    game_id: str,
+    data: dict,
+    user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Toggle whether a game appears in the main feed (vs explore only)"""
+    result = await db.execute(select(Game).where(Game.id == game_id))
+    game = result.scalar_one_or_none()
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    show_in_feed = data.get("show_in_feed", True)
+    await db.execute(
+        update(Game)
+        .where(Game.id == game_id)
+        .values(show_in_feed=show_in_feed)
+    )
+    await db.commit()
+    return {"success": True, "show_in_feed": show_in_feed}
 
 @api_router.delete("/admin/games/{game_id}")
 async def admin_delete_game(

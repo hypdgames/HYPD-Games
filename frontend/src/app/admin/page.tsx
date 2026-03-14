@@ -560,13 +560,33 @@ export default function AdminDashboard() {
         }
       );
       if (res.ok) {
-        toast.success(
-          !currentVisibility ? "Game is now visible" : "Game is now hidden"
-        );
+        toast.success(!currentVisibility ? "Game is now visible" : "Game is now hidden");
         fetchGames();
       }
     } catch {
       toast.error("Failed to update visibility");
+    }
+  };
+
+  const toggleFeedVisibility = async (gameId: string, currentShowInFeed: boolean) => {
+    try {
+      const res = await fetch(
+        `${API_URL}/api/admin/games/${gameId}/feed-visibility`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ show_in_feed: !currentShowInFeed }),
+        }
+      );
+      if (res.ok) {
+        toast.success(!currentShowInFeed ? "Game added to Feed" : "Game moved to Explore only");
+        fetchGames();
+      }
+    } catch {
+      toast.error("Failed to update feed visibility");
     }
   };
 
@@ -689,6 +709,7 @@ export default function AdminDashboard() {
               games={games}
               loading={loading}
               onToggleVisibility={toggleVisibility}
+              onToggleFeedVisibility={toggleFeedVisibility}
               onDeleteGame={deleteGame}
               onBulkDelete={bulkDeleteGames}
             />
