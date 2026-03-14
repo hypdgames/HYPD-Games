@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Heart, Share2, Loader2, RefreshCw } from "lucide-react";
+import { Play, Heart, Loader2, RefreshCw } from "lucide-react";
 import { useAuthStore } from "@/store";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { toast } from "sonner";
@@ -36,7 +36,6 @@ function VideoCard({
   isActive,
   onPlay,
   onSave,
-  onShare,
   isSaved,
   showScrollHint,
 }: {
@@ -44,7 +43,6 @@ function VideoCard({
   isActive: boolean;
   onPlay: () => void;
   onSave: (e: React.MouseEvent) => void;
-  onShare: (e: React.MouseEvent) => void;
   isSaved: boolean;
   showScrollHint: boolean;
 }) {
@@ -153,17 +151,7 @@ function VideoCard({
           <span className="text-white/80 text-xs font-medium">Save</span>
         </motion.button>
 
-        <motion.button
-          whileTap={{ scale: 0.85 }}
-          onClick={onShare}
-          className="flex flex-col items-center gap-1"
-          data-testid={`share-game-btn-${game.id}`}
-        >
-          <div className="w-12 h-12 rounded-full bg-white/10 border border-white/20 flex items-center justify-center backdrop-blur-sm hover:bg-white/20 transition-all">
-            <Share2 className="w-6 h-6 text-white" />
-          </div>
-          <span className="text-white/80 text-xs font-medium">Share</span>
-        </motion.button>
+        {/* Share button removed */}
       </div>
 
       {/* Bottom info + play button */}
@@ -345,17 +333,6 @@ export default function GameFeed() {
     } catch { toast.error("Failed to save game"); }
   };
 
-  const shareGame = async (game: Game, e: React.MouseEvent) => {
-    e.stopPropagation();
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: game.title, text: game.description, url: `${window.location.origin}/play/${game.id}` });
-      } else {
-        await navigator.clipboard.writeText(`${window.location.origin}/play/${game.id}`);
-        toast.success("Link copied!");
-      }
-    } catch { /* user cancelled share */ }
-  };
 
   if (loading) {
     return (
@@ -446,7 +423,6 @@ export default function GameFeed() {
                 isActive={currentIndex === index}
                 onPlay={() => playGame(item.data!.id)}
                 onSave={(e) => toggleSave(item.data!.id, e)}
-                onShare={(e) => shareGame(item.data!, e)}
                 isSaved={savedGames.has(item.data!.id)}
                 showScrollHint={index === 0}
               />
