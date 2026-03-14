@@ -2458,6 +2458,37 @@ async def bulk_import_gamepix_games(
 # GameMonetize Configuration - Using custom feed URL
 GAMEMONETIZE_FEED_URL = "https://gamemonetize.com/feed.php"
 
+# In-memory cache for the full GameMonetize feed (avoids re-fetching on every browse request)
+_gmz_cache: dict = {"games": [], "fetched_at": 0, "ttl": 300}  # 5-min TTL
+
+async def _fetch_full_gmz_feed() -> list:
+    """Fetch the full GameMonetize feed, using cache when fresh."""
+    now = time.time()
+    if _gmz_cache["games"] and (now - _gmz_cache["fetched_at"]) < _gmz_cache["ttl"]:
+        return _gmz_cache["games"]
+
+    all_games: list = []
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        # The feed returns up to 2000 games per page. Fetch pages until exhausted.
+        for feed_page in range(1, 20):  # safety cap at 20 pages (40k games)
+            params = {"format": "0", "page": str(feed_page)}
+            response = await client.get(GAMEMONETIZE_FEED_URL, params=params)
+            if response.status_code != 200:
+                logger.warning(f"GameMonetize feed page {feed_page} returned {response.status_code}")
+                break
+            page_games = response.json()
+            if not isinstance(page_games, list) or len(page_games) == 0:
+                break
+            all_games.extend(page_games)
+            # If we got fewer than 2000, that was the last page
+            if len(page_games) < 2000:
+                break
+
+    logger.info(f"GameMonetize feed fetched: {len(all_games)} total games")
+    _gmz_cache["games"] = all_games
+    _gmz_cache["fetched_at"] = now
+    return all_games
+
 # GameMonetize categories (will be populated from feed)
 GAMEMONETIZE_CATEGORIES = [
     {"id": "All", "name": "All Games", "icon": "🎮"},
@@ -2513,100 +2544,76 @@ class GMZGameImport(BaseModel):
 async def browse_gamemonetize_games(
     category: Optional[str] = None,
     search: Optional[str] = None,
-    sort: Optional[str] = "newest",  # newest, oldest, title_asc, title_desc
+    sort: Optional[str] = "newest",
     page: int = 1,
     num: int = 50
 ):
-    """Browse games from GameMonetize JSON feed"""
+    """Browse all games from GameMonetize feed (cached, locally paginated)"""
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            # Request extra games to detect if there are more beyond current page
-            request_num = num * page + 1
-            params = {
-                "format": "0",
-                "num": str(request_num),
-                "page": "1",
-            }
-            
-            response = await client.get(GAMEMONETIZE_FEED_URL, params=params)
-            
-            if response.status_code != 200:
-                logger.warning(f"GameMonetize API returned {response.status_code}")
-                return {"games": [], "total": 0, "page": page, "num": num, "error": "Failed to fetch games"}
-            
-            all_games = response.json()
-            
-            if not isinstance(all_games, list):
-                all_games = []
-            
-            # Track if the API had more games than we requested
-            api_returned_count = len(all_games)
-            api_has_more = api_returned_count >= request_num
-            
-            # Apply category filter locally
-            if category and category.lower() != "all":
-                all_games = [g for g in all_games if g.get("category", "").lower() == category.lower()]
-            
-            # Apply search filter
-            if search:
-                search_lower = search.lower()
-                all_games = [g for g in all_games if 
-                    search_lower in g.get("title", "").lower() or 
-                    search_lower in g.get("tags", "").lower() or
-                    search_lower in g.get("description", "").lower()
-                ]
-            
-            # Apply sorting
-            if sort == "newest":
-                all_games = sorted(all_games, key=lambda x: int(x.get("id", 0)), reverse=True)
-            elif sort == "oldest":
-                all_games = sorted(all_games, key=lambda x: int(x.get("id", 0)), reverse=False)
-            elif sort == "title_asc":
-                all_games = sorted(all_games, key=lambda x: x.get("title", "").lower())
-            elif sort == "title_desc":
-                all_games = sorted(all_games, key=lambda x: x.get("title", "").lower(), reverse=True)
-            
-            # Paginate after sorting
-            start_idx = (page - 1) * num
-            end_idx = start_idx + num
-            page_games = all_games[start_idx:end_idx]
-            
-            # Format games
-            games = []
-            for g in page_games:
-                thumb_url = g.get("thumb", "")
-                base_url = ""
-                if thumb_url:
-                    parts = thumb_url.rsplit("/", 1)
-                    if len(parts) == 2:
-                        base_url = parts[0]
-                
-                games.append({
-                    "gmz_game_id": g.get("id", ""),
-                    "title": g.get("title", "Unknown"),
-                    "description": g.get("description", ""),
-                    "category": g.get("category", "Action"),
-                    "thumbnail_url": f"{base_url}/512x384.jpg" if base_url else thumb_url,
-                    "icon_url": f"{base_url}/512x512.jpg" if base_url else thumb_url,
-                    "thumbnail_large_url": f"{base_url}/512x340.jpg" if base_url else thumb_url,
-                    "play_url": g.get("url", ""),
-                    "instructions": g.get("instructions", ""),
-                    "tags": g.get("tags", ""),
-                    "width": int(g.get("width", 800)) if g.get("width") else 800,
-                    "height": int(g.get("height", 600)) if g.get("height") else 600,
-                })
-            
-            # has_more is true if there are more games in the filtered set OR the API has more
-            has_more = end_idx < len(all_games) or (api_has_more and not (category or search))
-            
-            return {
-                "games": games,
-                "total": len(all_games),
-                "page": page,
-                "num": num,
-                "has_more": has_more
-            }
-            
+        all_games = await _fetch_full_gmz_feed()
+
+        # Apply category filter
+        if category and category.lower() != "all":
+            all_games = [g for g in all_games if g.get("category", "").lower() == category.lower()]
+
+        # Apply search filter
+        if search:
+            search_lower = search.lower()
+            all_games = [g for g in all_games if
+                search_lower in g.get("title", "").lower() or
+                search_lower in g.get("tags", "").lower() or
+                search_lower in g.get("description", "").lower()
+            ]
+
+        # Apply sorting
+        if sort == "newest":
+            all_games = sorted(all_games, key=lambda x: int(x.get("id", 0)), reverse=True)
+        elif sort == "oldest":
+            all_games = sorted(all_games, key=lambda x: int(x.get("id", 0)), reverse=False)
+        elif sort == "title_asc":
+            all_games = sorted(all_games, key=lambda x: x.get("title", "").lower())
+        elif sort == "title_desc":
+            all_games = sorted(all_games, key=lambda x: x.get("title", "").lower(), reverse=True)
+
+        # Paginate
+        total = len(all_games)
+        start_idx = (page - 1) * num
+        end_idx = start_idx + num
+        page_games = all_games[start_idx:end_idx]
+
+        # Format games
+        games = []
+        for g in page_games:
+            thumb_url = g.get("thumb", "")
+            base_url = ""
+            if thumb_url:
+                parts = thumb_url.rsplit("/", 1)
+                if len(parts) == 2:
+                    base_url = parts[0]
+
+            games.append({
+                "gmz_game_id": g.get("id", ""),
+                "title": g.get("title", "Unknown"),
+                "description": g.get("description", ""),
+                "category": g.get("category", "Action"),
+                "thumbnail_url": f"{base_url}/512x384.jpg" if base_url else thumb_url,
+                "icon_url": f"{base_url}/512x512.jpg" if base_url else thumb_url,
+                "thumbnail_large_url": f"{base_url}/512x340.jpg" if base_url else thumb_url,
+                "play_url": g.get("url", ""),
+                "instructions": g.get("instructions", ""),
+                "tags": g.get("tags", ""),
+                "width": int(g.get("width", 800)) if g.get("width") else 800,
+                "height": int(g.get("height", 600)) if g.get("height") else 600,
+            })
+
+        return {
+            "games": games,
+            "total": total,
+            "page": page,
+            "num": num,
+            "has_more": end_idx < total
+        }
+
     except Exception as e:
         logger.error(f"Error fetching GameMonetize games: {e}")
         return {"games": [], "total": 0, "page": page, "num": num, "error": str(e)}
