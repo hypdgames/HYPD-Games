@@ -25,22 +25,9 @@ function getGMZHash(embedUrl?: string): string | null {
   }
 }
 
-// Build the srcdoc HTML for the GMZ video player (each iframe has its own window context)
-// jQuery is required by gamemonetize video.js
-function buildVideoSrcdoc(hash: string, color = "#ccff00"): string {
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
-*{margin:0;padding:0;box-sizing:border-box;}
-html,body{width:100%;height:100%;background:#000;overflow:hidden;}
-#gamemonetize-video{width:100%;height:100%;}
-</style>
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-</head><body>
-<div id="gamemonetize-video"></div>
-<script>
-window.VIDEO_OPTIONS={gameid:"${hash}",width:"100%",height:"100%",color:"${color}",getAds:"false"};
-(function(a,b,c){var d=a.getElementsByTagName(b)[0];a.getElementById(c)||(a=a.createElement(b),a.id=c,a.src="https://api.gamemonetize.com/video.js",d.parentNode.insertBefore(a,d))})(document,"script","gamemonetize-video-api");
-</script>
-</body></html>`;
+// Build direct GMZ video embed URL — fallback iframe if direct video unavailable
+function buildGMZVideoUrl(hash: string, color = "%23ccff00"): string {
+  return `https://gamemonetize.video/index.php?domain=&gameid=${hash}&game=undefined&getads=false&color=${color}`;
 }
 
 // Single video card — loads video only when in viewport
@@ -64,29 +51,64 @@ function VideoCard({
   const hash = getGMZHash(game.embed_url);
   const hasVideo = game.source === "gamemonetize" && !!hash;
   const [videoLoaded, setVideoLoaded] = useState(false);
+  const [directVideoUrl, setDirectVideoUrl] = useState<string | null>(null);
+  const [videoFetched, setVideoFetched] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Load video iframe only when card becomes active
+  // When card becomes active, fetch direct MP4 URL and load video
   useEffect(() => {
-    if (isActive && hasVideo) {
-      setVideoLoaded(true);
+    if (!isActive || !hasVideo || videoFetched) return;
+    setVideoFetched(true);
+
+    fetch(`${API_URL}/api/games/${game.id}/video-preview`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.video_url) {
+          setDirectVideoUrl(data.video_url);
+        }
+        setVideoLoaded(true);
+      })
+      .catch(() => setVideoLoaded(true));
+  }, [isActive, hasVideo, game.id, videoFetched]);
+
+  // Play/pause native video based on active state
+  useEffect(() => {
+    if (!videoRef.current || !directVideoUrl) return;
+    if (isActive) {
+      videoRef.current.play().catch(() => {});
+    } else {
+      videoRef.current.pause();
     }
-  }, [isActive, hasVideo]);
+  }, [isActive, directVideoUrl]);
 
   return (
     <div className="relative w-full h-full bg-black overflow-hidden">
-      {/* Background — video or image */}
-      {videoLoaded && hash ? (
-        // GMZ video player via srcdoc (isolated window context per iframe)
+      {/* Background layer */}
+      {directVideoUrl ? (
+        // Native HTML5 video — muted + autoplay works on ALL browsers including iOS
+        <video
+          ref={videoRef}
+          src={directVideoUrl}
+          poster={game.thumbnail_url || undefined}
+          className="absolute inset-0 w-full h-full object-cover"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="auto"
+        />
+      ) : videoLoaded && hash ? (
+        // Fallback: GMZ iframe player (for games where direct URL unavailable)
         <iframe
-          srcDoc={buildVideoSrcdoc(hash)}
+          src={buildGMZVideoUrl(hash)}
           className="absolute inset-0 w-full h-full border-0"
           allow="autoplay; fullscreen"
+          allowFullScreen
           title={`${game.title} preview`}
         />
       ) : (
-        // Thumbnail background with blur
+        // Thumbnail background while loading
         <>
-          {/* Blurred background fill */}
           <div
             className="absolute inset-0 bg-cover bg-center scale-110"
             style={{
@@ -94,7 +116,6 @@ function VideoCard({
               filter: "blur(20px) brightness(0.4)",
             }}
           />
-          {/* Centered thumbnail */}
           {game.thumbnail_url && (
             <img
               src={game.thumbnail_url}
@@ -103,7 +124,6 @@ function VideoCard({
               loading={isActive ? "eager" : "lazy"}
             />
           )}
-          {/* Loading spinner for GMZ cards waiting for video */}
           {hasVideo && !videoLoaded && (
             <div className="absolute inset-0 flex items-center justify-center z-20">
               <Loader2 className="w-10 h-10 text-lime/60 animate-spin" />
