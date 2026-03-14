@@ -5,60 +5,67 @@ Build "Hypd Games," a mobile-first instant gaming website with a vertical, "TikT
 
 ## Core Features Implemented
 - **Game Feed**: TikTok-style vertical scroll with game cards
-- **Multi-Network Game Integration**: GamePix and GameMonetize providers
-- **Admin Dashboard**: Game management, network settings, bulk operations
+- **Multi-Network Game Integration**: GamePix and GameMonetize providers (both active)
+- **Admin Dashboard**: Game management, network settings, bulk operations, 7 tabs (Games, GamePix, GMZ, Upload, Users, Stats, Settings)
 - **Daily Login Streaks**: Track and reward consecutive daily logins
 - **Consolidated Profile Page**: Refactored into child components (Streak, Games, Wallet, Friends tabs)
 - **Wallet/Coin System**: Coin balance, packages (Stripe MOCKED/disabled)
 - **Friends System**: Search, add, accept/decline, remove
-- **Base Defence Game (Tower Defense)**: Canvas-based pixel art survival game. Features: auto-attacking archer tower with priority targeting (tower-damaging enemies first), 5 enemy types (goblin/skeleton/orc/bat/demon), 15 in-game upgrade types, lobby with 12 permanent upgrades, 15-min survival timer, XP gem/gold coin tap-to-collect, game speed toggle (1x/2x/3x), victory/defeat screens. Fully responsive on all screen sizes. State persists to backend.
+- **Base Defence Game (Tower Defense)**: Canvas-based pixel art survival game with auto-attacking archer tower, 5 enemy types, 15 in-game upgrades, lobby with 12 permanent upgrades, 15-min survival timer, XP/gold collection, game speed toggle, victory/defeat screens. Fully responsive. State persists to backend.
+- **GameMonetize Integration**: Browse, search, filter, sort, import/bulk-import games from GameMonetize feed. Embed wrapper for playback. ads.txt updated.
+- **ads.txt**: Contains entries for Google AdSense, GamePix, and GameMonetize
 
 ## Hidden/Disabled Features
-- **Pro/Ad-Free features**: All Pro-related UI hidden. Can be re-enabled in the future.
+- **Pro/Ad-Free features**: All Pro-related UI hidden. ProTab.tsx deleted. Can be re-enabled.
 - **Stripe payments**: Mocked/disabled, awaiting API key.
-
-## Pet Idle Game Architecture
-Each animal has its own **shooting lane card**:
-- Animal character on left with recoil animation
-- Green projectile dots flying to target on right
-- Target crosshair on right side
-- Level Up button at bottom of each card
-- Global target HP bar at top of page
-- Player level + XP bar for unlocking new animals
-- Tap target for bonus damage
 
 ## Architecture
 ```
 /app/
 ├── backend/
-│   ├── server.py (includes idle game save/load endpoints)
+│   ├── server.py (GamePix, GameMonetize, idle game, auth, admin endpoints)
 │   ├── models.py (IdleGameState model)
 │   └── database.py
 ├── frontend/src/app/
-│   ├── idle-game/
-│   │   ├── page.tsx (main: top bar + target HP + XP + lane list)
-│   │   ├── components/
-│   │   │   └── AnimalLaneList.tsx (each animal = own shooting scene card)
-│   │   ├── data/
-│   │   │   └── animals.ts (50 animals, unlock levels, DPS, costs, images)
-│   │   └── hooks/
-│   │       └── useGameState.ts (tick loop, tap, upgrade, prestige, save/load)
-│   ├── profile/ (10 refactored child components)
-│   ├── admin/ (7 tab components)
+│   ├── defence-game/ (Base Defence tower defense game)
+│   ├── admin/
+│   │   ├── page.tsx (Admin dashboard with 7 tabs)
+│   │   └── components/
+│   │       ├── GamesTab.tsx
+│   │       ├── GamePixTab.tsx
+│   │       ├── GameMonetizeTab.tsx
+│   │       ├── UploadTab.tsx
+│   │       ├── UsersTab.tsx
+│   │       ├── AnalyticsTab.tsx
+│   │       ├── SettingsTab.tsx
+│   │       ├── types.ts
+│   │       └── index.ts
+│   ├── profile/ (child components, AdminSection link)
 │   └── ...
+├── frontend/public/ads.txt (AdSense + GamePix + GameMonetize)
 ```
+
+## Key API Endpoints
+- `GET /api/gamemonetize/browse` — Browse GameMonetize games (filter, search, sort, paginate)
+- `GET /api/gamemonetize/categories` — GameMonetize categories
+- `POST /api/admin/gamemonetize/import` — Import single game
+- `POST /api/admin/gamemonetize/bulk-import` — Bulk import games
+- `GET /api/gamepix/browse` — Browse GamePix games
+- `POST /api/admin/gamepix/bulk-import` — Bulk import GamePix games
+- `GET /api/games` — Game feed
+- `GET /api/games/{id}/play` — Play game (embed wrapper for GMZ/GPX)
+- `GET/POST /api/idle-game/state|save` — Defence game state
 
 ## Prioritized Backlog
 ### P0
-- Enable Wallet System with Stripe
+- Enable Wallet System with Stripe (blocked on user API key)
 
 ### P1
-- Generate remaining character images (tiers 13-50)
 - Featured Games section on home feed
 - Video Previews for games
 
 ### P2
-- Social features, notifications, custom game, fonts, SEO
+- Social features, notifications, custom fonts, SEO
 - Re-enable Pro/Ad-Free features when ready
 
 ## Key Credentials
@@ -67,4 +74,5 @@ Each animal has its own **shooting lane card**:
 ## Known Limitations
 - Stripe payments MOCKED/disabled
 - Pro/Ad-Free features hidden (can be re-enabled later)
-- Base Defence first run is challenging by design - lobby upgrades improve subsequent runs
+- GameMonetize external API may rate-limit under heavy browsing (429 responses)
+- Base Defence first run is challenging by design
