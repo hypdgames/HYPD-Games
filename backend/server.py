@@ -727,6 +727,38 @@ async def get_games(
     response.headers["Expires"] = "0"
     return response
 
+
+@api_router.get("/games/video-previews-batch")
+async def get_video_previews_batch(db: AsyncSession = Depends(get_db)):
+    """Fetch all GMZ video preview URLs in one parallel call — used at feed load time."""
+    import asyncio
+    result = await db.execute(
+        select(Game).where(
+            Game.source == "gamemonetize",
+            Game.is_visible.is_(True),
+            Game.show_in_feed.is_not(False),
+            Game.embed_url.is_not(None),
+        )
+    )
+    games = result.scalars().all()
+
+    async def fetch_for_game(game):
+        parts = (game.embed_url or "").rstrip("/").split("/")
+        game_hash = parts[-1] if parts else None
+        if not game_hash or len(game_hash) < 10:
+            return game.id, None
+        url = await _fetch_gmz_video_url(game_hash, game.title)
+        return game.id, url
+
+    results = await asyncio.gather(*[fetch_for_game(g) for g in games], return_exceptions=True)
+    return {
+        gid: url
+        for item in results
+        if not isinstance(item, Exception)
+        for gid, url in [item]
+    }
+
+
 @api_router.get("/games/{game_id}", response_model=GameResponse)
 async def get_game(game_id: str, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Game).where(Game.id == game_id))
@@ -764,37 +796,14 @@ async def get_game_meta(game_id: str, db: AsyncSession = Depends(get_db)):
 _gmz_video_cache: dict = {}
 GMZ_VIDEO_CACHE_TTL = 3600  # 1 hour
 
-@api_router.get("/games/{game_id}/video-preview")
-async def get_game_video_preview(game_id: str, db: AsyncSession = Depends(get_db)):
-    """Fetch the direct MP4 video URL for a GameMonetize game walkthrough.
-    Returns {video_url: str | null}. Cached for 1 hour per hash."""
-    result = await db.execute(select(Game).where(Game.id == game_id))
-    game = result.scalar_one_or_none()
-    if not game:
-        raise HTTPException(status_code=404, detail="Game not found")
-
-    if game.source != "gamemonetize" or not game.embed_url:
-        return JSONResponse(content={"video_url": None})
-
-    # Extract hash from embed_url e.g. https://html5.gamemonetize.co/{hash}/
-    parts = game.embed_url.rstrip("/").split("/")
-    game_hash = parts[-1] if parts else None
-    if not game_hash or len(game_hash) < 10:
-        return JSONResponse(content={"video_url": None})
-
-    # Check cache
-    import time
+async def _fetch_gmz_video_url(game_hash: str, game_title: str) -> Optional[str]:
+    """Fetch direct MP4 URL for a GMZ game. Returns None on failure."""
+    import time, httpx
     cached = _gmz_video_cache.get(game_hash)
     if cached and (time.time() - cached["fetched_at"]) < GMZ_VIDEO_CACHE_TTL:
-        return JSONResponse(content={"video_url": cached["url"]})
-
-    # Fetch video URL from GMZ's internal video API
-    import httpx
+        return cached["url"]
     try:
-        gmz_api_url = (
-            f"https://gamemonetize.video/video.php"
-            f"?page_url=&gameid={game_hash}&game={game.title}"
-        )
+        gmz_api_url = f"https://gamemonetize.video/video.php?page_url=&gameid={game_hash}&game={game_title}"
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.get(gmz_api_url, headers={
                 "User-Agent": "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 Chrome/120.0.0.0 Mobile Safari/537.36",
@@ -805,11 +814,29 @@ async def get_game_video_preview(game_id: str, db: AsyncSession = Depends(get_db
             if data.get("isSuccess") and data.get("data", {}).get("detail"):
                 video_url = data["data"]["detail"][0].get("mediaURL")
                 _gmz_video_cache[game_hash] = {"url": video_url, "fetched_at": time.time()}
-                return JSONResponse(content={"video_url": video_url})
+                return video_url
     except Exception:
         pass
+    return None
 
-    return JSONResponse(content={"video_url": None})
+
+@api_router.get("/games/{game_id}/video-preview")
+async def get_game_video_preview(game_id: str, db: AsyncSession = Depends(get_db)):
+    """Fetch the direct MP4 video URL for a single GMZ game walkthrough."""
+    result = await db.execute(select(Game).where(Game.id == game_id))
+    game = result.scalar_one_or_none()
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+    if game.source != "gamemonetize" or not game.embed_url:
+        return JSONResponse(content={"video_url": None})
+
+    parts = game.embed_url.rstrip("/").split("/")
+    game_hash = parts[-1] if parts else None
+    if not game_hash or len(game_hash) < 10:
+        return JSONResponse(content={"video_url": None})
+
+    video_url = await _fetch_gmz_video_url(game_hash, game.title)
+    return JSONResponse(content={"video_url": video_url})
 
 @api_router.get("/games/{game_id}/play")
 async def get_game_file(
