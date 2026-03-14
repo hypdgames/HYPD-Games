@@ -26,12 +26,15 @@ function getGMZHash(embedUrl?: string): string | null {
 }
 
 // Build the srcdoc HTML for the GMZ video player (each iframe has its own window context)
+// jQuery is required by gamemonetize video.js
 function buildVideoSrcdoc(hash: string, color = "#ccff00"): string {
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{width:100%;height:100%;background:#000;overflow:hidden;}
 #gamemonetize-video{width:100%;height:100%;}
-</style></head><body>
+</style>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+</head><body>
 <div id="gamemonetize-video"></div>
 <script>
 window.VIDEO_OPTIONS={gameid:"${hash}",width:"100%",height:"100%",color:"${color}",getAds:"false"};
@@ -77,8 +80,7 @@ function VideoCard({
         <iframe
           srcDoc={buildVideoSrcdoc(hash)}
           className="absolute inset-0 w-full h-full border-0"
-          allow="autoplay"
-          sandbox="allow-scripts allow-same-origin"
+          allow="autoplay; fullscreen"
           title={`${game.title} preview`}
         />
       ) : (
