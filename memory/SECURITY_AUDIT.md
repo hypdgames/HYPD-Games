@@ -45,7 +45,7 @@
 **Configuration:**
 ```python
 # backend/.env
-CORS_ORIGINS="https://hypd-games-2.preview.emergentagent.com,http://localhost:3000"
+CORS_ORIGINS="https://game-feed-1.preview.emergentagent.com,http://localhost:3000"
 ```
 
 **Verified:**

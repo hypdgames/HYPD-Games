@@ -1202,7 +1202,7 @@ async def admin_cleanup_games_by_source(
     db: AsyncSession = Depends(get_db)
 ):
     """Delete all games from a specific source (gamedistribution, custom, gamepix)"""
-    valid_sources = ["gamedistribution", "custom", "gamepix"]
+    valid_sources = ["gamedistribution", "custom", "gamepix", "gamemonetize"]
     if source not in valid_sources:
         raise HTTPException(status_code=400, detail=f"Invalid source. Must be one of: {valid_sources}")
     
@@ -2520,11 +2520,12 @@ async def browse_gamemonetize_games(
     """Browse games from GameMonetize JSON feed"""
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
-            # Build feed URL with your custom endpoint
+            # Request extra games to detect if there are more beyond current page
+            request_num = num * page + 1
             params = {
-                "format": "0",  # JSON format
-                "num": str(num * page),  # Get enough games for sorting/pagination
-                "page": "1",  # Always get from first page for sorting
+                "format": "0",
+                "num": str(request_num),
+                "page": "1",
             }
             
             response = await client.get(GAMEMONETIZE_FEED_URL, params=params)
@@ -2537,6 +2538,10 @@ async def browse_gamemonetize_games(
             
             if not isinstance(all_games, list):
                 all_games = []
+            
+            # Track if the API had more games than we requested
+            api_returned_count = len(all_games)
+            api_has_more = api_returned_count >= request_num
             
             # Apply category filter locally
             if category and category.lower() != "all":
@@ -2553,16 +2558,12 @@ async def browse_gamemonetize_games(
             
             # Apply sorting
             if sort == "newest":
-                # Sort by ID descending (higher ID = newer)
                 all_games = sorted(all_games, key=lambda x: int(x.get("id", 0)), reverse=True)
             elif sort == "oldest":
-                # Sort by ID ascending (lower ID = older)
                 all_games = sorted(all_games, key=lambda x: int(x.get("id", 0)), reverse=False)
             elif sort == "title_asc":
-                # Sort alphabetically A-Z
                 all_games = sorted(all_games, key=lambda x: x.get("title", "").lower())
             elif sort == "title_desc":
-                # Sort alphabetically Z-A
                 all_games = sorted(all_games, key=lambda x: x.get("title", "").lower(), reverse=True)
             
             # Paginate after sorting
@@ -2573,11 +2574,9 @@ async def browse_gamemonetize_games(
             # Format games
             games = []
             for g in page_games:
-                # Extract base URL from thumbnail to generate different sizes
                 thumb_url = g.get("thumb", "")
                 base_url = ""
                 if thumb_url:
-                    # Extract base: https://img.gamemonetize.com/{hash}/512x384.jpg -> https://img.gamemonetize.com/{hash}
                     parts = thumb_url.rsplit("/", 1)
                     if len(parts) == 2:
                         base_url = parts[0]
@@ -2587,10 +2586,9 @@ async def browse_gamemonetize_games(
                     "title": g.get("title", "Unknown"),
                     "description": g.get("description", ""),
                     "category": g.get("category", "Action"),
-                    # Different image sizes for different use cases
-                    "thumbnail_url": f"{base_url}/512x384.jpg" if base_url else thumb_url,  # Landscape banner (4:3)
-                    "icon_url": f"{base_url}/512x512.jpg" if base_url else thumb_url,  # Square icon (1:1)
-                    "thumbnail_large_url": f"{base_url}/512x340.jpg" if base_url else thumb_url,  # Wide banner (3:2)
+                    "thumbnail_url": f"{base_url}/512x384.jpg" if base_url else thumb_url,
+                    "icon_url": f"{base_url}/512x512.jpg" if base_url else thumb_url,
+                    "thumbnail_large_url": f"{base_url}/512x340.jpg" if base_url else thumb_url,
                     "play_url": g.get("url", ""),
                     "instructions": g.get("instructions", ""),
                     "tags": g.get("tags", ""),
@@ -2598,12 +2596,15 @@ async def browse_gamemonetize_games(
                     "height": int(g.get("height", 600)) if g.get("height") else 600,
                 })
             
+            # has_more is true if there are more games in the filtered set OR the API has more
+            has_more = end_idx < len(all_games) or (api_has_more and not (category or search))
+            
             return {
                 "games": games,
                 "total": len(all_games),
                 "page": page,
                 "num": num,
-                "has_more": end_idx < len(all_games)
+                "has_more": has_more
             }
             
     except Exception as e:
