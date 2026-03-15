@@ -89,7 +89,7 @@ function CategoryTile({ name, onSelect }: { name: string; onSelect: () => void }
 // ── Section header ────────────────────────────────────────────────────────────
 function SectionHeader({ title, onViewAll }: { title: string; onViewAll?: () => void }) {
   return (
-    <div className="flex items-center justify-between px-4 mb-3">
+    <div className="flex items-center justify-between px-5 mb-3">
       <h2 className="text-base font-bold text-foreground">{title}</h2>
       {onViewAll && (
         <button onClick={onViewAll} className="flex items-center gap-0.5 text-lime text-sm font-medium" data-testid={`view-all-${title}`}>
@@ -103,7 +103,7 @@ function SectionHeader({ title, onViewAll }: { title: string; onViewAll?: () => 
 // ── Horizontal scroll row ─────────────────────────────────────────────────────
 function HScroll({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex gap-3 overflow-x-auto hide-scrollbar px-4 pb-1" style={{ scrollSnapType: "x mandatory" }}>
+    <div className="flex gap-3 overflow-x-auto hide-scrollbar px-5 pb-1" style={{ scrollSnapType: "x mandatory" }}>
       {children}
     </div>
   );
@@ -115,7 +115,7 @@ function NewGamesGrid({ games, onClick }: { games: Game[]; onClick: (id: string)
   const featured = games[4] || games[0]; // tall featured card on right
 
   return (
-    <div className="px-4 grid grid-cols-3 gap-2">
+    <div className="px-5 grid grid-cols-3 gap-2">
       {/* Left 2x2 grid */}
       <div className="col-span-2 grid grid-cols-2 gap-2">
         {left.map(game => (
@@ -157,7 +157,7 @@ function NewGamesGrid({ games, onClick }: { games: Game[]; onClick: (id: string)
 // ── Search results grid ───────────────────────────────────────────────────────
 function SearchGrid({ games, onClick }: { games: Game[]; onClick: (id: string) => void }) {
   return (
-    <div className="grid grid-cols-3 gap-3 px-4">
+    <div className="grid grid-cols-3 gap-3 px-5">
       {games.map(game => (
         <motion.div
           key={game.id}
@@ -181,7 +181,7 @@ function SearchGrid({ games, onClick }: { games: Game[]; onClick: (id: string) =
 function CategoryPage({ name, games, onBack, onClick }: { name: string; games: Game[]; onBack: () => void; onClick: (id: string) => void }) {
   return (
     <div className="min-h-screen bg-background pb-28">
-      <div className="sticky top-0 z-30 bg-background/95 backdrop-blur border-b border-border px-4 py-3 flex items-center gap-3">
+      <div className="sticky top-0 z-30 bg-background/95 backdrop-blur border-b border-border px-5 py-3 flex items-center gap-3">
         <button onClick={onBack} className="text-foreground/70 hover:text-foreground" data-testid="back-btn">
           <ArrowLeft className="w-5 h-5" />
         </button>
@@ -189,7 +189,7 @@ function CategoryPage({ name, games, onBack, onClick }: { name: string; games: G
         <h1 className="font-bold text-lg text-foreground">{name}</h1>
         <span className="text-muted-foreground text-sm ml-1">({games.length})</span>
       </div>
-      <div className="grid grid-cols-3 gap-3 p-4">
+      <div className="grid grid-cols-3 gap-3 p-5">
         {games.map(game => (
           <motion.div key={game.id} whileTap={{ scale: 0.96 }} onClick={() => onClick(game.id)}
             className="relative rounded-xl overflow-hidden cursor-pointer" style={{ aspectRatio: "1/1" }}>
@@ -276,7 +276,7 @@ export default function ExplorePage() {
 
       {/* ── Sticky header ── */}
       <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border/50">
-        <div className="flex items-center justify-between px-4 py-3">
+        <div className="flex items-center justify-between px-5 py-3">
           {/* Left: logo + streak + coins */}
           <div className="flex items-center gap-3">
             <button className="text-foreground/60 hover:text-foreground transition-colors" data-testid="add-friend-btn">
@@ -313,7 +313,7 @@ export default function ExplorePage() {
             className="fixed inset-0 z-50 bg-background flex flex-col"
           >
             {/* Search header */}
-            <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
+            <div className="flex items-center gap-3 px-5 py-3 border-b border-border">
               <button onClick={() => { setSearchActive(false); setSearchQuery(""); }} data-testid="search-close-btn">
                 <ArrowLeft className="w-5 h-5 text-foreground/70" />
               </button>
@@ -344,7 +344,7 @@ export default function ExplorePage() {
                 <p className="text-center text-muted-foreground text-sm pt-12">No games found for &ldquo;{searchQuery}&rdquo;</p>
               ) : (
                 <>
-                  <p className="px-4 mb-3 text-sm text-muted-foreground">{searchResults.length} result{searchResults.length !== 1 ? "s" : ""}</p>
+                  <p className="px-5 mb-3 text-sm text-muted-foreground">{searchResults.length} result{searchResults.length !== 1 ? "s" : ""}</p>
                   <SearchGrid games={searchResults} onClick={id => { setSearchActive(false); playGame(id); }} />
                 </>
               )}
