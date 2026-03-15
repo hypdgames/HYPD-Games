@@ -72,7 +72,7 @@ function VideoCard({
       <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-black/70 to-transparent pointer-events-none z-20" />
 
       {/* Side buttons — Save + Play */}
-      <div className="absolute right-4 bottom-24 flex flex-col gap-4 z-30">
+      <div className="absolute right-4 bottom-28 flex flex-col gap-4 z-30">
         <motion.button
           whileTap={{ scale: 0.85 }}
           onClick={onSave}
@@ -101,7 +101,7 @@ function VideoCard({
       </div>
 
       {/* Bottom info */}
-      <div className="absolute bottom-0 left-0 right-20 z-30 px-5 pb-24">
+      <div className="absolute bottom-0 left-0 right-20 z-30 px-5 pb-28">
         <div className="flex items-center gap-2 mb-2">
           <span className="text-xs font-bold uppercase tracking-wider text-lime bg-lime/15 px-2.5 py-1 rounded-full border border-lime/30">
             {game.category}
