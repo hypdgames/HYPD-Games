@@ -349,14 +349,14 @@ export default function ExplorePage() {
       {/* ── Feed ── */}
       <div className="py-5 space-y-7">
 
-        {/* Recommended For You */}
-        {games.length > 0 && (
+        {/* New Games — at top, square SmallCards */}
+        {newGames.length > 0 && (
           <section>
-            <SectionHeader title="Recommended For You" />
+            <SectionHeader title="New Games" />
             <HScroll>
-              {games.slice(0, 10).map(game => (
+              {newGames.map(game => (
                 <div key={game.id} style={{ scrollSnapAlign: "start" }}>
-                  <BigCard game={game} onClick={() => playGame(game.id)} />
+                  <SmallCard game={game} onClick={() => playGame(game.id)} />
                 </div>
               ))}
             </HScroll>
@@ -371,20 +371,6 @@ export default function ExplorePage() {
               {categoriesWithGames.map(({ name }) => (
                 <div key={name} style={{ scrollSnapAlign: "start" }}>
                   <CategoryTile name={name} onSelect={() => setSelectedCategory(name)} />
-                </div>
-              ))}
-            </HScroll>
-          </section>
-        )}
-
-        {/* New Games — horizontal scroll of square cards */}
-        {newGames.length > 0 && (
-          <section>
-            <SectionHeader title="New Games" />
-            <HScroll>
-              {newGames.map(game => (
-                <div key={game.id} style={{ scrollSnapAlign: "start" }}>
-                  <SmallCard game={game} onClick={() => playGame(game.id)} />
                 </div>
               ))}
             </HScroll>
