@@ -103,7 +103,10 @@ function SectionHeader({ title, onViewAll }: { title: string; onViewAll?: () => 
 // ── Horizontal scroll row ─────────────────────────────────────────────────────
 function HScroll({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex gap-3 overflow-x-auto hide-scrollbar px-5 pb-1" style={{ scrollSnapType: "x mandatory" }}>
+    <div
+      className="flex gap-3 overflow-x-auto hide-scrollbar pb-1"
+      style={{ scrollSnapType: "x mandatory", paddingLeft: "20px", paddingRight: "20px" }}
+    >
       {children}
     </div>
   );
