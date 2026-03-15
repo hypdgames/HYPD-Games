@@ -95,6 +95,10 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://games.gamepix.com" />
         <link rel="preconnect" href="https://html5.gamedistribution.com" />
         <link rel="dns-prefetch" href="https://html5.gamedistribution.com" />
+        <link rel="preconnect" href="https://html5.gamemonetize.co" />
+        <link rel="dns-prefetch" href="https://html5.gamemonetize.co" />
+        <link rel="preconnect" href="https://img.gamemonetize.com" />
+        <link rel="dns-prefetch" href="https://img.gamemonetize.com" />
       </head>
       <body className={`${chivo.variable} ${manrope.variable} font-sans antialiased`}>
         <Providers>

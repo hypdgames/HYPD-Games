@@ -6,7 +6,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://game-feed-2.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://hypd-speed.preview.emergentagent.com')
 
 # Test credentials
 ADMIN_EMAIL = "admin@hypd.games"

@@ -31,7 +31,7 @@ from collections import defaultdict
 import time
 
 # Local imports
-from database import get_db, engine, Base
+from database import get_db, engine, Base, AsyncSessionLocal
 from models import (
     User, Game, PlaySession, AppSettings,
     Friendship, FriendshipStatus, Challenge, ChallengeParticipant,
@@ -84,6 +84,30 @@ security = HTTPBearer()
 
 # In-memory game file storage (fallback if Supabase Storage not available)
 game_files_cache: dict = {}
+
+# ── Simple in-memory API cache — reduces Supabase round-trips significantly ───
+_api_cache: dict = {}  # {key: {"data": Any, "ts": float}}
+
+def _cache_get(key: str, ttl: int = 30):
+    """Return cached data if fresh, else None."""
+    entry = _api_cache.get(key)
+    if entry and (time.time() - entry["ts"]) < ttl:
+        return entry["data"]
+    return None
+
+def _cache_set(key: str, data) -> None:
+    _api_cache[key] = {"data": data, "ts": time.time()}
+
+def _invalidate_games_cache() -> None:
+    """Bust games/categories caches. Call after any admin game mutation."""
+    for k in list(_api_cache):
+        if k.startswith("games:") or k == "categories":
+            del _api_cache[k]
+
+# Batch-level cache for video previews (avoids re-fetching on every cold start)
+_gmz_batch_result: dict = {}
+_gmz_batch_ts: float = 0.0
+GMZ_BATCH_CACHE_TTL = 1800  # 30 minutes
 
 # Supabase Storage bucket names
 GAMES_BUCKET = "games"
@@ -704,34 +728,47 @@ async def get_games(
     feed_only: bool = True,
     db: AsyncSession = Depends(get_db)
 ):
-    """Get all games for the feed - no caching for real-time updates"""
+    """Get games for the feed/explore. Results cached in memory for 30s to avoid DB round-trips."""
+    cache_key = f"games:feed={feed_only}:cat={category}"
+    cached = _cache_get(cache_key, ttl=30)
+    if cached is not None:
+        response = JSONResponse(content=cached)
+        response.headers["Cache-Control"] = "public, max-age=15, stale-while-revalidate=60"
+        return response
+
     query = select(Game)
-    
     if category and category != "all":
         query = query.where(Game.category == category)
     if visible_only:
         query = query.where(Game.is_visible.is_(True))
     if feed_only:
         query = query.where(Game.show_in_feed.is_not(False))
-    
+
     query = query.order_by(Game.created_at.desc())
     result = await db.execute(query)
     games = result.scalars().all()
-    
+
     game_responses = [GameResponse(**g.to_dict()).model_dump() for g in games]
-    
+    _cache_set(cache_key, game_responses)
+
     response = JSONResponse(content=game_responses)
-    # Disable caching for real-time updates after admin changes
-    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-    response.headers["Pragma"] = "no-cache"
-    response.headers["Expires"] = "0"
+    response.headers["Cache-Control"] = "public, max-age=15, stale-while-revalidate=60"
     return response
 
 
 @api_router.get("/games/video-previews-batch")
 async def get_video_previews_batch(db: AsyncSession = Depends(get_db)):
-    """Fetch all GMZ video preview URLs in one parallel call — used at feed load time."""
+    """Fetch all GMZ video preview URLs in one parallel call — used at feed load time.
+    Batch result is cached for 30 minutes to avoid re-fetching on every cold start."""
+    global _gmz_batch_result, _gmz_batch_ts
     import asyncio
+
+    now = time.time()
+    if _gmz_batch_result and (now - _gmz_batch_ts) < GMZ_BATCH_CACHE_TTL:
+        response = JSONResponse(content=_gmz_batch_result)
+        response.headers["Cache-Control"] = "public, max-age=1800, stale-while-revalidate=3600"
+        return response
+
     result = await db.execute(
         select(Game).where(
             Game.source == "gamemonetize",
@@ -751,12 +788,19 @@ async def get_video_previews_batch(db: AsyncSession = Depends(get_db)):
         return game.id, url
 
     results = await asyncio.gather(*[fetch_for_game(g) for g in games], return_exceptions=True)
-    return {
+    batch = {
         gid: url
         for item in results
         if not isinstance(item, Exception)
         for gid, url in [item]
     }
+
+    _gmz_batch_result = batch
+    _gmz_batch_ts = now
+
+    response = JSONResponse(content=batch)
+    response.headers["Cache-Control"] = "public, max-age=1800, stale-while-revalidate=3600"
+    return response
 
 
 @api_router.get("/games/{game_id}", response_model=GameResponse)
@@ -1057,14 +1101,20 @@ async def get_game_file(
 
 @api_router.get("/categories")
 async def get_categories(db: AsyncSession = Depends(get_db)):
-    """Get all unique game categories"""
+    """Get all unique game categories — cached for 5 minutes."""
+    cached = _cache_get("categories", ttl=300)
+    if cached is not None:
+        return cached
+
     result = await db.execute(
         select(Game.category)
         .where(Game.is_visible.is_(True))
         .distinct()
     )
     categories = [row[0] for row in result.all()]
-    return {"categories": categories}
+    data = {"categories": categories}
+    _cache_set("categories", data)
+    return data
 
 # ==================== ADMIN ENDPOINTS ====================
 
@@ -1186,6 +1236,7 @@ async def admin_create_game_with_files(
         db.add(new_game)
         await db.commit()
         await db.refresh(new_game)
+        _invalidate_games_cache()
         
         logger.info(f"Game created: {game_id} - {title}")
         return GameResponse(**new_game.to_dict())
@@ -1215,6 +1266,7 @@ async def admin_toggle_visibility(
         .values(is_visible=visibility.get("is_visible", True))
     )
     await db.commit()
+    _invalidate_games_cache()
     
     return {"success": True, "is_visible": visibility.get("is_visible", True)}
 
@@ -1239,6 +1291,7 @@ async def admin_toggle_feed_visibility(
         .values(show_in_feed=show_in_feed)
     )
     await db.commit()
+    _invalidate_games_cache()
     return {"success": True, "show_in_feed": show_in_feed}
 
 @api_router.delete("/admin/games/{game_id}")
@@ -1259,6 +1312,7 @@ async def admin_delete_game(
     
     await db.execute(delete(Game).where(Game.id == game_id))
     await db.commit()
+    _invalidate_games_cache()
     
     return {"success": True, "deleted_id": game_id}
 
@@ -1294,6 +1348,7 @@ async def admin_bulk_delete_games(
         await db.execute(delete(Game).where(Game.id.in_(deleted_ids)))
         await db.commit()
     
+    _invalidate_games_cache()
     logger.info(f"Bulk deleted {len(deleted_ids)} games")
     
     return {
@@ -1346,7 +1401,7 @@ async def admin_cleanup_games_by_source(
         await db.execute(delete(Game).where(Game.source == source))
     
     await db.commit()
-    
+    _invalidate_games_cache()
     logger.info(f"Deleted {len(deleted_ids)} games from source: {source}")
     return {
         "success": True,
@@ -1377,7 +1432,7 @@ async def admin_cleanup_test_games(
     # Delete from database
     await db.execute(delete(Game).where(Game.title.ilike("%test%")))
     await db.commit()
-    
+    _invalidate_games_cache()
     logger.info(f"Deleted {len(deleted_ids)} test games")
     return {
         "success": True,
@@ -2554,7 +2609,7 @@ async def bulk_import_gamepix_games(
             skipped.append(game_data.title)
     
     await db.commit()
-    
+    _invalidate_games_cache()
     return {
         "imported": len(imported),
         "skipped": len(skipped),
@@ -2789,7 +2844,7 @@ async def import_gamemonetize_game(
     
     db.add(new_game)
     await db.commit()
-    
+    _invalidate_games_cache()
     logger.info(f"Imported GameMonetize game: {new_game.title} (ID: {new_game.id})")
     
     return {"success": True, "game_id": new_game.id, "title": new_game.title}
@@ -2840,7 +2895,7 @@ async def bulk_import_gamemonetize_games(
         imported.append(game_data.title)
     
     await db.commit()
-    
+    _invalidate_games_cache()
     logger.info(f"Bulk imported {len(imported)} GameMonetize games")
     
     return {
@@ -4278,6 +4333,45 @@ async def startup():
     logger.info("Starting Hypd Games API with Supabase PostgreSQL")
     # Initialize storage buckets
     init_storage_buckets()
+    # Pre-warm caches in background
+    import asyncio
+    asyncio.create_task(_prewarm_caches())
+
+async def _prewarm_caches():
+    """Background task: warms games + categories caches on startup so first user gets fast response."""
+    import asyncio
+    await asyncio.sleep(4)  # Small delay so DB pool is ready
+    try:
+        async with AsyncSessionLocal() as db:
+            # Warm games feed cache
+            result = await db.execute(
+                select(Game)
+                .where(Game.is_visible.is_(True))
+                .where(Game.show_in_feed.is_not(False))
+                .order_by(Game.created_at.desc())
+            )
+            feed_games = result.scalars().all()
+            feed_responses = [GameResponse(**g.to_dict()).model_dump() for g in feed_games]
+            _cache_set("games:feed=True:cat=None", feed_responses)
+
+            # Warm explore (all games) cache
+            result2 = await db.execute(
+                select(Game).where(Game.is_visible.is_(True)).order_by(Game.created_at.desc())
+            )
+            all_games = result2.scalars().all()
+            all_responses = [GameResponse(**g.to_dict()).model_dump() for g in all_games]
+            _cache_set("games:feed=False:cat=None", all_responses)
+
+            # Warm categories cache
+            result3 = await db.execute(
+                select(Game.category).where(Game.is_visible.is_(True)).distinct()
+            )
+            categories = [row[0] for row in result3.all()]
+            _cache_set("categories", {"categories": categories})
+
+            logger.info(f"Cache pre-warmed: {len(feed_responses)} feed games, {len(all_responses)} total games, {len(categories)} categories")
+    except Exception as e:
+        logger.warning(f"Cache pre-warm failed (non-critical): {e}")
 
 # Root redirect
 @app.get("/")

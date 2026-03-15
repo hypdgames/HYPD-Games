@@ -1,0 +1,120 @@
+{
+  "summary": "Performance & caching validation for Hypd Games. Server-side in-memory cache working correctly: /api/games cached < 150ms, /api/categories < 90ms, /api/games/video-previews-batch < 110ms. All major frontend flows verified: home feed, explore, search, navigation, play, save/heart, admin login, feed toggle, leaderboard, profile.",
+
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "/api/games (Cache-Control header)",
+        "issue": "Cache-Control header set by FastAPI ('public, max-age=15, stale-while-revalidate=60') is being overridden by Cloudflare to 'no-store, no-cache, must-revalidate'. This means browser/CDN HTTP caching will NOT work. Only server-side in-memory caching is active.",
+        "priority": "HIGH"
+      }
+    ],
+    "minor": [
+      {
+        "endpoint": "/api/games (first cold call)",
+        "issue": "First call to /api/games when 30s pre-warm cache has expired takes ~3.5s. Pre-warm TTL (30s) is too short for low-traffic environments — cache expires and next cold request hits Supabase DB. Recommend increasing TTL to 5-10min for games cache.",
+        "priority": "MEDIUM"
+      },
+      {
+        "endpoint": "/api/auth/friends (profile page)",
+        "issue": "Console error 'Error fetching friends: TypeError: Failed to fetch' on profile page. Friends API endpoint failing.",
+        "priority": "LOW"
+      }
+    ]
+  },
+
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Home Feed (VideoCard)",
+        "issues": ["Video preview area shows solid black background for games without video URLs — could look like a loading/broken state to users. Consider showing thumbnail image as fallback."]
+      }
+    ]
+  },
+
+  "performance_results": {
+    "/api/games (cached)": "0.15s ✅ (target < 500ms)",
+    "/api/games (cold/expired cache)": "3.58s ❌ (target < 2s)",
+    "/api/categories (cached)": "0.09s ✅ (target < 300ms)",
+    "/api/games/video-previews-batch (cached)": "0.10s ✅ (target < 300ms)",
+    "note": "All cached calls are well within targets. Cold call fails due to 30s TTL expiry."
+  },
+
+  "passed_tests": [
+    "Backend: /api/games cached second call < 500ms",
+    "Backend: /api/categories cached call < 300ms",
+    "Backend: /api/games/video-previews-batch cached < 300ms",
+    "Backend: /api/games returns list of games with correct structure",
+    "Backend: /api/categories returns categories array",
+    "Backend: Category filter query parameter works",
+    "Backend: Admin login (admin@hypd.games/admin123) succeeds",
+    "Backend: Wrong password returns 401",
+    "Backend: GET /api/admin/games returns full game list (56 games)",
+    "Backend: Admin user has is_admin=True flag",
+    "Backend: Cache-Control header present (even if overridden by Cloudflare)",
+    "Backend: Game visibility toggle works via admin API",
+    "Frontend: Home feed loads, displays game cards with Save and Play buttons",
+    "Frontend: Play button navigates to /play/{gameId} with game loading screen",
+    "Frontend: Save/Heart without login shows 'Please login to save games' toast",
+    "Frontend: Save/Heart with admin login shows 'Game saved!' toast, heart turns red",
+    "Frontend: Explore page loads with Recommended, Categories, New Games sections",
+    "Frontend: Search toggle opens overlay, typing 'puzzle' returns 6 results",
+    "Frontend: Category drilldown (Puzzle = 12 games) navigates and shows game grid",
+    "Frontend: Back button returns from category drilldown",
+    "Frontend: Leaderboard page loads with Global/By Game tabs and ranked users",
+    "Frontend: Profile page shows Join HYPD login form for unauthenticated users",
+    "Frontend: Admin login via profile page succeeds, shows admin dashboard at /admin",
+    "Frontend: Admin dashboard shows 56 games with feed-toggle and visibility buttons",
+    "Frontend: Feed toggle shows 'Game moved to Explore only' toast and updates",
+    "Frontend: Navigation (Feed, Explore, Defence, Leaders, Profile) all work"
+  ],
+
+  "failed_tests": [
+    "Backend: test_games_api_first_call_fast - 3.582s cold call (expected < 2.0s; cache TTL expired)",
+    "Backend: test_games_cache_header_present - Cloudflare overrides Cache-Control to no-store"
+  ],
+
+  "test_report_links": [
+    "/app/backend/tests/test_performance_cache.py",
+    "/app/test_reports/pytest/pytest_performance.xml"
+  ],
+
+  "action_items": [
+    "MEDIUM: Increase games cache TTL from 30s to 5-10 minutes (30s is too short, cache expires frequently in low-traffic environments)",
+    "HIGH: Investigate Cloudflare Cache-Control header override — server sets 'public, max-age=15' but Cloudflare rewrites to 'no-store, no-cache, must-revalidate'. Consider Cloudflare page rules or Cache Rules to allow caching for /api/games and /api/categories endpoints",
+    "LOW: Fix 'Error fetching friends: TypeError: Failed to fetch' on profile page — friends API endpoint failing",
+    "LOW: Add thumbnail image fallback for VideoCard when no video URL available (currently shows solid black)"
+  ],
+
+  "critical_code_review_comments": [
+    "Cache TTL (30s) in server.py line 733 is too aggressive for low-traffic scenarios — extend to 5min minimum",
+    "The _prewarm_caches() function only runs at startup; consider a background periodic re-warm task every 5 minutes",
+    "Cloudflare is overriding Cache-Control headers — the frontend sessionStorage caching is the effective client-side cache layer; HTTP cache headers need Cloudflare configuration to propagate correctly"
+  ],
+
+  "updated_files": [
+    "/app/backend/tests/test_performance_cache.py"
+  ],
+
+  "success_rate": {
+    "backend": "89% (16/18 tests passed)",
+    "frontend": "100% (all flows verified)"
+  },
+
+  "test_credentials": {
+    "admin_email": "admin@hypd.games",
+    "admin_password": "admin123"
+  },
+
+  "seed_data_creation": "None - existing 56 games used for testing",
+
+  "retest_needed": false,
+
+  "should_main_agent_self_test": true,
+
+  "context_for_next_testing_agent": "Performance caching implementation verified working: server-side in-memory cache reduces /api/games from 3.77s to ~150ms (cached), /api/categories to ~90ms, video batch to ~110ms. Key issue: 30s TTL causes frequent cache misses — recommend extending to 5min. Cloudflare overrides Cache-Control headers, so HTTP caching doesn't work end-to-end (only server-side in-memory cache is effective). Frontend sessionStorage caching working (30s for games, 1h for video URLs). All admin features work: login, game list, feed toggle (56 games). Admin page at /admin accessible after login. Save/Heart works with login ('Game saved!' toast). Search overlay works with live filtering. All navigation tabs work.",
+
+  "mocked_apis": ["Stripe payments - MOCKED/disabled, awaiting API key"]
+}

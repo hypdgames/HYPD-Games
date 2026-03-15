@@ -9,6 +9,23 @@ import type { Game } from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
+const EXPLORE_CACHE_KEY = "hypd:explore_data";
+const EXPLORE_CACHE_TTL = 30 * 1000; // 30 seconds
+
+function sessionGet<T>(key: string, ttl: number): T | null {
+  try {
+    const raw = sessionStorage.getItem(key);
+    if (!raw) return null;
+    const { data, ts } = JSON.parse(raw);
+    if (Date.now() - ts > ttl) return null;
+    return data as T;
+  } catch { return null; }
+}
+
+function sessionSet(key: string, data: unknown): void {
+  try { sessionStorage.setItem(key, JSON.stringify({ data, ts: Date.now() })); } catch { /* storage full */ }
+}
+
 const CATEGORY_EMOJI: Record<string, string> = {
   Racing: "🏎", Action: "⚔️", Puzzle: "🧩", Adventure: "🗺️",
   Sports: "⚽", Strategy: "♟️", Arcade: "🕹️", Shooter: "🎯",
@@ -178,12 +195,24 @@ export default function ExplorePage() {
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    // Check sessionStorage cache first (30s TTL)
+    const cached = sessionGet<{ games: Game[]; categories: string[] }>(EXPLORE_CACHE_KEY, EXPLORE_CACHE_TTL);
+    if (cached) {
+      setGames(cached.games);
+      setCategories(cached.categories);
+      setLoading(false);
+      return;
+    }
+
     Promise.all([
-      fetch(`${API_URL}/api/games?feed_only=false`, { cache: "no-store" }),
-      fetch(`${API_URL}/api/categories`, { cache: "no-store" }),
+      fetch(`${API_URL}/api/games?feed_only=false`),
+      fetch(`${API_URL}/api/categories`),
     ]).then(async ([gRes, cRes]) => {
-      if (gRes.ok) setGames(await gRes.json());
-      if (cRes.ok) setCategories((await cRes.json()).categories || []);
+      const gamesData = gRes.ok ? await gRes.json() : [];
+      const catData = cRes.ok ? (await cRes.json()).categories || [] : [];
+      setGames(gamesData);
+      setCategories(catData);
+      sessionSet(EXPLORE_CACHE_KEY, { games: gamesData, categories: catData });
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);

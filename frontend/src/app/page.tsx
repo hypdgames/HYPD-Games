@@ -11,6 +11,24 @@ import type { Game, FeedItem } from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 const AD_FREQUENCY = 6;
+const VIDEO_CACHE_KEY = "hypd:video_urls";
+const VIDEO_CACHE_TTL = 3600 * 1000; // 1 hour in ms
+const GAMES_CACHE_KEY = "hypd:games_feed";
+const GAMES_CACHE_TTL = 30 * 1000; // 30 seconds in ms
+
+function sessionGet<T>(key: string, ttl: number): T | null {
+  try {
+    const raw = sessionStorage.getItem(key);
+    if (!raw) return null;
+    const { data, ts } = JSON.parse(raw);
+    if (Date.now() - ts > ttl) return null;
+    return data as T;
+  } catch { return null; }
+}
+
+function sessionSet(key: string, data: unknown): void {
+  try { sessionStorage.setItem(key, JSON.stringify({ data, ts: Date.now() })); } catch { /* storage full */ }
+}
 
 // ─── VideoCard ────────────────────────────────────────────────────────────────
 function VideoCard({
@@ -160,9 +178,19 @@ export default function GameFeed() {
   // Fetch games then immediately kick off batch video URL fetch
   const fetchGames = useCallback(async (showToast = false) => {
     try {
-      const res = await fetch(`${API_URL}/api/games`, { cache: "no-store" });
-      if (!res.ok) return;
-      const data: Game[] = await res.json();
+      // Check sessionStorage cache first (30s TTL)
+      const cachedGames = showToast ? null : sessionGet<Game[]>(GAMES_CACHE_KEY, GAMES_CACHE_TTL);
+      let data: Game[];
+
+      if (cachedGames) {
+        data = cachedGames;
+      } else {
+        const res = await fetch(`${API_URL}/api/games`);
+        if (!res.ok) return;
+        data = await res.json();
+        sessionSet(GAMES_CACHE_KEY, data);
+      }
+
       setGames(data);
 
       const items: FeedItem[] = [];
@@ -175,11 +203,20 @@ export default function GameFeed() {
       setFeedItems(items);
       if (showToast) toast.success("Feed refreshed!");
 
-      // Batch-fetch all video URLs in parallel — no waiting for scroll
-      fetch(`${API_URL}/api/games/video-previews-batch`)
-        .then(r => r.json())
-        .then((urls: Record<string, string>) => setVideoUrls(urls))
-        .catch(() => {});
+      // Check sessionStorage for cached video URLs (1h TTL)
+      const cachedUrls = showToast ? null : sessionGet<Record<string, string>>(VIDEO_CACHE_KEY, VIDEO_CACHE_TTL);
+      if (cachedUrls) {
+        setVideoUrls(cachedUrls);
+      } else {
+        // Fetch in background — non-blocking
+        fetch(`${API_URL}/api/games/video-previews-batch`)
+          .then(r => r.json())
+          .then((urls: Record<string, string>) => {
+            setVideoUrls(urls);
+            sessionSet(VIDEO_CACHE_KEY, urls);
+          })
+          .catch(() => {});
+      }
 
     } catch {
       if (showToast) toast.error("Failed to refresh");
