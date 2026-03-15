@@ -82,8 +82,16 @@ function VideoCard({
           preload={preload}
         />
       ) : (
-        // No video available — simple black bg (no thumbnails)
-        <div className="absolute inset-0 bg-zinc-900" />
+        // No video — show thumbnail as fallback background
+        game.thumbnail_url || game.icon_url ? (
+          <img
+            src={game.thumbnail_url || game.icon_url || ""}
+            alt={game.title}
+            className="absolute inset-0 w-full h-full object-cover opacity-60"
+          />
+        ) : (
+          <div className="absolute inset-0 bg-zinc-900" />
+        )
       )}
 
       {/* Bottom gradient for text legibility only */}

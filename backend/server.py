@@ -728,9 +728,9 @@ async def get_games(
     feed_only: bool = True,
     db: AsyncSession = Depends(get_db)
 ):
-    """Get games for the feed/explore. Results cached in memory for 30s to avoid DB round-trips."""
+    """Get games for the feed/explore. Results cached in memory for 5 minutes to avoid DB round-trips."""
     cache_key = f"games:feed={feed_only}:cat={category}"
-    cached = _cache_get(cache_key, ttl=30)
+    cached = _cache_get(cache_key, ttl=300)  # 5 min TTL — long enough to avoid frequent DB hits
     if cached is not None:
         response = JSONResponse(content=cached)
         response.headers["Cache-Control"] = "public, max-age=15, stale-while-revalidate=60"
@@ -4333,9 +4333,10 @@ async def startup():
     logger.info("Starting Hypd Games API with Supabase PostgreSQL")
     # Initialize storage buckets
     init_storage_buckets()
-    # Pre-warm caches in background
+    # Pre-warm caches in background, then keep them warm periodically
     import asyncio
     asyncio.create_task(_prewarm_caches())
+    asyncio.create_task(_periodic_rewarm())
 
 async def _prewarm_caches():
     """Background task: warms games + categories caches on startup so first user gets fast response."""
@@ -4372,6 +4373,13 @@ async def _prewarm_caches():
             logger.info(f"Cache pre-warmed: {len(feed_responses)} feed games, {len(all_responses)} total games, {len(categories)} categories")
     except Exception as e:
         logger.warning(f"Cache pre-warm failed (non-critical): {e}")
+
+async def _periodic_rewarm():
+    """Re-warm caches every 4 minutes so they never expire in low-traffic scenarios."""
+    import asyncio
+    while True:
+        await asyncio.sleep(240)  # Every 4 min (well within 5-min TTL)
+        await _prewarm_caches()
 
 # Root redirect
 @app.get("/")
