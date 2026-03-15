@@ -25,7 +25,7 @@ export default function BottomNav() {
       className="fixed bottom-4 left-0 right-0 z-50 flex justify-center px-6"
       data-testid="bottom-navigation"
     >
-      <div className="flex items-center justify-around w-full max-w-sm bg-[#0f0f0f] rounded-[32px] px-4 py-2 shadow-2xl shadow-black/60">
+      <div className="flex items-center justify-around w-full max-w-sm bg-[#0f0f0f] rounded-[32px] px-4 py-1.5 shadow-2xl shadow-black/60">
         {navItems.map(({ path, icon: Icon, label, isCenter }) => {
           const isActive = pathname === path;
 
@@ -40,7 +40,7 @@ export default function BottomNav() {
                 <motion.div
                   whileTap={{ scale: 0.88 }}
                   className={cn(
-                    "w-10 h-10 rounded-xl flex items-center justify-center border-2 transition-all duration-200",
+                    "w-9 h-9 rounded-xl flex items-center justify-center border-2 transition-all duration-200",
                     isActive
                       ? "border-lime bg-lime/10"
                       : "border-lime/80 bg-transparent"
@@ -74,7 +74,7 @@ export default function BottomNav() {
               <motion.div
                 whileTap={{ scale: 0.88 }}
                 className={cn(
-                  "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200",
+                  "w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200",
                   isProfile && !isActive && "bg-white/8",
                   isProfile && isActive && "bg-lime/20",
                   !isProfile && "bg-transparent"
