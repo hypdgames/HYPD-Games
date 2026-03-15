@@ -104,6 +104,17 @@ def _invalidate_games_cache() -> None:
         if k.startswith("games:") or k == "categories":
             del _api_cache[k]
 
+def _invalidate_video_batch_cache() -> None:
+    """Clear the batch-level video URL cache so next request re-fetches fresh URLs."""
+    global _gmz_batch_result, _gmz_batch_ts
+    _gmz_batch_result = {}
+    _gmz_batch_ts = 0.0
+
+def _invalidate_all_game_caches() -> None:
+    """Bust both the games list cache AND the video batch cache."""
+    _invalidate_games_cache()
+    _invalidate_video_batch_cache()
+
 # Batch-level cache for video previews (avoids re-fetching on every cold start)
 _gmz_batch_result: dict = {}
 _gmz_batch_ts: float = 0.0
@@ -2844,7 +2855,7 @@ async def import_gamemonetize_game(
     
     db.add(new_game)
     await db.commit()
-    _invalidate_games_cache()
+    _invalidate_all_game_caches()
     logger.info(f"Imported GameMonetize game: {new_game.title} (ID: {new_game.id})")
     
     return {"success": True, "game_id": new_game.id, "title": new_game.title}
@@ -2895,7 +2906,7 @@ async def bulk_import_gamemonetize_games(
         imported.append(game_data.title)
     
     await db.commit()
-    _invalidate_games_cache()
+    _invalidate_all_game_caches()
     logger.info(f"Bulk imported {len(imported)} GameMonetize games")
     
     return {

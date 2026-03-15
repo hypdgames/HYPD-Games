@@ -11,10 +11,15 @@ import type { Game, FeedItem } from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 const AD_FREQUENCY = 6;
-const VIDEO_CACHE_KEY = "hypd:video_urls";
+const VIDEO_CACHE_KEY = "hypd:video_cache_v2";  // v2: includes game ID fingerprint
 const VIDEO_CACHE_TTL = 3600 * 1000; // 1 hour in ms
 const GAMES_CACHE_KEY = "hypd:games_feed";
 const GAMES_CACHE_TTL = 30 * 1000; // 30 seconds in ms
+
+// fingerprint = sorted game IDs joined — changes when games are added/removed
+const gameFingerprint = (games: Game[]) => games.map(g => g.id).sort().join("|");
+
+interface VideoCache { urls: Record<string, string>; fp: string; }
 
 function sessionGet<T>(key: string, ttl: number): T | null {
   try {
@@ -211,17 +216,19 @@ export default function GameFeed() {
       setFeedItems(items);
       if (showToast) toast.success("Feed refreshed!");
 
-      // Check sessionStorage for cached video URLs (1h TTL)
-      const cachedUrls = showToast ? null : sessionGet<Record<string, string>>(VIDEO_CACHE_KEY, VIDEO_CACHE_TTL);
-      if (cachedUrls) {
-        setVideoUrls(cachedUrls);
+      // Check sessionStorage for cached video URLs — only use if game list hasn't changed
+      const fp = gameFingerprint(data);
+      const cachedVideo = showToast ? null : sessionGet<VideoCache>(VIDEO_CACHE_KEY, VIDEO_CACHE_TTL);
+      if (cachedVideo && cachedVideo.fp === fp) {
+        // Same games as when cache was built — use cached URLs instantly
+        setVideoUrls(cachedVideo.urls);
       } else {
-        // Fetch in background — non-blocking
+        // Game list changed (new games added) or no cache — re-fetch video batch
         fetch(`${API_URL}/api/games/video-previews-batch`)
           .then(r => r.json())
           .then((urls: Record<string, string>) => {
             setVideoUrls(urls);
-            sessionSet(VIDEO_CACHE_KEY, urls);
+            sessionSet(VIDEO_CACHE_KEY, { urls, fp } as VideoCache);
           })
           .catch(() => {});
       }
