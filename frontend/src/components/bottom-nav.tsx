@@ -25,7 +25,7 @@ export default function BottomNav() {
       className="fixed bottom-4 left-0 right-0 z-50 flex justify-center px-6"
       data-testid="bottom-navigation"
     >
-      <div className="flex items-center justify-around w-full max-w-sm bg-[#0f0f0f] rounded-[32px] px-4 py-1.5 shadow-2xl shadow-black/60">
+      <div className="flex items-center justify-around w-full max-w-sm bg-card border border-border rounded-[32px] px-4 py-1.5 shadow-2xl shadow-black/30">
         {navItems.map(({ path, icon: Icon, label, isCenter }) => {
           const isActive = pathname === path;
 
@@ -47,13 +47,13 @@ export default function BottomNav() {
                   )}
                 >
                   <Icon
-                    className={cn("w-5 h-5", isActive ? "text-lime" : "text-white")}
+                    className={cn("w-5 h-5", isActive ? "text-lime" : "text-foreground/50")}
                     strokeWidth={isActive ? 2.5 : 1.8}
                   />
                 </motion.div>
                 <span className={cn(
                   "text-[9px] font-semibold tracking-wide",
-                  isActive ? "text-lime" : "text-white/50"
+                  isActive ? "text-lime" : "text-foreground/50"
                 )}>
                   {label}
                 </span>
@@ -83,14 +83,14 @@ export default function BottomNav() {
                 <Icon
                   className={cn(
                     "w-5 h-5 transition-colors duration-200",
-                    isActive ? "text-lime" : "text-white/60"
+                    isActive ? "text-lime" : "text-foreground/50"
                   )}
                   strokeWidth={isActive ? 2.5 : 1.8}
                 />
               </motion.div>
               <span className={cn(
                 "text-[9px] font-semibold tracking-wide",
-                isActive ? "text-lime" : "text-white/50"
+                isActive ? "text-lime" : "text-foreground/50"
               )}>
                 {label}
               </span>
