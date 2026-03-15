@@ -1,296 +1,428 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
-import { Search, Gamepad2, ChevronRight, Loader2 } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Search, ChevronRight, Flame, Gem, UserPlus, ArrowLeft, Loader2, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuthStore } from "@/store";
-import { ThemeToggle } from "@/components/theme-toggle";
 import type { Game } from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
-// Blur placeholder for images
-const BLUR_PLACEHOLDER = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMCwsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wAARCAAIAAoDASIAAhEBAxEB/8QAFgABAQEAAAAAAAAAAAAAAAAAAAkH/8QAIhAAAQMDBAMAAAAAAAAAAAAAAQIDBAAFEQYSITEHQVH/xAAVAQEBAAAAAAAAAAAAAAAAAAADBP/EABkRAAIDAQAAAAAAAAAAAAAAAAECAAMRIf/aAAwDAQACEQMRAD8AoNtFwbuUGJcGWnGW5TKHW0O43hKgCAcZHBrRdM+O7Jp2wQLQxKuC2IbKGEKdlOrUQlIGSVKJJ9kk0pU1WTkyTIc2f//Z";
+const CATEGORY_EMOJI: Record<string, string> = {
+  Racing: "🏎", Action: "⚔️", Puzzle: "🧩", Adventure: "🗺️",
+  Sports: "⚽", Strategy: "♟️", Arcade: "🕹️", Shooter: "🎯",
+  Simulation: "🏗️", Casual: "🎮", RPG: "🧙", Horror: "👻",
+  Multiplayer: "👥", Platformer: "🏃", Fighting: "🥊", Hypercasual: "⚡",
+  Idle: "💤", Clicker: "👆", Card: "🃏", Match: "💎",
+  "Tower Defense": "🏰", Default: "🎲",
+};
 
-export default function ExplorePage() {
-  const router = useRouter();
-  const { settings } = useAuthStore();
-  
-  const [games, setGames] = useState<Game[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<Game[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+function getCategoryEmoji(cat: string) {
+  return CATEGORY_EMOJI[cat] || CATEGORY_EMOJI.Default;
+}
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [gamesRes, categoriesRes] = await Promise.all([
-          fetch(`${API_URL}/api/games`, { cache: "no-store" }),
-          fetch(`${API_URL}/api/categories`, { cache: "no-store" }),
-        ]);
-
-        if (gamesRes.ok) {
-          const gamesData = await gamesRes.json();
-          setGames(gamesData);
-        }
-
-        if (categoriesRes.ok) {
-          const categoriesData = await categoriesRes.json();
-          setCategories(categoriesData.categories || []);
-        }
-      } catch (e) {
-        console.error("Error fetching data:", e);
-      }
-      setLoading(false);
-    };
-    fetchData();
-  }, []);
-
-  // Handle search
-  useEffect(() => {
-    if (searchQuery.trim()) {
-      setIsSearching(true);
-      const results = games.filter((game) =>
-        game.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        game.description.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      setSearchResults(results);
-    } else {
-      setIsSearching(false);
-      setSearchResults([]);
-    }
-  }, [searchQuery, games]);
-
-  // Group games by category (all categories with at least 1 game)
-  const categoriesWithGames = categories
-    .map(cat => ({
-      name: cat,
-      games: games.filter(g => g.category === cat)
-    }))
-    .filter(c => c.games.length >= 1)
-    .sort((a, b) => b.games.length - a.games.length);
-
-  const playGame = (gameId: string) => {
-    router.push(`/play/${gameId}`);
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-10 h-10 text-lime animate-spin" />
-      </div>
-    );
-  }
-
-  // Show all games in a category when selected
-  if (selectedCategory) {
-    const categoryGames = games.filter(g => g.category === selectedCategory);
-    return (
-      <div className="min-h-screen bg-background pb-24" data-testid="explore-page">
-        {/* Header */}
-        <div className="sticky top-0 z-30 bg-background border-b border-border p-4">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setSelectedCategory(null)}
-              className="text-lime hover:text-lime/80"
-            >
-              ← Back
-            </button>
-            <h1 className="font-heading text-lg text-foreground">{selectedCategory}</h1>
-            <span className="text-muted-foreground text-sm">({categoryGames.length})</span>
-          </div>
-        </div>
-        <div className="p-4">
-          <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-            {categoryGames.map((game, index) => (
-              <GameCard key={game.id} game={game} onClick={() => playGame(game.id)} index={index} />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
+// ── Big portrait card (horizontal scroll sections) ───────────────────────────
+function BigCard({ game, onClick }: { game: Game; onClick: () => void }) {
   return (
-    <div className="min-h-screen bg-background pb-24" data-testid="explore-page">
-      {/* Header */}
-      <div className="sticky top-0 z-30 bg-background border-b border-border">
-        <div className="p-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              {settings?.logo_url ? (
-                <img src={settings.logo_url} alt="Logo" className="h-8" />
-              ) : (
-                <h1 className="font-heading text-xl text-lime tracking-tight">
-                  {settings?.site_name || "HYPD"}
-                </h1>
-              )}
-              <span className="text-muted-foreground text-sm">Explore</span>
-            </div>
-            <ThemeToggle />
-          </div>
-
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Search games..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-12 h-11 bg-card border-border rounded-xl text-foreground placeholder:text-muted-foreground"
-              data-testid="search-input"
-            />
-          </div>
-        </div>
+    <motion.div
+      whileTap={{ scale: 0.97 }}
+      onClick={onClick}
+      className="relative flex-shrink-0 w-[58vw] max-w-[220px] rounded-2xl overflow-hidden cursor-pointer"
+      style={{ aspectRatio: "3/4" }}
+      data-testid={`big-card-${game.id}`}
+    >
+      <img
+        src={game.thumbnail_url || game.icon_url || ""}
+        alt={game.title}
+        className="absolute inset-0 w-full h-full object-cover"
+        loading="lazy"
+      />
+      {/* gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
+      <div className="absolute bottom-0 left-0 right-0 p-3">
+        <p className="text-white font-bold text-sm leading-tight line-clamp-2 drop-shadow">{game.title}</p>
       </div>
+    </motion.div>
+  );
+}
 
-      {/* Search Results */}
-      {isSearching ? (
-        <div className="p-4">
-          <h2 className="text-lg font-bold text-foreground mb-4">
-            Search Results
-            <span className="text-muted-foreground font-normal ml-2">
-              ({searchResults.length})
-            </span>
-          </h2>
-          {searchResults.length === 0 ? (
-            <div className="text-center py-12">
-              <Gamepad2 className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">No games found for &ldquo;{searchQuery}&rdquo;</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-              {searchResults.map((game, index) => (
-                <GameCard key={game.id} game={game} onClick={() => playGame(game.id)} index={index} />
-              ))}
-            </div>
-          )}
-        </div>
-      ) : (
-        /* Category Sections */
-        <div className="py-4">
-          {/* Featured / All Games - horizontal scroll */}
-          <CategorySection
-            title="Featured Games"
-            games={games}
-            onGameClick={playGame}
-            showViewAll={false}
-          />
+// ── Small square card (per-category horizontal scroll) ───────────────────────
+function SmallCard({ game, onClick }: { game: Game; onClick: () => void }) {
+  return (
+    <motion.div
+      whileTap={{ scale: 0.97 }}
+      onClick={onClick}
+      className="relative flex-shrink-0 w-[42vw] max-w-[160px] rounded-xl overflow-hidden cursor-pointer"
+      style={{ aspectRatio: "1/1" }}
+      data-testid={`small-card-${game.id}`}
+    >
+      <img
+        src={game.icon_url || game.thumbnail_url || ""}
+        alt={game.title}
+        className="absolute inset-0 w-full h-full object-cover"
+        loading="lazy"
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent" />
+      <div className="absolute bottom-0 left-0 right-0 p-2">
+        <p className="text-white font-bold text-xs leading-tight line-clamp-2 drop-shadow">{game.title}</p>
+      </div>
+    </motion.div>
+  );
+}
 
-          {/* Category rows */}
-          {categoriesWithGames.map(({ name, games: categoryGames }) => (
-            <CategorySection
-              key={name}
-              title={name}
-              games={categoryGames}
-              onGameClick={playGame}
-              onViewAll={() => setSelectedCategory(name)}
-            />
-          ))}
-        </div>
+// ── Category emoji tile ───────────────────────────────────────────────────────
+function CategoryTile({ name, onSelect }: { name: string; onSelect: () => void }) {
+  return (
+    <motion.button
+      whileTap={{ scale: 0.93 }}
+      onClick={onSelect}
+      className="flex-shrink-0 flex flex-col items-center justify-center gap-1.5 w-[72px] h-[72px] rounded-2xl bg-card border border-border"
+      data-testid={`category-tile-${name}`}
+    >
+      <span className="text-2xl leading-none">{getCategoryEmoji(name)}</span>
+      <span className="text-foreground/80 text-[10px] font-semibold leading-tight text-center px-1 line-clamp-1">{name}</span>
+    </motion.button>
+  );
+}
+
+// ── Section header ────────────────────────────────────────────────────────────
+function SectionHeader({ title, onViewAll }: { title: string; onViewAll?: () => void }) {
+  return (
+    <div className="flex items-center justify-between px-4 mb-3">
+      <h2 className="text-base font-bold text-foreground">{title}</h2>
+      {onViewAll && (
+        <button onClick={onViewAll} className="flex items-center gap-0.5 text-lime text-sm font-medium" data-testid={`view-all-${title}`}>
+          <ChevronRight className="w-4 h-4" />
+        </button>
       )}
     </div>
   );
 }
 
-// Category Section Component
-function CategorySection({
-  title,
-  games,
-  onGameClick,
-  onViewAll,
-  showViewAll = true,
-}: {
-  title: string;
-  games: Game[];
-  onGameClick: (gameId: string) => void;
-  onViewAll?: () => void;
-  showViewAll?: boolean;
-}) {
+// ── Horizontal scroll row ─────────────────────────────────────────────────────
+function HScroll({ children }: { children: React.ReactNode }) {
   return (
-    <section className="mb-6">
-      {/* Category Header */}
-      <div className="flex items-center justify-between px-4 mb-3">
-        <h2 className="text-base font-bold text-foreground">{title}</h2>
-        {showViewAll && onViewAll && (
-          <button
-            onClick={onViewAll}
-            className="flex items-center gap-1 text-sm text-lime hover:text-lime/80 transition-colors"
-          >
-            View more
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        )}
-      </div>
-
-      {/* Horizontal Scroll Container */}
-      <div
-        className="flex gap-3 overflow-x-auto hide-scrollbar px-4 pb-2"
-        style={{ scrollSnapType: "x mandatory" }}
-      >
-        {games.slice(0, 12).map((game, index) => (
-          <div
-            key={game.id}
-            className="flex-shrink-0"
-            style={{ scrollSnapAlign: "start" }}
-          >
-            <GameCard
-              game={game}
-              onClick={() => onGameClick(game.id)}
-              index={index}
-            />
-          </div>
-        ))}
-      </div>
-    </section>
+    <div className="flex gap-3 overflow-x-auto hide-scrollbar px-4 pb-1" style={{ scrollSnapType: "x mandatory" }}>
+      {children}
+    </div>
   );
 }
 
-// Game Card Component
-function GameCard({
-  game,
-  onClick,
-  index = 0,
-}: {
-  game: Game;
-  onClick: () => void;
-  index?: number;
-}) {
+// ── New Games 3-col grid (2 small left cols + 1 tall right card) ──────────────
+function NewGamesGrid({ games, onClick }: { games: Game[]; onClick: (id: string) => void }) {
+  const left = games.slice(0, 4);   // up to 4 small cards in 2x2 left section
+  const featured = games[4] || games[0]; // tall featured card on right
+
   return (
-    <div
-      onClick={onClick}
-      className="group cursor-pointer w-[88px] md:w-[132px]"
-      data-testid={`game-card-${index}`}
-    >
-      {/* Square Image - prefer icon_url for grid layouts */}
-      <div className="aspect-square relative overflow-hidden rounded-xl bg-card border border-border group-hover:border-lime/50 transition-all group-hover:scale-[1.02]">
-        <Image
-          src={
-            game.icon_url ||  // Prefer square icon for grid
-            game.thumbnail_url ||
-            "https://images.unsplash.com/photo-1637734373619-af1e76434bec?w=400&q=80"
-          }
-          alt={game.title}
-          fill
-          className="object-cover"
-          sizes="(max-width: 768px) 88px, 132px"
-          loading="lazy"
-          placeholder="blur"
-          blurDataURL={BLUR_PLACEHOLDER}
-        />
+    <div className="px-4 grid grid-cols-3 gap-2">
+      {/* Left 2x2 grid */}
+      <div className="col-span-2 grid grid-cols-2 gap-2">
+        {left.map(game => (
+          <motion.div
+            key={game.id}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => onClick(game.id)}
+            className="relative rounded-xl overflow-hidden cursor-pointer"
+            style={{ aspectRatio: "1/1" }}
+          >
+            <img src={game.icon_url || game.thumbnail_url || ""} alt={game.title} className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 p-1.5">
+              <p className="text-white font-bold text-[10px] leading-tight line-clamp-2">{game.title}</p>
+            </div>
+          </motion.div>
+        ))}
       </div>
 
-      {/* Title - Below Image */}
-      <div className="pt-1.5">
-        <h3 className="text-[11px] md:text-xs font-medium text-foreground line-clamp-2 leading-tight">
-          {game.title}
-        </h3>
+      {/* Tall featured card (right col, spans full height) */}
+      {featured && (
+        <motion.div
+          whileTap={{ scale: 0.97 }}
+          onClick={() => onClick(featured.id)}
+          className="relative rounded-xl overflow-hidden cursor-pointer"
+          style={{ aspectRatio: "1/2.05" }}
+        >
+          <img src={featured.thumbnail_url || featured.icon_url || ""} alt={featured.title} className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 p-2">
+            <p className="text-white font-bold text-xs leading-tight line-clamp-3">{featured.title}</p>
+          </div>
+        </motion.div>
+      )}
+    </div>
+  );
+}
+
+// ── Search results grid ───────────────────────────────────────────────────────
+function SearchGrid({ games, onClick }: { games: Game[]; onClick: (id: string) => void }) {
+  return (
+    <div className="grid grid-cols-3 gap-3 px-4">
+      {games.map(game => (
+        <motion.div
+          key={game.id}
+          whileTap={{ scale: 0.96 }}
+          onClick={() => onClick(game.id)}
+          className="relative rounded-xl overflow-hidden cursor-pointer"
+          style={{ aspectRatio: "1/1" }}
+        >
+          <img src={game.icon_url || game.thumbnail_url || ""} alt={game.title} className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 p-1.5">
+            <p className="text-white font-bold text-[10px] leading-tight line-clamp-2">{game.title}</p>
+          </div>
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
+// ── Category drilldown page ───────────────────────────────────────────────────
+function CategoryPage({ name, games, onBack, onClick }: { name: string; games: Game[]; onBack: () => void; onClick: (id: string) => void }) {
+  return (
+    <div className="min-h-screen bg-background pb-28">
+      <div className="sticky top-0 z-30 bg-background/95 backdrop-blur border-b border-border px-4 py-3 flex items-center gap-3">
+        <button onClick={onBack} className="text-foreground/70 hover:text-foreground" data-testid="back-btn">
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+        <span className="text-xl mr-2">{getCategoryEmoji(name)}</span>
+        <h1 className="font-bold text-lg text-foreground">{name}</h1>
+        <span className="text-muted-foreground text-sm ml-1">({games.length})</span>
+      </div>
+      <div className="grid grid-cols-3 gap-3 p-4">
+        {games.map(game => (
+          <motion.div key={game.id} whileTap={{ scale: 0.96 }} onClick={() => onClick(game.id)}
+            className="relative rounded-xl overflow-hidden cursor-pointer" style={{ aspectRatio: "1/1" }}>
+            <img src={game.icon_url || game.thumbnail_url || ""} alt={game.title} className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 p-1.5">
+              <p className="text-white font-bold text-[10px] leading-tight line-clamp-2">{game.title}</p>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Main Page ─────────────────────────────────────────────────────────────────
+export default function ExplorePage() {
+  const router = useRouter();
+  const { user } = useAuthStore();
+
+  const [games, setGames] = useState<Game[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchActive, setSearchActive] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    Promise.all([
+      fetch(`${API_URL}/api/games?feed_only=false`, { cache: "no-store" }),
+      fetch(`${API_URL}/api/categories`, { cache: "no-store" }),
+    ]).then(async ([gRes, cRes]) => {
+      if (gRes.ok) setGames(await gRes.json());
+      if (cRes.ok) setCategories((await cRes.json()).categories || []);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    if (searchActive) setTimeout(() => searchRef.current?.focus(), 100);
+  }, [searchActive]);
+
+  const playGame = (id: string) => router.push(`/play/${id}`);
+
+  // Derive sections
+  const allByDate = [...games].sort((a, b) =>
+    new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+  );
+  const trending = [...games].sort((a, b) => (b.play_count || 0) - (a.play_count || 0)).slice(0, 10);
+  const newGames = allByDate.slice(0, 9);
+  const categoriesWithGames = categories
+    .map(cat => ({ name: cat, games: games.filter(g => g.category === cat) }))
+    .filter(c => c.games.length >= 1)
+    .sort((a, b) => b.games.length - a.games.length);
+
+  const searchResults = searchQuery.trim()
+    ? games.filter(g =>
+        g.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (g.description || "").toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : [];
+
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <Loader2 className="w-10 h-10 text-lime animate-spin" />
+    </div>
+  );
+
+  // Category drilldown
+  if (selectedCategory) {
+    return (
+      <CategoryPage
+        name={selectedCategory}
+        games={games.filter(g => g.category === selectedCategory)}
+        onBack={() => setSelectedCategory(null)}
+        onClick={playGame}
+      />
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background pb-28" data-testid="explore-page">
+
+      {/* ── Sticky header ── */}
+      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border/50">
+        <div className="flex items-center justify-between px-4 py-3">
+          {/* Left: logo + streak + coins */}
+          <div className="flex items-center gap-3">
+            <button className="text-foreground/60 hover:text-foreground transition-colors" data-testid="add-friend-btn">
+              <UserPlus className="w-5 h-5" />
+            </button>
+            <div className="flex items-center gap-1 bg-card border border-border rounded-full px-2.5 py-1">
+              <Flame className="w-3.5 h-3.5 text-orange-400" />
+              <span className="text-xs font-bold text-foreground">{user?.login_streak || 0}</span>
+            </div>
+            <div className="flex items-center gap-1 bg-card border border-border rounded-full px-2.5 py-1">
+              <Gem className="w-3.5 h-3.5 text-blue-400" />
+              <span className="text-xs font-bold text-foreground">{user?.coin_balance || 0}</span>
+            </div>
+          </div>
+
+          {/* Right: search icon */}
+          <button
+            onClick={() => setSearchActive(true)}
+            className="w-9 h-9 rounded-full bg-card border border-border flex items-center justify-center text-foreground/70 hover:text-foreground transition-colors"
+            data-testid="search-toggle-btn"
+          >
+            <Search className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* ── Search overlay ── */}
+      <AnimatePresence>
+        {searchActive && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className="fixed inset-0 z-50 bg-background flex flex-col"
+          >
+            {/* Search header */}
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
+              <button onClick={() => { setSearchActive(false); setSearchQuery(""); }} data-testid="search-close-btn">
+                <ArrowLeft className="w-5 h-5 text-foreground/70" />
+              </button>
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input
+                  ref={searchRef}
+                  type="text"
+                  placeholder="Search games..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2.5 bg-card border border-border rounded-xl text-foreground text-sm placeholder:text-muted-foreground outline-none focus:border-lime/50"
+                  data-testid="search-input"
+                />
+                {searchQuery && (
+                  <button onClick={() => setSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <X className="w-4 h-4 text-muted-foreground" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Results */}
+            <div className="flex-1 overflow-y-auto pt-4">
+              {searchQuery.trim() === "" ? (
+                <p className="text-center text-muted-foreground text-sm pt-12">Start typing to search games</p>
+              ) : searchResults.length === 0 ? (
+                <p className="text-center text-muted-foreground text-sm pt-12">No games found for &ldquo;{searchQuery}&rdquo;</p>
+              ) : (
+                <>
+                  <p className="px-4 mb-3 text-sm text-muted-foreground">{searchResults.length} result{searchResults.length !== 1 ? "s" : ""}</p>
+                  <SearchGrid games={searchResults} onClick={id => { setSearchActive(false); playGame(id); }} />
+                </>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Feed ── */}
+      <div className="py-5 space-y-7">
+
+        {/* Recommended For You */}
+        {games.length > 0 && (
+          <section>
+            <SectionHeader title="Recommended For You" />
+            <HScroll>
+              {games.slice(0, 10).map(game => (
+                <div key={game.id} style={{ scrollSnapAlign: "start" }}>
+                  <BigCard game={game} onClick={() => playGame(game.id)} />
+                </div>
+              ))}
+            </HScroll>
+          </section>
+        )}
+
+        {/* Categories */}
+        {categoriesWithGames.length > 0 && (
+          <section>
+            <SectionHeader title="Categories" />
+            <HScroll>
+              {categoriesWithGames.map(({ name }) => (
+                <div key={name} style={{ scrollSnapAlign: "start" }}>
+                  <CategoryTile name={name} onSelect={() => setSelectedCategory(name)} />
+                </div>
+              ))}
+            </HScroll>
+          </section>
+        )}
+
+        {/* New Games — 3-col grid */}
+        {newGames.length > 0 && (
+          <section>
+            <SectionHeader title="New Games" />
+            <NewGamesGrid games={newGames} onClick={playGame} />
+          </section>
+        )}
+
+        {/* Trending */}
+        {trending.length > 0 && (
+          <section>
+            <SectionHeader title="🔥 Trending" />
+            <HScroll>
+              {trending.map(game => (
+                <div key={game.id} style={{ scrollSnapAlign: "start" }}>
+                  <BigCard game={game} onClick={() => playGame(game.id)} />
+                </div>
+              ))}
+            </HScroll>
+          </section>
+        )}
+
+        {/* Per-category rows */}
+        {categoriesWithGames.map(({ name, games: catGames }) => (
+          <section key={name}>
+            <SectionHeader
+              title={`${getCategoryEmoji(name)} ${name}`}
+              onViewAll={() => setSelectedCategory(name)}
+            />
+            <HScroll>
+              {catGames.slice(0, 10).map(game => (
+                <div key={game.id} style={{ scrollSnapAlign: "start" }}>
+                  <SmallCard game={game} onClick={() => playGame(game.id)} />
+                </div>
+              ))}
+            </HScroll>
+          </section>
+        ))}
+
       </div>
     </div>
   );
