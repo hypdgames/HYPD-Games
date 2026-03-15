@@ -118,13 +118,18 @@ function SectionHeader({ title, onViewAll }: { title: string; onViewAll?: () => 
 }
 
 // ── Horizontal scroll row ─────────────────────────────────────────────────────
+// NOTE: We use spacer divs instead of padding-left/right because iOS Safari
+// does NOT apply padding correctly on overflow:auto flex containers (WebKit bug).
+// Spacer width = 12px + gap-3 (12px) = 24px effective left/right inset.
 function HScroll({ children }: { children: React.ReactNode }) {
   return (
     <div
       className="flex gap-3 overflow-x-auto hide-scrollbar pb-1"
-      style={{ scrollSnapType: "x mandatory", paddingLeft: "24px", paddingRight: "24px" }}
+      style={{ scrollSnapType: "x mandatory" }}
     >
+      <div className="flex-none w-3 shrink-0" aria-hidden="true" />
       {children}
+      <div className="flex-none w-3 shrink-0" aria-hidden="true" />
     </div>
   );
 }
