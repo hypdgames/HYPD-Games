@@ -112,50 +112,6 @@ function HScroll({ children }: { children: React.ReactNode }) {
   );
 }
 
-// ── New Games 3-col grid (2 small left cols + 1 tall right card) ──────────────
-function NewGamesGrid({ games, onClick }: { games: Game[]; onClick: (id: string) => void }) {
-  const left = games.slice(0, 4);   // up to 4 small cards in 2x2 left section
-  const featured = games[4] || games[0]; // tall featured card on right
-
-  return (
-    <div className="px-5 grid grid-cols-3 gap-2">
-      {/* Left 2x2 grid */}
-      <div className="col-span-2 grid grid-cols-2 gap-2">
-        {left.map(game => (
-          <motion.div
-            key={game.id}
-            whileTap={{ scale: 0.97 }}
-            onClick={() => onClick(game.id)}
-            className="relative rounded-xl overflow-hidden cursor-pointer"
-            style={{ aspectRatio: "1/1" }}
-          >
-            <img src={game.icon_url || game.thumbnail_url || ""} alt={game.title} className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-            <div className="absolute bottom-0 left-0 right-0 p-1.5">
-              <p className="text-white font-bold text-[10px] leading-tight line-clamp-2">{game.title}</p>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-
-      {/* Tall featured card (right col, spans full height) */}
-      {featured && (
-        <motion.div
-          whileTap={{ scale: 0.97 }}
-          onClick={() => onClick(featured.id)}
-          className="relative rounded-xl overflow-hidden cursor-pointer"
-          style={{ aspectRatio: "1/2.05" }}
-        >
-          <img src={featured.thumbnail_url || featured.icon_url || ""} alt={featured.title} className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
-          <div className="absolute bottom-0 left-0 right-0 p-2">
-            <p className="text-white font-bold text-xs leading-tight line-clamp-3">{featured.title}</p>
-          </div>
-        </motion.div>
-      )}
-    </div>
-  );
-}
 
 // ── Search results grid ───────────────────────────────────────────────────────
 function SearchGrid({ games, onClick }: { games: Game[]; onClick: (id: string) => void }) {
@@ -387,11 +343,17 @@ export default function ExplorePage() {
           </section>
         )}
 
-        {/* New Games — 3-col grid */}
+        {/* New Games — horizontal scroll of square cards */}
         {newGames.length > 0 && (
           <section>
             <SectionHeader title="New Games" />
-            <NewGamesGrid games={newGames} onClick={playGame} />
+            <HScroll>
+              {newGames.map(game => (
+                <div key={game.id} style={{ scrollSnapAlign: "start" }}>
+                  <SmallCard game={game} onClick={() => playGame(game.id)} />
+                </div>
+              ))}
+            </HScroll>
           </section>
         )}
 
