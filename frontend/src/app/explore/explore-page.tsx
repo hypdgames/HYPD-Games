@@ -106,7 +106,7 @@ function CategoryTile({ name, onSelect }: { name: string; onSelect: () => void }
 // ── Section header ────────────────────────────────────────────────────────────
 function SectionHeader({ title, onViewAll }: { title: string; onViewAll?: () => void }) {
   return (
-    <div className="flex items-center justify-between px-6 mb-3">
+    <div className="flex items-center justify-between px-4 mb-3">
       <h2 className="text-base font-bold text-foreground">{title}</h2>
       {onViewAll && (
         <button onClick={onViewAll} className="flex items-center gap-0.5 text-lime text-sm font-medium" data-testid={`view-all-${title}`}>
@@ -120,16 +120,17 @@ function SectionHeader({ title, onViewAll }: { title: string; onViewAll?: () => 
 // ── Horizontal scroll row ─────────────────────────────────────────────────────
 // NOTE: We use spacer divs instead of padding-left/right because iOS Safari
 // does NOT apply padding correctly on overflow:auto flex containers (WebKit bug).
-// Spacer width = 12px + gap-3 (12px) = 24px effective left/right inset.
+// Spacer width (w-1 = 4px) + gap-3 (12px) = 16px effective left/right inset,
+// matching the px-4 (16px) on SectionHeader above.
 function HScroll({ children }: { children: React.ReactNode }) {
   return (
     <div
       className="flex gap-3 overflow-x-auto hide-scrollbar pb-1"
       style={{ scrollSnapType: "x mandatory" }}
     >
-      <div className="flex-none w-3 shrink-0" aria-hidden="true" />
+      <div className="flex-none w-1 shrink-0" aria-hidden="true" />
       {children}
-      <div className="flex-none w-3 shrink-0" aria-hidden="true" />
+      <div className="flex-none w-1 shrink-0" aria-hidden="true" />
     </div>
   );
 }
@@ -138,7 +139,7 @@ function HScroll({ children }: { children: React.ReactNode }) {
 // ── Search results grid ───────────────────────────────────────────────────────
 function SearchGrid({ games, onClick }: { games: Game[]; onClick: (id: string) => void }) {
   return (
-    <div className="grid grid-cols-3 gap-3 px-6">
+    <div className="grid grid-cols-3 gap-3 px-4">
       {games.map(game => (
         <motion.div
           key={game.id}
@@ -162,7 +163,7 @@ function SearchGrid({ games, onClick }: { games: Game[]; onClick: (id: string) =
 function CategoryPage({ name, games, onBack, onClick }: { name: string; games: Game[]; onBack: () => void; onClick: (id: string) => void }) {
   return (
     <div className="min-h-screen bg-background pb-28">
-      <div className="sticky top-0 z-30 bg-background/95 backdrop-blur border-b border-border px-6 py-3 flex items-center gap-3">
+      <div className="sticky top-0 z-30 bg-background/95 backdrop-blur border-b border-border px-4 py-3 flex items-center gap-3">
         <button onClick={onBack} className="text-foreground/70 hover:text-foreground" data-testid="back-btn">
           <ArrowLeft className="w-5 h-5" />
         </button>
@@ -170,7 +171,7 @@ function CategoryPage({ name, games, onBack, onClick }: { name: string; games: G
         <h1 className="font-bold text-lg text-foreground">{name}</h1>
         <span className="text-muted-foreground text-sm ml-1">({games.length})</span>
       </div>
-      <div className="grid grid-cols-3 gap-3 p-6">
+      <div className="grid grid-cols-3 gap-3 p-4">
         {games.map(game => (
           <motion.div key={game.id} whileTap={{ scale: 0.96 }} onClick={() => onClick(game.id)}
             className="relative rounded-xl overflow-hidden cursor-pointer" style={{ aspectRatio: "1/1" }}>
@@ -269,7 +270,7 @@ export default function ExplorePage() {
 
       {/* ── Sticky header ── */}
       <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border/50">
-        <div className="flex items-center justify-between px-6 py-3">
+        <div className="flex items-center justify-between px-4 py-3">
           {/* Left: logo + streak + coins */}
           <div className="flex items-center gap-3">
             <button className="text-foreground/60 hover:text-foreground transition-colors" data-testid="add-friend-btn">
@@ -306,7 +307,7 @@ export default function ExplorePage() {
             className="fixed inset-0 z-50 bg-background flex flex-col"
           >
             {/* Search header */}
-            <div className="flex items-center gap-3 px-6 py-3 border-b border-border">
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
               <button onClick={() => { setSearchActive(false); setSearchQuery(""); }} data-testid="search-close-btn">
                 <ArrowLeft className="w-5 h-5 text-foreground/70" />
               </button>
@@ -337,7 +338,7 @@ export default function ExplorePage() {
                 <p className="text-center text-muted-foreground text-sm pt-12">No games found for &ldquo;{searchQuery}&rdquo;</p>
               ) : (
                 <>
-                  <p className="px-6 mb-3 text-sm text-muted-foreground">{searchResults.length} result{searchResults.length !== 1 ? "s" : ""}</p>
+                  <p className="px-4 mb-3 text-sm text-muted-foreground">{searchResults.length} result{searchResults.length !== 1 ? "s" : ""}</p>
                   <SearchGrid games={searchResults} onClick={id => { setSearchActive(false); playGame(id); }} />
                 </>
               )}
