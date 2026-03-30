@@ -6,7 +6,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('NEXT_PUBLIC_API_URL', 'https://hypd-speed.preview.emergentagent.com')
+BASE_URL = os.environ.get('NEXT_PUBLIC_API_URL', 'https://pill-nav-feed.preview.emergentagent.com')
 
 # Test credentials
 ADMIN_EMAIL = "admin@hypd.games"

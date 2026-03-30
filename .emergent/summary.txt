@@ -1,146 +1,133 @@
-<analysis>**original_problem_statement**:
-The user wants to build Hypd Games, a mobile-first instant gaming website with a vertical, TikTok-style endless scroll feed.
+<analysis>**original_problem_statement**: 
+The user wants to build Hypd Games, a mobile-first instant gaming website with a vertical, TikTok-style endless scroll feed. 
+**NEW MASSIVE REQUIREMENT:** The user requested a complete UI/UX redesign based on a reference app called Hook. The redesign must retain 100% of current HYPD functionality but adopt a new visual system featuring: seamless Light/Dark mode toggling via CSS variables, soft pastel gradients for light mode, deep glowing colors for dark mode, heavy corner radiuses (squircles) on all elements, a floating pill-shaped bottom navigation bar, card-based layouts, and clean sans-serif typography.
 
-Key requirements include:
-- A main idle game feature, which is currently a tower defense game called Base Defence.
-- Daily Login Streaks.
-- Wallet/Coin System (Stripe for payments is currently disabled).
-- Multi-Network Game Integration (GamePix is active, GameMonetize has just been added).
-- Admin Dashboard for game management.
-- AdSense &  integration.
+**User's preferred language**: English (Next agent MUST respond in English)
 
-**User's preferred language**: English
-
-**what currently exists?**
-The application is a full-stack gaming platform with a Next.js frontend, a FastAPI backend, and a PostgreSQL database. The core features include a user profile system, an admin dashboard for managing games, the Base Defence idle game, and integrations with the GamePix and GameMonetize game providers. The GameMonetize integration was fully implemented in this session, including a robust backend search and caching system to handle a catalog of over 10,000 games. The database has also been updated to store additional image sizes for future use.
+**what currently exists?** 
+The application is a full-stack gaming platform (Next.js + FastAPI + PostgreSQL). Recently, massive performance bottlenecks were resolved by implementing backend and frontend caching, bringing API load times down from ~3.7s to ~0.14s. An automated cache invalidation system was built so admin game imports instantly reflect on the feed. A dedicated Design Agent just analyzed 14 user-provided UI screenshots and generated a comprehensive design system at .
 
 **Last working item**:
-- Last item agent was working: Adding three new image URL columns (, , ) to the  table in the database. This was done to store additional image assets available from the GameMonetize API for future features. The work involved creating a database migration, updating the backend models and API endpoints to derive and save these URLs on import, and updating the corresponding frontend types.
-- Status: USER VERIFICATION PENDING
-- Agent Testing Done: Y
-- Which testing method agent to use? NA
+- Last item agent was working: Preparing to implement the global UI/UX redesign. The agent successfully generated the  based on the user's reference images and had just begun reading  and frontend pages to start defining the CSS variables and structural layouts.
+- Status: IN PROGRESS
+- Agent Testing Done: N
+- Which testing method agent to use? screenshot tool (for individual component design checks) and testing_agent_v4_fork (for overall page flow testing once major sections are redesigned).
 - User Testing Done: N
 
 **All Pending/In progress Issue list**:
-  - Issue 1: (P0) User Verification for additional image URLs.
-  
-  Issues Detail:
-  - Issue 1: 
-     - Attempted fixes: The agent has successfully implemented the database changes and updated the import logic. It was verified by importing a new game and checking that all five image URLs are present in the database. The agent also backfilled the data for the Cat Evolution game.
-     - Next debug checklist: 
-        1.  The user needs to confirm that the new image data is being collected as requested.
-        2.  The next agent should present the completed work and ask for the user's approval before proceeding.
-     - Why fix this issue and what will be achieved with the fix? This completes the user's request to capture all available image data from the game providers, making it available for future UI/feature enhancements.
-     - Status:  USER VERIFICATION PENDING
+  - Issue 1: (P0) Complete Global UI/UX Redesign
+     - Attempted fixes: The Design Agent created , but no code has been written yet.
+     - Next debug checklist: Read . Start with  to implement Light/Dark mode CSS variables. Move to global UI components (floating pill bottom nav), then tackle page-by-page redesigns (Home, Leaderboards, Profile, Player).
+     - Why fix this issue and what will be achieved with the fix? This is the user's explicit, highly detailed current request to modernize the platform's visual identity.
+     - Status: IN PROGRESS
      - Is recurring issue? N
-     - Should Test frontend/backend/both after fix? NA
-     - Blocked on other issue: None
+     - Should Test frontend/backend/both after fix? Frontend
 
 **In progress Task List**:
-  - None.
+  - Task 1: (P0) Implement Global Theming & CSS Variables
+     - Where to resume:  and . Set up the light/dark toggle and define the pastel/glow color palettes as per the JSON guidelines.
+     - What will be achieved with this? Foundation for the entire app redesign.
+     - Status: NOT STARTED
+     - Should Test frontend/backend/both after fix? Frontend
+     - Blocked on something: None
+  - Task 2: (P0) Redesign Core Pages (Feed, Explore, Leaderboard, Profile)
+     - Where to resume: After global CSS is set, update card components, buttons, and inputs to feature heavy squircles (rounded corners) and card-based layouts with soft drop shadows/glows.
+     - What will be achieved with this? Fulfills user's Hook concept request.
+     - Status: NOT STARTED
+     - Should Test frontend/backend/both after fix? Frontend
 
-**Upcoming and Future Tasks**
-- **Upcoming Tasks:**
-    - P0: **Enable Wallet System with Stripe**: Re-enable the Stripe payment functionality once the user provides a valid . This involves uncommenting code in .
-    - P1: **Implement Featured Games section**: Add a section on the home feed to highlight top-quality games, potentially using the new  or  images.
-- **Future Tasks:**
-    - P1: Implement Video Previews for games.
+**Upcoming and Future Tasks**:
+  Upcoming Tasks:
+    - P1: Enable Wallet System with Stripe (Wait for user to provide ).
+    - P1: Implement Featured Games section on the home feed.
+  Future Tasks:
+    - P2: Fix friends API fetch error on profile page.
     - P2: Implement Social Feature Enhancements (friend challenges, game sharing).
     - P2: Implement User Notifications.
-    - P2: Add custom fonts.
     - P2: Add SEO meta tags customization.
 
-**Completed work in this session**
-- **GameMonetize Integration (Completed)**:
-    - Integrated GameMonetize as a new game source.
-    - Implemented a robust backend solution with in-memory caching and server-side search to handle the 10,000+ game catalog from GameMonetize without performance degradation.
-    - Updated the Admin Dashboard UI () with live search, debouncing, and clear display of total vs. loaded game counts (Showing 100 of 10,000).
-    - Fixed a pagination bug in the original GameMonetize endpoint.
-- **Database Enhancement (Completed)**:
-    - Added , , and  columns to the  table via an Alembic migration.
-    - Updated the backend logic in  to automatically derive and populate these new image URLs for games imported from both GamePix and GameMonetize.
-- **Code Cleanup & Bug Fixes (Completed)**:
-    - Deleted the unused  component.
-    - Fixed the  endpoint to correctly handle games from the gamemonetize source.
-    - Corrected the admin games list () to use the square  instead of a distorted .
+**Completed work in this session**:
+  - Performance & Caching Optimization: Implemented backend in-memory TTL caching and frontend  (reduced load from 3.7s to 0.14s) (DONE)
+  - Next.js configuration () added for image optimization (DONE)
+  - iOS Safari padding/spacing fixes on Explore page using spacer divs (DONE)
+  - Reordered Explore page to move New Games to the top (DONE)
+  - Auto-Video Sync: Built cache invalidation/fingerprinting so new games added via admin auto-sync to the frontend video feed (DONE)
+  - UI/UX Guidelines Generated: Analyzed 14 images and generated  (DONE)
 
-**Earlier issues found/mentioned but not fixed**
-   - None.
+**Earlier issues found/mentioned but not fixed**:
+   - None
 
-**Known issue recurrence from previous fork**
-  - None.
+**Known issue recurrence from previous fork**:
+  - Recurrence count: 0
+  - Status: N/A
 
-**Code Architecture**
+**Code Architecture**:
 
 
-**Key Technical Concepts**
-- **API Caching**: Implemented an in-memory, time-based cache in the FastAPI backend to store the large (10,000+) game feed from GameMonetize, improving performance and avoiding rate limits.
-- **Database Migration**: Used Alembic to generate and apply a schema migration to the PostgreSQL database, adding three new columns to the  table.
-- **Backend Search**: Refactored the admin API from a simple paginated proxy to a powerful search endpoint that filters the entire cached catalog on the server side.
-- **Frontend Live Search**: Rebuilt the admin UI component with debounced input to provide a live search experience against the large backend catalog.
-- **Build Process**: The agent identified that frontend changes in the containerized environment require a manual yarn run v1.22.22
-info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command. to be reflected in the preview.
+**Key Technical Concepts**:
+- Next.js Frontend (Tailwind CSS, Framer Motion)
+- FastAPI Backend with Async SQLAlchemy and in-memory caching.
+- Caching Strategy: Frontend uses  fingerprinted with Game IDs; Backend uses TTL-based dictionary caches that invalidate upon admin actions.
+- Theming: The upcoming UI redesign relies heavily on CSS variables for a seamless Light/Dark mode toggle without layout shifts.
 
-**key DB schema**
-  - **games**:  (New columns added: , , ).
-  - **users**: 
-  - **idle_game_state**: 
+**key DB schema**:
+  - : 
 
-**changes in tech stack**
-  - None.
+**changes in tech stack**:
+  - None this session.
 
-**All files of reference**
-- : Major updates for GameMonetize caching, search, and new image URL derivation.
-- : Added new columns to the  SQLAlchemy model.
-- : New Alembic migration file.
-- : Significantly refactored to support live, full-catalog search.
-- : Fixed to use the correct image aspect ratio.
-- : Updated  type definition to include new image URLs.
+**All files of reference**:
+  -  (CRITICAL: Contains all rules for the upcoming UI/UX task)
+  -  (Needs complete overhaul for new variables)
+  -  (Needs to become a floating pill)
 
 **Areas that need refactoring**:
-- None. The agent completed the planned refactoring by deleting .
+  - The entire frontend presentation layer requires a visual refactor to match the newly generated .
 
-**key api endpoints**
-- : Rewritten to use an in-memory cache and support full-text search and pagination over a 10,000+ game catalog.
-- : Updated to derive and save the three new image URLs (, , ).
+**key api endpoints**:
+  - : Fully cached now.
+  - : Cached and tied to admin invalidation.
 
-**Critical Info for New Agent**
-- The GameMonetize integration is complete and robust, now handling a 10,000+ game catalog with efficient backend caching and search.
-- The database schema for the  table has been updated with three new columns to store extra image URLs. The import logic populates these fields automatically. This work is complete but pending user verification.
-- **IMPORTANT**: When making changes to the frontend, remember to run yarn run v1.22.22
-info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command. inside the  directory for the changes to appear in the preview environment. The agent had to do this to get the search UI updates to work.
+**Critical Info for New Agent**:
+- **DO NOT jump into fixing old minor bugs.** The user just submitted a massive prompt with 14 reference images requesting a total visual overhaul based on an app called Hook. 
+- Your absolute first priority is reading .
+- The user stressed: DO NOT build a music app. You must retain 100% of the HYPD Gaming functionality. You are strictly wrapping the existing app in the new aesthetic (squircles, pastel/glow themes, pill nav).
+- iOS Safari has a known bug with  on  containers. The previous agent fixed this using spacer s. Remember this when styling horizontal scrolling carousels in the new design.
 
-**documents and test reports created in this job**
-  -  (Updated)
+**documents and test reports created in this job**:
+  - 
+  - 
   - 
 
-**Last 10 User Messages and any pending HUMAN messages** 
-1.  **User**: Add three new image sizes (, , ) to the database for future use. (Status: COMPLETED)
-2.  **User**: I want to check that our site is collecting and using the correct thumbnail sizes for games from GameMonetize. (Status: COMPLETED - led to the implementation of the next item)
-3.  **User**: Perfect, the search is working now. (Status: COMPLETED)
-4.  **User**: Why does the admin dashboard only show 50 games? I can't search for a specific game. (Status: COMPLETED - agent implemented backend full-catalog search).
-5.  **User**: Okay, but I updated the GameMonetize feed link to show all games. Can you update the site to fetch all of them? (Status: COMPLETED - agent implemented backend caching to handle the large feed).
-6.  **User**: The GameMonetize tab is fully functional... The integration is complete. (Status: This was an agent message, not a user one).
-7.  **User**:  (Status: COMPLETED).
+**Last 10 User Messages and any pending HUMAN messages**:
+1. *User*: Look at the mobile view, there needs more space between the tiles and the side (Explore page). (COMPLETED)
+2. *User*: You have moved only the text and not the game tiles. (COMPLETED - Fixed via spacer divs)
+3. *User*: Remove the recommended for you category and replace it with new games. (COMPLETED)
+4. *User*: Move the category titles more to the left of the screen on mobile view. (COMPLETED)
+5. *User*: I added games in admin but it didn't load videos. Need auto-sync. (COMPLETED - Built cache invalidation)
+6. *User*: I am going to provide you with a ui design prompt... (Acknowledged)
+7. *User*: Uploaded 4 images of Current Site. (Analyzed)
+8. *User*: Uploaded 5 images of new concept. (Analyzed)
+9. *User*: Uploaded next 5 images of new concept. (Analyzed)
+10. *User*: Uploaded final 5 images of new concept. (Analyzed & Guidelines generated. Action pending).
 
-**Project Health Check:**
-- **Broken**: None.
-- **Mocked**: Stripe payment functionality remains disabled.
+**Project Health Check**:
+  - **Broken**: None. App is currently highly performant.
+  - **Mocked**: Stripe payments.
 
-**3rd Party Integrations**
-- **GamePix**: Integrated and active.
-- **GameMonetize**: Integrated and active.
-- **Google AdSense**:  is in place and updated.
-- **Stripe**: Partially integrated but disabled, awaiting user API key.
+**3rd Party Integrations**:
+  - GamePix (Integrated)
+  - GameMonetize (Integrated)
+  - Stripe (Requires User API Key)
 
-**Testing status**
-  - Testing agent used after significant changes: YES, after the initial GameMonetize feature was added.
+**Testing status**:
+  - Testing agent used after significant changes: YES (For performance optimizations).
   - Troubleshoot agent used after agent stuck in loop: NO
-  - Test files created: None.
-  - Known regressions: None.
+  - Test files created: None
+  - Known regressions: None
 
-**Credentials to test flow:**
-- **Admin User**:  / 
+**Credentials to test flow**:
+  - Admin:  / 
 
-**What agent forgot to execute**
-- Nothing. The agent successfully completed all user requests from this session, including fixing a previously missed cleanup task.</analysis>
+**What agent forgot to execute**:
+The previous agent successfully completed the planning phase for the massive UI redesign (analyzing 14 images and generating the design JSON) but ran out of context limits before writing any code to implement the actual CSS variables, new components, or layouts. This is your starting point.</analysis>
