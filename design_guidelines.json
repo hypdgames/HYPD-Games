@@ -1,161 +1,163 @@
 {
-  "design_system": {
-    "identity": {
-      "name": "Hypd Games",
-      "aesthetic": "Dark Mode Gaming / Cyber-Social",
-      "core_values": ["Instant", "Immersive", "Electric", "Social"],
-      "emotional_tone": "High-Energy, Slick, Addictive"
+  "project_name": "HYPD Games UI/UX Redesign",
+  "theme": "mobile-first",
+  "design_philosophy": "Extract the aesthetic from the 'Hook' app reference and wrap it around ALL existing HYPD Gaming features. Features heavy use of soft blur gradients, friendly 'squircle' corner radiuses, floating pill-shaped navigation, and high contrast typography. Keep the neon lime green accent as the core HYPD brand identity.",
+  "typography": {
+    "font_family": {
+      "primary": "'DM Sans', sans-serif"
     },
-    "typography": {
-      "font_family": {
-        "headings": "Chivo, sans-serif",
-        "body": "Manrope, sans-serif",
-        "mono": "JetBrains Mono, monospace"
-      },
-      "weights": {
-        "headings": "900",
-        "body": "400, 500"
-      },
-      "scale": {
-        "h1": "text-5xl md:text-7xl tracking-tighter uppercase",
-        "h2": "text-3xl md:text-5xl tracking-tight",
-        "h3": "text-2xl font-bold",
-        "body": "text-base leading-relaxed",
-        "caption": "text-xs uppercase tracking-widest text-muted-foreground"
-      }
+    "scales": {
+      "h1": "text-[28px] md:text-[32px] font-bold tracking-tight lowercase",
+      "h2": "text-[20px] font-bold tracking-tight text-left",
+      "body": "text-[15px] font-normal",
+      "cta": "text-[16px] font-bold lowercase",
+      "tab": "text-[13px] font-medium"
     },
-    "colors": {
-      "palette": {
-        "background": "#050505",
-        "foreground": "#FFFFFF",
-        "card": "#121212",
-        "card_foreground": "#FFFFFF",
-        "primary": "#CCFF00",
-        "primary_foreground": "#000000",
-        "secondary": "#7000FF",
-        "secondary_foreground": "#FFFFFF",
-        "muted": "#27272A",
-        "muted_foreground": "#A1A1AA",
-        "accent": "#CCFF00",
-        "accent_foreground": "#000000",
-        "border": "#27272A",
-        "input": "#27272A",
-        "ring": "#CCFF00"
-      },
-      "gradients": {
-        "feed_overlay": "bg-gradient-to-t from-black/90 via-black/40 to-transparent",
-        "hero_glow": "bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/20 via-background to-background",
-        "glass": "bg-black/60 backdrop-blur-xl border-t border-white/10"
-      }
+    "rules": "Never use Inter or Roboto. Use DM Sans or Plus Jakarta Sans. Make headings bold and lowercase where appropriate for a trendy feel. Maintain clean, modern, rounded typographic forms."
+  },
+  "colors": {
+    "light": {
+      "background": "#FAFAFA",
+      "surface": "#FFFFFF",
+      "input": "#F2F2F7",
+      "text_primary": "#1A1A1A",
+      "text_secondary": "#888888",
+      "accent": "#AAFF00",
+      "accent_secondary": "#7748F8",
+      "gradient_top": "linear-gradient(to bottom, #EDE0FF 0%, #F5E8FF 20%, #FAFAFA 50%)",
+      "gradient_cta": "linear-gradient(to right, #7748F8, #A259FF)",
+      "border": "transparent",
+      "shadow_soft": "0 2px 16px rgba(0,0,0,0.07)",
+      "shadow_nav": "0 8px 32px rgba(0,0,0,0.12)"
     },
-    "layout": {
-      "spacing": {
-        "container_padding": "p-4 md:p-8",
-        "section_gap": "gap-8 md:gap-16"
-      },
-      "grid_systems": {
-        "feed": "snap-y snap-mandatory h-[100dvh] w-full overflow-y-scroll",
-        "explore": "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4",
-        "dashboard": "grid grid-cols-1 md:grid-cols-12 gap-6"
-      },
-      "border_radius": {
-        "default": "rounded-xl",
-        "button": "rounded-full",
-        "card": "rounded-2xl"
-      }
-    },
-    "components": {
-      "buttons": {
-        "primary": "bg-[#CCFF00] text-black hover:bg-[#b3e600] font-black uppercase tracking-widest rounded-full px-8 py-4 transition-transform active:scale-95 shadow-[0_0_20px_rgba(204,255,0,0.3)]",
-        "secondary": "bg-white/10 text-white hover:bg-white/20 backdrop-blur-md font-bold rounded-full px-6 py-3",
-        "ghost": "text-muted-foreground hover:text-white hover:bg-white/5"
-      },
-      "cards": {
-        "game_preview": "relative w-full h-full snap-start overflow-hidden bg-zinc-900",
-        "category_tile": "aspect-square relative overflow-hidden rounded-2xl group cursor-pointer border border-white/5 hover:border-[#CCFF00]/50 transition-colors",
-        "dashboard_widget": "bg-[#121212] border border-white/5 rounded-xl p-6"
-      },
-      "navigation": {
-        "bottom_bar": "fixed bottom-0 left-0 right-0 h-20 bg-black/80 backdrop-blur-xl border-t border-white/10 flex justify-around items-center z-50 pb-safe"
-      },
-      "inputs": {
-        "default": "bg-zinc-900/50 border-white/10 focus:border-[#CCFF00] focus:ring-[#CCFF00] rounded-xl h-12 px-4 text-white placeholder:text-zinc-600"
-      }
-    },
-    "motion": {
-      "transitions": "transition-all duration-300 ease-out",
-      "micro_interactions": {
-        "hover_lift": "hover:-translate-y-1 hover:shadow-lg",
-        "active_press": "active:scale-95",
-        "page_transition": "animate-in fade-in slide-in-from-bottom-4 duration-500"
-      }
-    },
-    "assets": {
-      "images": {
-        "game_thumbnails": [
-          {
-            "url": "https://images.unsplash.com/photo-1721987203048-24725e93047e?crop=entropy&cs=srgb&fm=jpg&q=85",
-            "alt": "Action Game - Fire Core",
-            "category": "action"
-          },
-          {
-            "url": "https://images.unsplash.com/photo-1637734373619-af1e76434bec?crop=entropy&cs=srgb&fm=jpg&q=85",
-            "alt": "Puzzle Game - Bubble Float",
-            "category": "puzzle"
-          },
-          {
-            "url": "https://images.unsplash.com/photo-1590034295051-004f272713a4?crop=entropy&cs=srgb&fm=jpg&q=85",
-            "alt": "Sci-Fi Game - Blue Void",
-            "category": "scifi"
-          },
-          {
-            "url": "https://images.unsplash.com/photo-1765408217631-77f2469f7626?crop=entropy&cs=srgb&fm=jpg&q=85",
-            "alt": "Retro Game - Glitch Runner",
-            "category": "arcade"
-          },
-          {
-            "url": "https://images.unsplash.com/photo-1684536689765-c4ebf55da2ae?crop=entropy&cs=srgb&fm=jpg&q=85",
-            "alt": "Cyberpunk City",
-            "category": "background"
-          },
-          {
-            "url": "https://images.unsplash.com/photo-1683304290611-b7fc0ddb7af9?crop=entropy&cs=srgb&fm=jpg&q=85",
-            "alt": "Neon Signs",
-            "category": "background"
-          }
-        ],
-        "placeholders": {
-          "user_avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix",
-          "game_logo": "https://placehold.co/200x200/121212/CCFF00?text=GAME"
-        }
-      },
-      "icons": {
-        "library": "lucide-react",
-        "style": "stroke-width={1.5}"
-      }
+    "dark": {
+      "background": "#141414",
+      "surface": "#1E1E1E",
+      "input": "#252525",
+      "text_primary": "#F0F0F0",
+      "text_secondary": "#888888",
+      "accent": "#AAFF00",
+      "accent_secondary": "#9B6CFF",
+      "gradient_top": "linear-gradient(to bottom, #1A0D2E 0%, #141414 40%)",
+      "gradient_cta": "linear-gradient(to right, #7748F8, #A259FF)",
+      "border": "rgba(255, 255, 255, 0.08)",
+      "shadow_soft": "none",
+      "shadow_nav": "none"
     }
   },
-  "instructions_to_main_agent": {
-    "setup": [
-      "Install fonts: 'npm install @fontsource/chivo @fontsource/manrope'",
-      "Update tailwind.config.js with the color palette provided in design_system.colors",
-      "Update index.css with the CSS variables for the dark theme",
-      "Ensure 'lucide-react' is installed"
-    ],
-    "implementation_rules": [
-      "MOBILE FIRST: Always design for mobile viewport first, then scale up.",
-      "SNAP SCROLL: The Home/Feed page MUST use CSS Scroll Snap (snap-y snap-mandatory) for the TikTok feel.",
-      "FULLSCREEN: Game player must occupy 100% of the screen (z-50) with a floating 'Back' button.",
-      "GLASSMORPHISM: Use the 'glass' utility class for the bottom navigation bar.",
-      "NO SCROLLBARS: Hide scrollbars on the feed for a cleaner look (scrollbar-width: none).",
-      "TOUCH TARGETS: Ensure all interactive elements are at least 44x44px.",
-      "DATA-TESTID: Add data-testid attributes to all buttons, inputs, and game cards."
-    ],
-    "universal_guidelines": [
-      "Avoid generic 'Bootstrap' layouts. Use asymmetry and layering.",
-      "Do not use gradients for text unless it's a very large headline.",
-      "Use 'sonner' for all toast notifications.",
-      "Use 'framer-motion' for page transitions if possible."
-    ]
-  }
+  "visual_enhancers": {
+    "radii": {
+      "sm": "12px",
+      "md": "20px",
+      "lg": "28px",
+      "xl": "36px",
+      "pill": "999px",
+      "squircle": "28px"
+    },
+    "shadows": {
+      "light": {
+        "card": "box-shadow: 0 2px 16px rgba(0,0,0,0.07);",
+        "nav": "box-shadow: 0 8px 32px rgba(0,0,0,0.12);"
+      },
+      "dark": {
+        "card": "border: 1px solid rgba(255,255,255,0.08);",
+        "nav": "border: 1px solid rgba(255,255,255,0.1);"
+      }
+    },
+    "glassmorphism": "Use backdrop-blur for action bar buttons on the game feed (dark circle rgba(0,0,0,0.5) with backdrop-blur-md) and potentially the bottom nav."
+  },
+  "component_guidelines": {
+    "bottom_navigation": {
+      "design": "Floating pill bar. Does NOT touch screen edges (margin: 0 16px 20px). border-radius: 999px. Height: ~64px.",
+      "light_mode": "White #FFFFFF background, soft shadow 0 8px 32px rgba(0,0,0,0.12).",
+      "dark_mode": "Dark #1E1E1E background, subtle border rgba(255,255,255,0.1).",
+      "active_state": "Active tab gets #AAFF00 neon green circle background behind icon. Icon and text become black/dark. Inactive icons are #888888.",
+      "layout": "5 tabs: Feed, Explore, Defence, Leaders, Profile. Icon size 22px, label 11px below."
+    },
+    "buttons": {
+      "primary": "Full-width or wide, border-radius: 20px (md). Gradient fill #7748F8 to #A259FF for auth/non-gaming. Solid #AAFF00 for game play actions.",
+      "secondary_ghost": "Full-width pill (radius 999px), transparent bg, dark text in light mode, off-white in dark mode, thin border.",
+      "action_pills": "Light gray #F2F2F7 background (light) / #252525 (dark), radius 999px.",
+      "feed_action_buttons": "Dark circle rgba(0,0,0,0.5) backdrop-blur with white icon (for Play/Save/Heart)."
+    },
+    "cards": {
+      "game_cards": "border-radius: 24px (squircle). Overflow hidden, full image cover, title + meta overlay at bottom. Used in feed/explore.",
+      "leaderboard_rows": "border-radius: 20px. White card bg (light) / #1E1E1E (dark). Soft shadow in light mode. Row flex layout.",
+      "category_tiles": "border-radius: 20px. Unique gradient background fills. Icon centered, label below.",
+      "hero_cards": "border-radius: 32px. Full image background."
+    },
+    "inputs": {
+      "design": "border-radius: 16px, height 56px. Icon on the left inside field.",
+      "light_mode": "#F2F2F7 background, no border, #888 placeholder.",
+      "dark_mode": "#252525 background, no border."
+    }
+  },
+  "layouts": {
+    "global": "Mobile-first, max-width 430px container centered on larger screens, full-height scroll. Background contains the top bleed gradient.",
+    "feed_page": "TikTok-style full-screen video game feed. Cards have squircle radiuses (24px). Floating rounded Play button, circular Save/heart button. Scrollable pill-shaped category filter chips at top.",
+    "explore_page": "Bold lowercase section headers. Horizontal scroll rows. SmallCards (squircle), BigCards for trending.",
+    "leaderboard_page": "Page title with trophy icon. Pill tabs with #AAFF00 active state. Ranked user rows (card style, radius 20px) containing rank badge, rounded avatar, username, and stats.",
+    "profile_page": "Large rounded inputs and gradient primary CTA button for auth. Logged in: large rounded avatar, streak badge, stats cards, tabs.",
+    "game_player": "Full-screen iframe. Floating bottom bar with game title, rounded neon green Play button, circular Save/heart. Soft pill Back button."
+  },
+  "motion": {
+    "interactions": "Add smooth hover/active scale-down effects (e.g., scale 0.98 on tap) for all squircle and pill buttons.",
+    "page_transitions": "Soft fade and slide-up for modals or new pages.",
+    "feed": "Snap scroll for the TikTok-style feed."
+  },
+  "accessibility": {
+    "contrast": "Ensure primary text #1A1A1A on light and #F0F0F0 on dark meets contrast ratios against backgrounds.",
+    "testing": "All interactive and key informational elements MUST include a data-testid attribute.",
+    "focus": "Use subtle ring outline for focus states on inputs and buttons."
+  },
+  "media": {
+    "images": "All game thumbnails must use border-radius: 24px (squircle). Maintain aspect ratios."
+  },
+  "image_urls": [
+    {
+      "url": "https://images.unsplash.com/photo-1562576649-daf535f7f4af?crop=entropy&cs=srgb&fm=jpg&q=85",
+      "category": "game_thumbnail",
+      "description": "Fantasy game artwork for game cards"
+    },
+    {
+      "url": "https://images.unsplash.com/photo-1765606290905-b9d377ea4d5e?crop=entropy&cs=srgb&fm=jpg&q=85",
+      "category": "game_thumbnail",
+      "description": "Action warrior game art"
+    },
+    {
+      "url": "https://images.unsplash.com/photo-1698450998458-0bc1045788a1?crop=entropy&cs=srgb&fm=jpg&q=85",
+      "category": "hero_card",
+      "description": "Hero section game art"
+    }
+  ],
+  "instructions_to_main_agent": [
+    "1. Define CSS variables for the color system in globals.css under :root and .dark selectors. Add the gradient utility classes.",
+    "2. Implement the BottomNav component in /app/frontend/src/components/bottom-nav.js using the floating pill design.",
+    "3. Update the main feed page in /app/frontend/src/app/page.js applying squircle radiuses and backdrop-blur action buttons.",
+    "4. Update the Explore page components applying horizontal scroll, squircle cards, and lowercase bold headers.",
+    "5. Restyle Leaderboard rows as radius-20px cards with soft shadows in light mode.",
+    "6. Update Profile/Auth forms with 16px radius inputs, no borders, and large gradient CTAs.",
+    "7. Set the font to DM Sans in layout.js.",
+    "8. Ensure the app maintains max-width: 430px for the mobile-first layout.",
+    "9. ALWAYS include data-testid on interactive elements."
+  ],
+  "UNIVERSAL GUIDELINES FOR MAIN AGENT": [
+    "You tend to converge toward generic, 'on distribution' outputs. In frontend design, this creates what users call the 'AI slop' aesthetic. Avoid this: make creative, distinctive frontends that surprise and delight.",
+    "Dark colors look good when used independently without gradients. DO NOT use dark colors as gradients.",
+    "Don't make generic centered layouts, simplistic gradients, and uniform styling.",
+    "Create depth through layered design elements with z-index hierarchy.",
+    "Use glass-morphism effects with backdrop filters (12-24px blur).",
+    "You MUST NOT apply universal transition. Eg: transition: all. Always add transitions for specific interactive elements like button, input excluding transforms.",
+    "You MUST NOT center align the app container, ie do not add .App { text-align: center; } in the css file. This disrupts the human natural reading flow of text.",
+    "Always use modern button styles like pill-shaped, or sharp button with interaction animations & color relevant to the app style.",
+    "NEVER use AI assistant Emoji characters for icons. Use proper icon libraries.",
+    "Every interaction needs micro-animations - hover states, transitions, parallax effects, and entrance animations. Static = dead.",
+    "Use 2-3x more spacing than feels comfortable. Cramped designs look cheap.",
+    "Subtle grain textures, noise overlays, custom cursors, selection states, and loading animations: separates good from extraordinary.",
+    "Prioritize using pre-existing components from src/components/ui when applicable.",
+    "Components MUST use named exports (export const ComponentName = ...). Pages MUST use default exports.",
+    "Use sonner for toasts.",
+    "All interactive elements MUST include data-testid attribute.",
+    "DO NOT use complete transparent background in header, overlays, any surface that has content under it."
+  ]
 }
