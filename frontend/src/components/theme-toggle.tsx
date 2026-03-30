@@ -11,17 +11,17 @@ export function ThemeToggle() {
     <button
       onClick={toggleTheme}
       className={cn(
-        "flex items-center gap-1.5 px-3 py-2 rounded-full glass",
-        "text-foreground text-xs font-medium",
-        "transition-all hover:scale-105 active:scale-95"
+        "flex items-center justify-center w-9 h-9 rounded-full",
+        "bg-muted text-foreground",
+        "active:scale-95"
       )}
       data-testid="theme-toggle"
       title={`Switch to ${theme === "light" ? "Dark" : "Light"} mode`}
     >
       {theme === "dark" ? (
-        <Sun className="w-4 h-4" />
+        <Sun className="w-[18px] h-[18px]" />
       ) : (
-        <Moon className="w-4 h-4" />
+        <Moon className="w-[18px] h-[18px]" />
       )}
     </button>
   );

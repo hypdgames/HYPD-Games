@@ -26,31 +26,21 @@ export default function GamePlayer() {
   const dragStartY = useRef(0);
   const buttonStartY = useRef(0);
 
-  // Set game URL on mount
   useEffect(() => {
     const url = `${API_URL}/api/games/${gameId}/play`;
     setGameUrl(url);
     startTimeRef.current = Date.now();
   }, [gameId]);
 
-  // Cleanup: record play session on unmount
   useEffect(() => {
-    return () => {
-      recordPlaySession();
-    };
+    return () => { recordPlaySession(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const recordPlaySession = async () => {
     if (!startTimeRef.current) return;
-
-    const durationSeconds = Math.round(
-      (Date.now() - startTimeRef.current) / 1000
-    );
-
-    // Only record sessions longer than 3 seconds
+    const durationSeconds = Math.round((Date.now() - startTimeRef.current) / 1000);
     if (durationSeconds < 3) return;
-
     try {
       await fetch(`${API_URL}/api/analytics/play-session`, {
         method: "POST",
@@ -58,15 +48,9 @@ export default function GamePlayer() {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({
-          game_id: gameId,
-          duration_seconds: durationSeconds,
-          score: null,
-        }),
+        body: JSON.stringify({ game_id: gameId, duration_seconds: durationSeconds, score: null }),
       });
-    } catch (e) {
-      console.error("Failed to record play session:", e);
-    }
+    } catch (e) { console.error("Failed to record play session:", e); }
   };
 
   const handleDragStart = useCallback(
@@ -88,29 +72,16 @@ export default function GamePlayer() {
       e.preventDefault();
       const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
       const deltaY = clientY - dragStartY.current;
-      
-      // Mark as dragged if moved more than 5px
-      if (Math.abs(deltaY) > 5) {
-        setHasDragged(true);
-      }
-      
-      const newY = Math.max(
-        50,
-        Math.min(window.innerHeight - 150, buttonStartY.current + deltaY)
-      );
+      if (Math.abs(deltaY) > 5) setHasDragged(true);
+      const newY = Math.max(50, Math.min(window.innerHeight - 150, buttonStartY.current + deltaY));
       setButtonY(newY);
     },
     [isDragging]
   );
 
   const handleDragEnd = useCallback(() => {
-    // Small delay to let click handler check hasDragged state
-    if (dragTimeoutRef.current) {
-      clearTimeout(dragTimeoutRef.current);
-    }
-    dragTimeoutRef.current = setTimeout(() => {
-      setIsDragging(false);
-    }, 50);
+    if (dragTimeoutRef.current) clearTimeout(dragTimeoutRef.current);
+    dragTimeoutRef.current = setTimeout(() => { setIsDragging(false); }, 50);
   }, []);
 
   useEffect(() => {
@@ -129,7 +100,6 @@ export default function GamePlayer() {
   }, [isDragging, handleDragMove, handleDragEnd]);
 
   const handleBack = () => {
-    // Record session before navigating
     recordPlaySession();
     router.back();
   };
@@ -140,11 +110,12 @@ export default function GamePlayer() {
         <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mb-4">
           <ArrowLeft className="w-8 h-8 text-red-500" />
         </div>
-        <h2 className="text-xl font-heading text-white mb-2">Game Not Found</h2>
+        <h2 className="text-xl font-bold text-foreground mb-2">Game Not Found</h2>
         <p className="text-muted-foreground mb-6">{error}</p>
         <button
           onClick={handleBack}
-          className="px-6 py-3 bg-lime text-black font-bold rounded-full"
+          className="px-6 py-3 bg-lime text-black font-bold rounded-pill"
+          data-testid="go-back-btn"
         >
           Go Back
         </button>
@@ -154,15 +125,13 @@ export default function GamePlayer() {
 
   return (
     <div className="fixed inset-0 bg-black z-50" data-testid="game-player">
-      {/* Loading Overlay */}
       {loading && (
         <div className="absolute inset-0 bg-background flex flex-col items-center justify-center z-20">
           <Loader2 className="w-12 h-12 text-lime animate-spin mb-4" />
-          <p className="text-white font-medium">Loading game...</p>
+          <p className="text-foreground font-medium text-[15px]">Loading game...</p>
         </div>
       )}
 
-      {/* Game iFrame - loads eagerly for faster start */}
       {gameUrl && (
         <iframe
           ref={iframeRef}
@@ -173,10 +142,7 @@ export default function GamePlayer() {
           allowFullScreen
           loading="eager"
           onLoad={() => setLoading(false)}
-          onError={() => {
-            setError("Failed to load game");
-            setLoading(false);
-          }}
+          onError={() => { setError("Failed to load game"); setLoading(false); }}
         />
       )}
 
@@ -186,35 +152,19 @@ export default function GamePlayer() {
         onTouchStart={handleDragStart}
         onClick={(e) => {
           e.preventDefault();
-          // Only navigate if we didn't drag
-          if (!hasDragged) {
-            handleBack();
-          }
+          if (!hasDragged) handleBack();
           setHasDragged(false);
         }}
-        className={`fixed left-4 z-30 w-10 h-10 rounded-full flex items-center justify-center touch-target transition-all cursor-grab active:cursor-grabbing ${
-          isDragging 
-            ? "scale-110 ring-2 ring-lime bg-lime/90" 
-            : "bg-black/50 hover:bg-black/70 border border-white/10"
+        className={`fixed left-4 z-30 w-11 h-11 rounded-pill flex items-center justify-center touch-target cursor-grab active:cursor-grabbing ${
+          isDragging
+            ? "scale-110 bg-lime glow-accent"
+            : "glass-dark"
         }`}
-        style={{ 
-          top: `${buttonY}px`,
-          touchAction: 'none',
-        }}
+        style={{ top: `${buttonY}px`, touchAction: 'none' }}
         data-testid="back-button"
       >
-        <ArrowLeft className={`w-5 h-5 ${isDragging ? "text-black" : "text-lime"}`} />
+        <ArrowLeft className={`w-5 h-5 ${isDragging ? "text-black" : "text-white"}`} />
       </button>
-
-      {/* Drag hint - only show initially */}
-      {!isDragging && buttonY === 100 && (
-        <div
-          className="fixed left-4 z-20 text-[10px] text-white/40 pointer-events-none"
-          style={{ top: `${buttonY + 46}px` }}
-        >
-          ↕ drag
-        </div>
-      )}
     </div>
   );
 }

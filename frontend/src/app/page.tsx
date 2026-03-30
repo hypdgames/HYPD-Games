@@ -11,12 +11,11 @@ import type { Game, FeedItem } from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 const AD_FREQUENCY = 6;
-const VIDEO_CACHE_KEY = "hypd:video_cache_v2";  // v2: includes game ID fingerprint
-const VIDEO_CACHE_TTL = 3600 * 1000; // 1 hour in ms
+const VIDEO_CACHE_KEY = "hypd:video_cache_v2";
+const VIDEO_CACHE_TTL = 3600 * 1000;
 const GAMES_CACHE_KEY = "hypd:games_feed";
-const GAMES_CACHE_TTL = 30 * 1000; // 30 seconds in ms
+const GAMES_CACHE_TTL = 30 * 1000;
 
-// fingerprint = sorted game IDs joined — changes when games are added/removed
 const gameFingerprint = (games: Game[]) => games.map(g => g.id).sort().join("|");
 
 interface VideoCache { urls: Record<string, string>; fp: string; }
@@ -32,10 +31,9 @@ function sessionGet<T>(key: string, ttl: number): T | null {
 }
 
 function sessionSet(key: string, data: unknown): void {
-  try { sessionStorage.setItem(key, JSON.stringify({ data, ts: Date.now() })); } catch { /* storage full */ }
+  try { sessionStorage.setItem(key, JSON.stringify({ data, ts: Date.now() })); } catch {}
 }
 
-// ─── VideoCard ────────────────────────────────────────────────────────────────
 function VideoCard({
   game,
   isActive,
@@ -48,7 +46,7 @@ function VideoCard({
 }: {
   game: Game;
   isActive: boolean;
-  isAdjacent: boolean; // card directly before/after active — preload but don't play
+  isAdjacent: boolean;
   videoUrl: string | null;
   onPlay: () => void;
   onSave: (e: React.MouseEvent) => void;
@@ -57,7 +55,6 @@ function VideoCard({
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Play active, pause all others
   useEffect(() => {
     if (!videoRef.current || !videoUrl) return;
     if (isActive) {
@@ -68,13 +65,10 @@ function VideoCard({
     }
   }, [isActive, videoUrl]);
 
-  // Determine preload strategy: active/adjacent = auto, far = none
   const preload = isActive || isAdjacent ? "auto" : "none";
 
   return (
     <div className="relative w-full h-full bg-black overflow-hidden">
-
-      {/* Video — always rendered when url available, preload controlled by proximity */}
       {videoUrl ? (
         <video
           ref={videoRef}
@@ -86,55 +80,52 @@ function VideoCard({
           playsInline
           preload={preload}
         />
+      ) : game.thumbnail_url || game.icon_url ? (
+        <img
+          src={game.thumbnail_url || game.icon_url || ""}
+          alt={game.title}
+          className="absolute inset-0 w-full h-full object-cover opacity-60"
+        />
       ) : (
-        // No video — show thumbnail as fallback background
-        game.thumbnail_url || game.icon_url ? (
-          <img
-            src={game.thumbnail_url || game.icon_url || ""}
-            alt={game.title}
-            className="absolute inset-0 w-full h-full object-cover opacity-60"
-          />
-        ) : (
-          <div className="absolute inset-0 bg-zinc-900" />
-        )
+        <div className="absolute inset-0 bg-zinc-900" />
       )}
 
-      {/* Bottom gradient for text legibility only */}
-      <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-black/70 to-transparent pointer-events-none z-20" />
+      {/* Bottom gradient overlay */}
+      <div className="absolute bottom-0 left-0 right-0 h-52 game-overlay pointer-events-none z-20" />
 
-      {/* Side buttons — Save + Play */}
-      <div className="absolute right-4 bottom-28 flex flex-col gap-4 z-30">
+      {/* Side action buttons — glassmorphic circles */}
+      <div className="absolute right-4 bottom-32 flex flex-col gap-4 z-30">
         <motion.button
           whileTap={{ scale: 0.85 }}
           onClick={onSave}
-          className="flex flex-col items-center gap-1"
+          className="flex flex-col items-center gap-1.5"
           data-testid={`save-game-btn-${game.id}`}
         >
-          <div className={`w-14 h-14 rounded-full flex items-center justify-center backdrop-blur-sm border transition-all ${
-            isSaved ? "bg-red-500/80 border-red-400" : "bg-white/10 border-white/20"
+          <div className={`w-12 h-12 rounded-full flex items-center justify-center backdrop-blur-md transition-colors ${
+            isSaved ? "bg-red-500/80" : "bg-black/50"
           }`}>
-            <Heart className={`w-6 h-6 ${isSaved ? "fill-white text-white" : "text-white"}`} />
+            <Heart className={`w-5 h-5 ${isSaved ? "fill-white text-white" : "text-white"}`} />
           </div>
-          <span className="text-white/70 text-xs font-medium">Save</span>
+          <span className="text-white/60 text-[11px] font-medium">Save</span>
         </motion.button>
 
         <motion.button
           whileTap={{ scale: 0.85 }}
           onClick={onPlay}
-          className="flex flex-col items-center gap-1"
+          className="flex flex-col items-center gap-1.5"
           data-testid={`play-now-btn-${game.id}`}
         >
-          <div className="w-14 h-14 rounded-full bg-lime flex items-center justify-center shadow-lg shadow-lime/30">
-            <Play className="w-7 h-7 fill-black text-black ml-0.5" />
+          <div className="w-12 h-12 rounded-full bg-lime flex items-center justify-center glow-accent">
+            <Play className="w-6 h-6 fill-black text-black ml-0.5" />
           </div>
-          <span className="text-white/70 text-xs font-medium">Play</span>
+          <span className="text-white/60 text-[11px] font-medium">Play</span>
         </motion.button>
       </div>
 
       {/* Bottom info */}
-      <div className="absolute bottom-0 left-0 right-20 z-30 px-5 pb-28">
+      <div className="absolute bottom-0 left-0 right-16 z-30 px-5 pb-28">
         <div className="flex items-center gap-2 mb-2">
-          <span className="text-xs font-bold uppercase tracking-wider text-lime bg-lime/15 px-2.5 py-1 rounded-full border border-lime/30">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-lime bg-lime/15 px-2.5 py-1 rounded-pill">
             {game.category}
           </span>
         </div>
@@ -142,35 +133,34 @@ function VideoCard({
           {game.title}
         </h2>
         {game.description && (
-          <p className="text-white/60 text-sm mt-1 line-clamp-2 leading-snug">
+          <p className="text-white/50 text-[13px] mt-1.5 line-clamp-2 leading-snug">
             {game.description}
           </p>
         )}
       </div>
 
-      {/* Swipe hint — first card only */}
+      {/* Swipe hint */}
       {showScrollHint && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 2 }}
-          className="absolute bottom-36 left-1/2 -translate-x-1/2 flex flex-col items-center text-white/30 z-30 pointer-events-none"
+          className="absolute bottom-40 left-1/2 -translate-x-1/2 flex flex-col items-center text-white/25 z-30 pointer-events-none"
         >
           <motion.div
             animate={{ y: [0, 8, 0] }}
             transition={{ repeat: Infinity, duration: 1.6, ease: "easeInOut" }}
-            className="w-5 h-9 rounded-full border-2 border-white/20 flex items-start justify-center p-1"
+            className="w-5 h-9 rounded-full border-2 border-white/15 flex items-start justify-center p-1"
           >
-            <div className="w-1 h-2.5 bg-white/30 rounded-full" />
+            <div className="w-1 h-2.5 bg-white/25 rounded-full" />
           </motion.div>
-          <span className="text-xs mt-2 tracking-wide">Swipe up</span>
+          <span className="text-[11px] mt-2 tracking-wide">Swipe up</span>
         </motion.div>
       )}
     </div>
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
 export default function GameFeed() {
   const router = useRouter();
   const { user, token, settings } = useAuthStore();
@@ -188,10 +178,8 @@ export default function GameFeed() {
   const isScrollingRef = useRef(false);
   const touchStartRef = useRef<{ y: number; time: number } | null>(null);
 
-  // Fetch games then immediately kick off batch video URL fetch
   const fetchGames = useCallback(async (showToast = false) => {
     try {
-      // Check sessionStorage cache first (30s TTL)
       const cachedGames = showToast ? null : sessionGet<Game[]>(GAMES_CACHE_KEY, GAMES_CACHE_TTL);
       let data: Game[];
 
@@ -216,14 +204,11 @@ export default function GameFeed() {
       setFeedItems(items);
       if (showToast) toast.success("Feed refreshed!");
 
-      // Check sessionStorage for cached video URLs — only use if game list hasn't changed
       const fp = gameFingerprint(data);
       const cachedVideo = showToast ? null : sessionGet<VideoCache>(VIDEO_CACHE_KEY, VIDEO_CACHE_TTL);
       if (cachedVideo && cachedVideo.fp === fp) {
-        // Same games as when cache was built — use cached URLs instantly
         setVideoUrls(cachedVideo.urls);
       } else {
-        // Game list changed (new games added) or no cache — re-fetch video batch
         fetch(`${API_URL}/api/games/video-previews-batch`)
           .then(r => r.json())
           .then((urls: Record<string, string>) => {
@@ -232,7 +217,6 @@ export default function GameFeed() {
           })
           .catch(() => {});
       }
-
     } catch {
       if (showToast) toast.error("Failed to refresh");
     }
@@ -321,7 +305,7 @@ export default function GameFeed() {
       <div className="h-screen flex flex-col items-center justify-center bg-black p-8 text-center">
         <Play className="w-10 h-10 text-lime mb-4" />
         <h2 className="text-2xl font-bold text-white mb-2">No Games Yet</h2>
-        <p className="text-white/40">Games will appear here once added by admin</p>
+        <p className="text-white/40 text-[15px]">Games will appear here once added by admin</p>
       </div>
     );
   }
@@ -329,7 +313,7 @@ export default function GameFeed() {
   return (
     <div className="relative h-screen bg-black overflow-hidden" data-testid="game-feed">
       {/* Fixed Header */}
-      <div className="fixed top-0 left-0 right-0 z-50 p-4 flex justify-between items-center pointer-events-none">
+      <div className="fixed top-0 left-0 right-0 z-50 p-4 flex justify-between items-center pointer-events-none max-w-[430px] mx-auto">
         <div className="pointer-events-auto">
           {settings?.logo_url ? (
             <img
@@ -339,8 +323,8 @@ export default function GameFeed() {
               className="object-contain"
             />
           ) : (
-            <h1 className="font-bold text-xl text-lime tracking-tight drop-shadow-lg">
-              {settings?.site_name || "HYPD"}
+            <h1 className="font-bold text-xl text-lime tracking-tight drop-shadow-lg lowercase">
+              {settings?.site_name || "hypd"}
             </h1>
           )}
         </div>
@@ -349,14 +333,14 @@ export default function GameFeed() {
         </div>
       </div>
 
-      {/* Pull-to-refresh indicator */}
+      {/* Pull-to-refresh */}
       <AnimatePresence>
         {refreshing && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="fixed top-16 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-lime text-black px-4 py-2 rounded-full font-bold text-sm shadow-lg"
+            className="fixed top-16 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-lime text-black px-4 py-2 rounded-pill font-bold text-sm"
           >
             <RefreshCw className="w-4 h-4 animate-spin" />
             Refreshing
@@ -367,8 +351,8 @@ export default function GameFeed() {
       {/* Feed */}
       <div
         ref={containerRef}
-        className="h-screen overflow-y-scroll snap-y snap-mandatory"
-        style={{ scrollSnapType: "y mandatory", scrollbarWidth: "none" }}
+        className="h-screen overflow-y-scroll snap-y snap-mandatory hide-scrollbar"
+        style={{ scrollSnapType: "y mandatory" }}
         onScroll={handleScroll}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}

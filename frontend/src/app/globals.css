@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Chivo:wght@400;700;900&family=Manrope:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -7,67 +7,86 @@
 @layer base {
   /* Dark theme (default) */
   :root {
-    --background: 0 0% 2%;
-    --foreground: 0 0% 100%;
-    --card: 0 0% 7%;
-    --card-foreground: 0 0% 100%;
-    --popover: 0 0% 7%;
-    --popover-foreground: 0 0% 100%;
-    --primary: 75 100% 50%;
+    --background: 0 0% 8%;
+    --foreground: 0 0% 94%;
+    --card: 0 0% 12%;
+    --card-foreground: 0 0% 94%;
+    --popover: 0 0% 12%;
+    --popover-foreground: 0 0% 94%;
+    --primary: 80 100% 50%;
     --primary-foreground: 0 0% 0%;
-    --secondary: 270 100% 50%;
+    --secondary: 256 93% 63%;
     --secondary-foreground: 0 0% 100%;
-    --muted: 240 4% 16%;
-    --muted-foreground: 240 5% 65%;
-    --accent: 75 100% 50%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 53%;
+    --accent: 80 100% 50%;
     --accent-foreground: 0 0% 0%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 4% 16%;
-    --input: 240 4% 16%;
-    --ring: 75 100% 50%;
-    --radius: 0.75rem;
+    --border: 0 0% 18%;
+    --input: 0 0% 15%;
+    --ring: 80 100% 50%;
+    --radius: 1.25rem;
+
+    --gradient-page: linear-gradient(to bottom, #1A0D2E 0%, #141414 35%);
+    --shadow-card: none;
+    --shadow-nav: none;
+    --nav-bg: #1E1E1E;
+    --nav-border: rgba(255, 255, 255, 0.1);
   }
 
   /* Light theme */
   .light {
     --background: 0 0% 98%;
-    --foreground: 0 0% 9%;
+    --foreground: 0 0% 10%;
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 9%;
+    --card-foreground: 0 0% 10%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 9%;
-    --primary: 75 100% 40%;
+    --popover-foreground: 0 0% 10%;
+    --primary: 80 100% 50%;
     --primary-foreground: 0 0% 0%;
-    --secondary: 270 100% 50%;
+    --secondary: 256 93% 63%;
     --secondary-foreground: 0 0% 100%;
-    --muted: 240 5% 92%;
-    --muted-foreground: 240 4% 46%;
-    --accent: 75 100% 40%;
+    --muted: 240 20% 96%;
+    --muted-foreground: 0 0% 53%;
+    --accent: 80 100% 50%;
     --accent-foreground: 0 0% 0%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 6% 85%;
-    --input: 240 6% 85%;
-    --ring: 75 100% 40%;
-  }
-}
+    --border: 0 0% 92%;
+    --input: 240 20% 96%;
+    --ring: 80 100% 50%;
 
-@layer base {
+    --gradient-page: linear-gradient(to bottom, #EDE0FF 0%, #F5E8FF 18%, #FAFAFA 48%);
+    --shadow-card: 0 2px 16px rgba(0, 0, 0, 0.07);
+    --shadow-nav: 0 8px 32px rgba(0, 0, 0, 0.12);
+    --nav-bg: #FFFFFF;
+    --nav-border: transparent;
+  }
+
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
+    font-family: 'DM Sans', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+
   html {
     scroll-behavior: smooth;
   }
 }
 
-/* Hide scrollbars for feed */
+/* ─── Page gradient background ────────────────────────────────── */
+.page-gradient {
+  background: var(--gradient-page);
+  background-attachment: fixed;
+}
+
+/* ─── Hide scrollbars ─────────────────────────────────────────── */
 .hide-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -76,7 +95,7 @@
   display: none;
 }
 
-/* Snap scroll container - fast and responsive */
+/* ─── Snap scroll (TikTok feed) ───────────────────────────────── */
 .snap-container {
   scroll-snap-type: y mandatory;
   overflow-y: scroll;
@@ -85,191 +104,165 @@
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
 }
-
 .snap-item {
   scroll-snap-align: start;
   scroll-snap-stop: always;
 }
 
-/* Solid backgrounds - no transparency */
-.glass {
-  background: #0a0a0a;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+/* ─── Squircle cards ──────────────────────────────────────────── */
+.squircle {
+  border-radius: 24px;
+  overflow: hidden;
+}
+.squircle-sm {
+  border-radius: 16px;
+  overflow: hidden;
+}
+.squircle-lg {
+  border-radius: 28px;
+  overflow: hidden;
 }
 
-.light .glass {
-  background: #ffffff;
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-/* Gradient overlay for game cards */
+/* ─── Bottom gradient on game cards ───────────────────────────── */
 .game-overlay {
   background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 40%, transparent 100%);
 }
 
-/* Primary button glow - adapts to theme */
-.btn-glow {
-  box-shadow: 0 0 20px rgba(204, 255, 0, 0.3);
-}
-.btn-glow:hover {
-  box-shadow: 0 0 30px rgba(204, 255, 0, 0.5);
-}
-
-.light .btn-glow {
-  box-shadow: 0 0 20px rgba(128, 204, 0, 0.4);
-}
-.light .btn-glow:hover {
-  box-shadow: 0 0 30px rgba(128, 204, 0, 0.6);
+/* ─── Glass/Blur surfaces ─────────────────────────────────────── */
+.glass-dark {
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
-/* Safe area padding for mobile */
+.glass-surface {
+  background: var(--nav-bg);
+  border: 1px solid var(--nav-border);
+  box-shadow: var(--shadow-nav);
+}
+
+/* ─── Gradient CTA button ─────────────────────────────────────── */
+.btn-gradient {
+  background: linear-gradient(to right, #7748F8, #A259FF);
+  color: white;
+  font-weight: 700;
+  border-radius: 20px;
+  border: none;
+}
+.btn-gradient:hover {
+  opacity: 0.92;
+}
+.btn-gradient:active {
+  transform: scale(0.98);
+}
+
+/* ─── Neon green accent glow (dark mode only) ─────────────────── */
+.glow-accent {
+  box-shadow: 0 0 20px rgba(170, 255, 0, 0.25);
+}
+.glow-accent:hover {
+  box-shadow: 0 0 30px rgba(170, 255, 0, 0.4);
+}
+.light .glow-accent,
+.light .glow-accent:hover {
+  box-shadow: none;
+}
+
+/* ─── Card shadows per theme ──────────────────────────────────── */
+.card-elevated {
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--nav-border);
+}
+
+/* ─── Floating nav pill ───────────────────────────────────────── */
+.nav-pill {
+  background: var(--nav-bg);
+  border: 1px solid var(--nav-border);
+  box-shadow: var(--shadow-nav);
+  border-radius: 999px;
+}
+
+/* ─── Pill chip (filter tags) ─────────────────────────────────── */
+.chip {
+  border-radius: 999px;
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  background: hsl(var(--muted));
+  color: hsl(var(--muted-foreground));
+  transition: background-color 0.2s, color 0.2s;
+}
+.chip-active {
+  background: #AAFF00;
+  color: #000000;
+}
+
+/* ─── Category gradient tiles ─────────────────────────────────── */
+.cat-tile {
+  border-radius: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ─── Safe area padding ───────────────────────────────────────── */
 .pb-safe {
   padding-bottom: env(safe-area-inset-bottom, 20px);
 }
 
-/* Touch optimization */
+/* ─── Touch target minimum size ───────────────────────────────── */
 .touch-target {
   min-height: 44px;
   min-width: 44px;
 }
 
-/* Loading shimmer - adapts to theme */
+/* ─── Loading shimmer ─────────────────────────────────────────── */
 .shimmer {
-  background: linear-gradient(90deg, #121212 25%, #1a1a1a 50%, #121212 75%);
+  background: linear-gradient(90deg, hsl(var(--card)) 25%, hsl(var(--muted)) 50%, hsl(var(--card)) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
 
-.light .shimmer {
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 
-/* Game card hover effect */
-.game-card-hover {
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.game-card-hover:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 40px rgba(204, 255, 0, 0.15);
-}
-
-.light .game-card-hover:hover {
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-}
-
-/* Category tile effect */
-.category-tile {
-  position: relative;
-  overflow: hidden;
-}
-
-.category-tile::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    135deg,
-    rgba(204, 255, 0, 0.1) 0%,
-    transparent 50%
-  );
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.category-tile:hover::before {
-  opacity: 1;
-}
-
-/* Neon text effect */
-.neon-text {
-  text-shadow: 
-    0 0 10px rgba(204, 255, 0, 0.5),
-    0 0 20px rgba(204, 255, 0, 0.3),
-    0 0 30px rgba(204, 255, 0, 0.2);
-}
-
-.light .neon-text {
-  text-shadow: none;
-}
-
-/* Pulse animation for play button */
+/* ─── Pulse animation for play button ─────────────────────────── */
 @keyframes pulse-ring {
-  0% {
-    transform: scale(0.8);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1.5);
-    opacity: 0;
-  }
+  0% { transform: scale(0.8); opacity: 1; }
+  100% { transform: scale(1.5); opacity: 0; }
 }
 
 .pulse-ring::before {
   content: "";
   position: absolute;
   inset: -10px;
-  border: 2px solid #CCFF00;
+  border: 2px solid #AAFF00;
   border-radius: 50%;
   animation: pulse-ring 1.5s ease-out infinite;
 }
 
-/* Glow lime adapts to theme */
-.glow-lime {
-  box-shadow: 0 0 20px rgba(204, 255, 0, 0.3);
-}
-
-.glow-lime:hover {
-  box-shadow: 0 0 30px rgba(204, 255, 0, 0.5);
-}
-
-.light .glow-lime {
-  box-shadow: 0 0 15px rgba(128, 204, 0, 0.3);
-}
-
-.light .glow-lime:hover {
-  box-shadow: 0 0 25px rgba(128, 204, 0, 0.5);
-}
-
-/* Light theme card borders */
-.light .border-white\/5 {
-  border-color: rgba(0, 0, 0, 0.08);
-}
-
-.light .border-white\/10 {
-  border-color: rgba(0, 0, 0, 0.1);
-}
-
-/* Lime color adjustments for light theme */
-.light .text-lime {
-  color: hsl(75, 100%, 35%);
-}
-
-.light .bg-lime {
-  background-color: hsl(75, 100%, 45%);
-}
-
-.light .bg-lime\/20 {
-  background-color: hsla(75, 100%, 45%, 0.2);
-}
-
-.light .border-lime {
-  border-color: hsl(75, 100%, 35%);
-}
-
-/* Ensure readable text in light mode overlays */
-.light .game-overlay {
-  background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 40%, transparent 100%);
-}
-
-/* Game feed specific - keep text white on game cards */
-.game-feed-content {
-  color: white;
-}
-
+/* ─── Game feed text — always white on video ──────────────────── */
+.game-feed-content,
 .game-feed-content h2,
 .game-feed-content p,
 .game-feed-content span {
   color: white;
+}
+
+/* ─── Entrance animations ─────────────────────────────────────── */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up {
+  animation: fade-up 0.4s ease-out both;
+}
+
+/* ─── Active tap feedback ─────────────────────────────────────── */
+.tap-scale {
+  transition: transform 0.15s ease;
+}
+.tap-scale:active {
+  transform: scale(0.97);
 }

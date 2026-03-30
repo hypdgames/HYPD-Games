@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Chivo, Manrope } from "next/font/google";
+import { DM_Sans } from "next/font/google";
 import "./globals.css";
 import BottomNav from "@/components/bottom-nav";
 import { Providers } from "@/components/providers";
@@ -7,16 +7,10 @@ import { ToastProvider } from "@/components/toast-provider";
 import { ServiceWorkerRegistration } from "@/components/service-worker";
 import { SettingsProvider } from "@/components/settings-provider";
 
-const chivo = Chivo({
-  subsets: ["latin"],
-  weight: ["400", "700", "900"],
-  variable: "--font-chivo",
-});
-
-const manrope = Manrope({
+const dmSans = DM_Sans({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
-  variable: "--font-manrope",
+  variable: "--font-dm-sans",
 });
 
 export const metadata: Metadata = {
@@ -64,7 +58,7 @@ export const metadata: Metadata = {
     },
   },
   verification: {
-    google: "your-google-verification-code", // Add when you have it
+    google: "your-google-verification-code",
   },
 };
 
@@ -73,7 +67,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#050505",
+  themeColor: "#141414",
 };
 
 export default function RootLayout({
@@ -90,7 +84,6 @@ export default function RootLayout({
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9316102142280167"
           crossOrigin="anonymous"
         ></script>
-        {/* Preconnect to game servers for faster loading */}
         <link rel="preconnect" href="https://games.gamepix.com" />
         <link rel="dns-prefetch" href="https://games.gamepix.com" />
         <link rel="preconnect" href="https://html5.gamedistribution.com" />
@@ -100,12 +93,14 @@ export default function RootLayout({
         <link rel="preconnect" href="https://img.gamemonetize.com" />
         <link rel="dns-prefetch" href="https://img.gamemonetize.com" />
       </head>
-      <body className={`${chivo.variable} ${manrope.variable} font-sans antialiased`}>
+      <body className={`${dmSans.variable} font-sans antialiased`}>
         <Providers>
           <SettingsProvider>
             <ServiceWorkerRegistration />
-            <main className="min-h-screen bg-background transition-colors duration-300">
-              {children}
+            <main className="min-h-screen bg-background">
+              <div className="mx-auto max-w-[430px] min-h-screen relative">
+                {children}
+              </div>
             </main>
             <BottomNav />
             <ToastProvider />

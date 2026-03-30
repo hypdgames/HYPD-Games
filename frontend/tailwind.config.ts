@@ -17,8 +17,8 @@ const config: Config = {
     },
     extend: {
       fontFamily: {
-        sans: ["var(--font-manrope)", "sans-serif"],
-        heading: ["var(--font-chivo)", "sans-serif"],
+        sans: ["'DM Sans'", "sans-serif"],
+        heading: ["'DM Sans'", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -55,17 +55,24 @@ const config: Config = {
           foreground: "hsl(var(--card-foreground))",
         },
         lime: {
-          DEFAULT: "#CCFF00",
-          dark: "#b3e600",
+          DEFAULT: "#AAFF00",
+          dark: "#8FD900",
         },
         violet: {
-          DEFAULT: "#7000FF",
+          DEFAULT: "#7748F8",
+          light: "#A259FF",
         },
       },
       borderRadius: {
         lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        md: "calc(var(--radius) - 4px)",
+        sm: "calc(var(--radius) - 8px)",
+        squircle: "24px",
+        pill: "999px",
+      },
+      boxShadow: {
+        "card-light": "0 2px 16px rgba(0,0,0,0.07)",
+        "nav-light": "0 8px 32px rgba(0,0,0,0.12)",
       },
       keyframes: {
         "accordion-down": {
@@ -77,8 +84,8 @@ const config: Config = {
           to: { height: "0" },
         },
         "pulse-glow": {
-          "0%, 100%": { boxShadow: "0 0 20px rgba(204, 255, 0, 0.3)" },
-          "50%": { boxShadow: "0 0 40px rgba(204, 255, 0, 0.5)" },
+          "0%, 100%": { boxShadow: "0 0 20px rgba(170, 255, 0, 0.3)" },
+          "50%": { boxShadow: "0 0 40px rgba(170, 255, 0, 0.5)" },
         },
         "slide-up": {
           from: { transform: "translateY(100%)", opacity: "0" },

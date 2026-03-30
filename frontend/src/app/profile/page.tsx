@@ -295,7 +295,7 @@ export default function ProfilePage() {
   // --- Logged in view ---
   return (
     <div
-      className="min-h-screen bg-background pb-24"
+      className="min-h-screen page-gradient pb-28"
       data-testid="profile-page-logged-in"
     >
       <ProfileHeader
@@ -305,9 +305,9 @@ export default function ProfilePage() {
         onLogout={handleLogout}
       />
 
-      <div className="px-6">
+      <div className="px-5">
         <Tabs defaultValue={defaultTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-4">
+          <TabsList className="grid w-full grid-cols-4 mb-5">
             <TabsTrigger
               value="streak"
               className="flex items-center gap-1"
