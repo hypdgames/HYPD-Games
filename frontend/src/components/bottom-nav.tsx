@@ -22,7 +22,7 @@ export default function BottomNav() {
       className="fixed bottom-4 left-0 right-0 z-50 flex justify-center px-4"
       data-testid="bottom-navigation"
     >
-      <div className="frosted-nav flex items-center justify-around w-full max-w-[400px] h-[58px] px-4">
+      <div className="frosted-nav flex items-center justify-around w-full max-w-[500px] h-[58px] px-4">
         {navItems.map(({ path, icon: Icon, label }) => {
           const isActive = pathname === path;
 

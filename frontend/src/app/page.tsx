@@ -272,7 +272,7 @@ export default function GameFeed() {
     <div className="relative h-[100dvh] hook-gradient-bg" data-testid="game-feed">
       {/* ─── Fixed header ──────────────────────────────────── */}
       <div className="fixed top-0 left-0 right-0 z-40 pointer-events-none">
-        <div className="mx-auto max-w-[430px] flex items-center justify-between px-5 pt-4 pb-2 pointer-events-auto">
+        <div className="mx-auto w-full max-w-[540px] flex items-center justify-between px-5 pt-4 pb-2 pointer-events-auto">
           <div>
             {settings?.logo_url ? (
               <img

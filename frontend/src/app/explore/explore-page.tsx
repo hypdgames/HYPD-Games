@@ -79,7 +79,7 @@ function TrendingCard({ game, onClick }: { game: Game; onClick: () => void }) {
     <motion.div
       whileTap={{ scale: 0.97 }}
       onClick={onClick}
-      className="flex-shrink-0 w-[65vw] max-w-[260px] squircle relative cursor-pointer"
+      className="flex-shrink-0 w-[60%] max-w-[280px] squircle relative cursor-pointer"
       style={{ aspectRatio: "4/5" }}
       data-testid={`trending-card-${game.id}`}
     >
@@ -106,7 +106,7 @@ function GameTile({ game, onClick }: { game: Game; onClick: () => void }) {
     <motion.div
       whileTap={{ scale: 0.97 }}
       onClick={onClick}
-      className="flex-shrink-0 w-[120px] cursor-pointer"
+      className="flex-shrink-0 w-[28%] min-w-[110px] max-w-[140px] cursor-pointer"
       data-testid={`tile-${game.id}`}
     >
       <div className="squircle-sm w-full" style={{ aspectRatio: "1" }}>
@@ -125,7 +125,7 @@ function CategoryTile({ name, gameCount, onSelect }: { name: string; gameCount: 
     <motion.button
       whileTap={{ scale: 0.93 }}
       onClick={onSelect}
-      className={`flex-shrink-0 flex flex-col items-center justify-center w-[100px] h-[80px] rounded-2xl bg-gradient-to-br ${getCatGrad(name)} shadow-md`}
+      className={`flex-shrink-0 flex flex-col items-center justify-center w-[22%] min-w-[90px] max-w-[110px] h-[80px] rounded-2xl bg-gradient-to-br ${getCatGrad(name)} shadow-md`}
       data-testid={`category-tile-${name}`}
     >
       <span className="text-white font-bold text-sm leading-tight text-center px-2 line-clamp-1">{name}</span>

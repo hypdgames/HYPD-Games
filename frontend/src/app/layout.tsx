@@ -98,7 +98,7 @@ export default function RootLayout({
           <SettingsProvider>
             <ServiceWorkerRegistration />
             <main className="min-h-screen bg-background">
-              <div className="mx-auto max-w-[430px] min-h-screen relative">
+              <div className="mx-auto w-full max-w-[540px] min-h-screen relative">
                 {children}
               </div>
             </main>
