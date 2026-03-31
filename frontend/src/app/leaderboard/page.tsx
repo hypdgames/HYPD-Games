@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Trophy, Crown, Medal, Gamepad2, Clock, User, Loader2 } from "lucide-react";
+import Image from "next/image";
 import type { Game } from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
@@ -105,9 +106,9 @@ export default function LeaderboardPage() {
             <div className="flex-shrink-0 w-6 flex justify-center">{getRankDecor(entry.rank)}</div>
 
             {/* Avatar */}
-            <div className="w-11 h-11 rounded-2xl bg-card flex items-center justify-center flex-shrink-0 overflow-hidden shadow-sm">
+            <div className="w-11 h-11 rounded-2xl bg-card flex items-center justify-center flex-shrink-0 overflow-hidden shadow-sm relative">
               {entry.user.avatar_url ? (
-                <img src={entry.user.avatar_url} alt="" className="w-full h-full object-cover" />
+                <Image src={entry.user.avatar_url} alt="" fill className="object-cover" sizes="44px" />
               ) : (
                 <User className="w-5 h-5 text-muted-foreground" />
               )}

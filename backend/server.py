@@ -381,6 +381,10 @@ class GameFeedResponse(BaseModel):
     play_count: int = 0
     created_at: Optional[str] = None
 
+    def model_post_init(self, __context):
+        if self.description and len(self.description) > 120:
+            self.description = self.description[:117] + "..."
+
 class PlaySessionCreate(BaseModel):
     game_id: str
     duration_seconds: int

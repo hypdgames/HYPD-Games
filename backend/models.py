@@ -319,7 +319,7 @@ class Game(Base):
     is_visible = Column(Boolean, default=True, index=True)
     show_in_feed = Column(Boolean, default=True, index=True)
     play_count = Column(Integer, default=0)
-    created_at = Column(DateTime(timezone=True), default=utc_now)
+    created_at = Column(DateTime(timezone=True), default=utc_now, index=True)
     
     # GameDistribution specific fields
     gd_game_id = Column(String(255), nullable=True, unique=True, index=True)  # GameDistribution game ID
