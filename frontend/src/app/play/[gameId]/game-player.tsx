@@ -85,7 +85,7 @@ export default function GamePlayer() {
   }
 
   return (
-    <div className="fixed inset-0 bg-black z-50" data-testid="game-player">
+    <div className="fixed inset-0 bg-black z-50 flex flex-col" data-testid="game-player">
       {/* Loading overlay */}
       {loading && (
         <div className="absolute inset-0 bg-background flex flex-col items-center justify-center z-30">
@@ -94,12 +94,47 @@ export default function GamePlayer() {
         </div>
       )}
 
-      {/* Game iframe */}
+      {/* ─── Top toolbar ─────────────────────────────────── */}
+      <div className="flex-shrink-0 flex items-center justify-between px-3 py-1.5 bg-background border-b border-border/50" data-testid="game-toolbar">
+        <button
+          onClick={handleExit}
+          className="flex items-center gap-1.5 bg-muted hover:bg-muted/80 px-3.5 py-1.5 rounded-pill text-foreground font-bold text-xs active:scale-95 transition-transform"
+          data-testid="exit-button"
+        >
+          <LogOut className="w-3.5 h-3.5" />
+          Exit
+        </button>
+
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={toggleMute}
+            className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-foreground active:scale-90 transition-transform"
+            data-testid="sound-toggle"
+          >
+            {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+          </button>
+
+          <button
+            onClick={handleProfileClick}
+            className="w-8 h-8 flex items-center justify-center active:scale-90 transition-transform"
+            data-testid="profile-status"
+            title={user ? `Logged in as ${user.username}` : "Not logged in — tap to sign in"}
+          >
+            {user ? (
+              <UserCheck className="w-5 h-5 text-green-500" strokeWidth={2} />
+            ) : (
+              <UserX className="w-5 h-5 text-red-500" strokeWidth={2} />
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Game iframe — fills remaining space below toolbar */}
       {gameUrl && (
         <iframe
           ref={iframeRef}
           src={gameUrl}
-          className="w-full h-full border-0"
+          className="flex-1 w-full border-0"
           title="Game Player"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
           allowFullScreen
@@ -108,45 +143,6 @@ export default function GamePlayer() {
           onError={() => { setError("Failed to load game"); setLoading(false); }}
         />
       )}
-
-      {/* ─── Top toolbar ─────────────────────────────────── */}
-      <div className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-3 py-2.5 bg-background/80 backdrop-blur-md border-b border-border/50" data-testid="game-toolbar">
-        {/* Exit button — themed pill */}
-        <button
-          onClick={handleExit}
-          className="flex items-center gap-1.5 bg-muted hover:bg-muted/80 px-4 py-2 rounded-pill text-foreground font-bold text-sm active:scale-95 transition-transform"
-          data-testid="exit-button"
-        >
-          <LogOut className="w-4 h-4" />
-          Exit
-        </button>
-
-        {/* Right side: Sound + Profile status */}
-        <div className="flex items-center gap-2.5">
-          {/* Sound toggle */}
-          <button
-            onClick={toggleMute}
-            className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-foreground active:scale-90 transition-transform"
-            data-testid="sound-toggle"
-          >
-            {muted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-          </button>
-
-          {/* Profile icon — green with tick if logged in, red with X if not */}
-          <button
-            onClick={handleProfileClick}
-            className="w-9 h-9 flex items-center justify-center active:scale-90 transition-transform"
-            data-testid="profile-status"
-            title={user ? `Logged in as ${user.username}` : "Not logged in — tap to sign in"}
-          >
-            {user ? (
-              <UserCheck className="w-6 h-6 text-green-500" strokeWidth={2} />
-            ) : (
-              <UserX className="w-6 h-6 text-red-500" strokeWidth={2} />
-            )}
-          </button>
-        </div>
-      </div>
     </div>
   );
 }
