@@ -65,7 +65,7 @@ function FeedCard({
   const preload = isActive || isAdjacent ? "auto" : "none";
 
   return (
-    <div className="flex flex-col h-full pt-[56px] pb-[96px] px-4">
+    <div className="flex flex-col h-full pt-[68px] pb-[84px] px-4">
       {/* Card — fills available space */}
       <div
         className="content-card relative bg-black w-full flex-1 min-h-0 cursor-pointer"
