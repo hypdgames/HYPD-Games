@@ -295,7 +295,7 @@ export default function ProfilePage() {
   // --- Logged in view ---
   return (
     <div
-      className="min-h-screen page-gradient pb-28"
+      className="min-h-screen hook-gradient-bg pb-28"
       data-testid="profile-page-logged-in"
     >
       <ProfileHeader

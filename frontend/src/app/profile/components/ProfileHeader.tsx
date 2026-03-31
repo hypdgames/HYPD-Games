@@ -1,13 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import {
-  LogOut,
-  Heart,
-  Trophy,
-  Flame,
-  Users,
-} from "lucide-react";
+import { LogOut, Heart, Trophy, Flame, Users } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import type { User, AppSettings } from "@/types";
 
@@ -18,21 +12,17 @@ interface ProfileHeaderProps {
   onLogout: () => void;
 }
 
-export function ProfileHeader({
-  user,
-  friendsCount,
-  onLogout,
-}: ProfileHeaderProps) {
+export function ProfileHeader({ user, friendsCount, onLogout }: ProfileHeaderProps) {
   return (
     <>
-      {/* Header Bar */}
-      <div className="px-4 pt-4 pb-2 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-foreground lowercase tracking-tight">profile</h1>
-        <div className="flex items-center gap-2">
+      {/* Centered title (Hook style) */}
+      <div className="pt-5 pb-2 text-center relative">
+        <h1 className="text-2xl font-extrabold text-foreground">Profile</h1>
+        <div className="absolute right-5 top-5 flex items-center gap-2">
           <ThemeToggle />
           <button
             onClick={onLogout}
-            className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground"
+            className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground active:scale-90 transition-transform"
             data-testid="logout-button"
           >
             <LogOut className="w-[18px] h-[18px]" />
@@ -41,53 +31,35 @@ export function ProfileHeader({
       </div>
 
       <div className="px-5 pt-4">
-        {/* User Info */}
+        {/* Avatar */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-6"
         >
-          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-lime/30 to-violet/30 flex items-center justify-center mx-auto mb-4">
-            <span className="font-bold text-3xl text-foreground">
+          <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-violet/30 to-lime/20 flex items-center justify-center mx-auto mb-4 shadow-md">
+            <span className="font-extrabold text-3xl text-foreground">
               {user.username?.charAt(0).toUpperCase()}
             </span>
           </div>
-          <h2 className="font-bold text-2xl text-foreground mb-1 lowercase">
-            {user.username}
-          </h2>
-          <p className="text-muted-foreground text-[14px]">{user.email}</p>
+          <h2 className="font-extrabold text-2xl mb-1">{user.username}</h2>
+          <p className="text-muted-foreground text-sm">{user.email}</p>
         </motion.div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-4 gap-2 mb-6">
-          <div className="bg-card card-elevated rounded-[20px] p-3 text-center">
-            <Flame className="w-5 h-5 text-orange-500 mx-auto mb-1" />
-            <p className="text-xl font-bold text-foreground">
-              {user.login_streak || 0}
-            </p>
-            <p className="text-[10px] text-muted-foreground font-medium">Streak</p>
-          </div>
-          <div className="bg-card card-elevated rounded-[20px] p-3 text-center">
-            <Heart className="w-5 h-5 text-red-500 mx-auto mb-1" />
-            <p className="text-xl font-bold text-foreground">
-              {user.saved_games?.length || 0}
-            </p>
-            <p className="text-[10px] text-muted-foreground font-medium">Saved</p>
-          </div>
-          <div className="bg-card card-elevated rounded-[20px] p-3 text-center">
-            <Trophy className="w-5 h-5 text-yellow-500 mx-auto mb-1" />
-            <p className="text-xl font-bold text-foreground">
-              {Object.keys(user.high_scores || {}).length}
-            </p>
-            <p className="text-[10px] text-muted-foreground font-medium">Scores</p>
-          </div>
-          <div className="bg-card card-elevated rounded-[20px] p-3 text-center">
-            <Users className="w-5 h-5 text-blue-500 mx-auto mb-1" />
-            <p className="text-xl font-bold text-foreground">
-              {friendsCount}
-            </p>
-            <p className="text-[10px] text-muted-foreground font-medium">Friends</p>
-          </div>
+        {/* Stats — soft cards (Hook's card style) */}
+        <div className="grid grid-cols-4 gap-2.5 mb-6">
+          {[
+            { icon: Flame, color: "text-orange-500", val: user.login_streak || 0, label: "Streak" },
+            { icon: Heart, color: "text-red-500", val: user.saved_games?.length || 0, label: "Saved" },
+            { icon: Trophy, color: "text-yellow-500", val: Object.keys(user.high_scores || {}).length, label: "Scores" },
+            { icon: Users, color: "text-blue-500", val: friendsCount, label: "Friends" },
+          ].map(({ icon: Icon, color, val, label }) => (
+            <div key={label} className="soft-card text-center">
+              <Icon className={`w-5 h-5 ${color} mx-auto mb-1.5`} />
+              <p className="text-xl font-extrabold">{val}</p>
+              <p className="text-[10px] text-muted-foreground font-medium mt-0.5">{label}</p>
+            </div>
+          ))}
         </div>
       </div>
     </>

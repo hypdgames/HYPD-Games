@@ -2,14 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Compass, Trophy, User, Crosshair } from "lucide-react";
+import { Home, Search, Trophy, User, Crosshair } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
 
 const navItems = [
   { path: "/", icon: Home, label: "Feed" },
-  { path: "/explore", icon: Compass, label: "Explore" },
-  { path: "/idle-game", icon: Crosshair, label: "Defence" },
+  { path: "/explore", icon: Search, label: "Explore" },
+  { path: "/idle-game", icon: Crosshair, label: "Defence", isCenter: true },
   { path: "/leaderboard", icon: Trophy, label: "Leaders" },
   { path: "/profile", icon: User, label: "Profile" },
 ];
@@ -21,43 +20,52 @@ export default function BottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 flex justify-center pb-5 pt-2 px-4 pointer-events-none"
+      className="fixed bottom-4 left-0 right-0 z-50 flex justify-center px-4"
       data-testid="bottom-navigation"
     >
-      <div
-        className="nav-pill flex items-center justify-around w-full max-w-[400px] h-16 px-3 pointer-events-auto"
-      >
-        {navItems.map(({ path, icon: Icon, label }) => {
+      <div className="frosted-nav flex items-center justify-around w-full max-w-[400px] h-[68px] px-4">
+        {navItems.map(({ path, icon: Icon, label, isCenter }) => {
           const isActive = pathname === path;
+
+          /* ── Large purple center button (like Hook's "+" button) ── */
+          if (isCenter) {
+            return (
+              <Link
+                key={path}
+                href={path}
+                className="flex flex-col items-center -mt-5"
+                data-testid="nav-defence"
+              >
+                <div
+                  className={cn(
+                    "w-14 h-14 rounded-full flex items-center justify-center center-btn-glow transition-transform active:scale-90",
+                    "bg-violet"
+                  )}
+                >
+                  <Icon className="w-6 h-6 text-white" strokeWidth={2} />
+                </div>
+              </Link>
+            );
+          }
 
           return (
             <Link
               key={path}
               href={path}
-              className="flex flex-col items-center gap-0.5 relative"
+              className="flex flex-col items-center gap-0.5"
               data-testid={`nav-${label.toLowerCase()}`}
             >
-              <motion.div
-                whileTap={{ scale: 0.85 }}
+              <Icon
                 className={cn(
-                  "w-10 h-10 rounded-full flex items-center justify-center transition-colors duration-200",
-                  isActive
-                    ? "bg-lime"
-                    : "bg-transparent"
+                  "w-6 h-6 transition-colors",
+                  isActive ? "text-foreground" : "text-muted-foreground"
                 )}
-              >
-                <Icon
-                  className={cn(
-                    "w-[22px] h-[22px] transition-colors duration-200",
-                    isActive ? "text-black" : "text-[#888888]"
-                  )}
-                  strokeWidth={isActive ? 2.5 : 1.8}
-                />
-              </motion.div>
+                strokeWidth={isActive ? 2.2 : 1.6}
+              />
               <span
                 className={cn(
-                  "text-[11px] font-medium leading-none",
-                  isActive ? "text-foreground" : "text-[#888888]"
+                  "text-[10px] font-medium",
+                  isActive ? "text-foreground" : "text-muted-foreground"
                 )}
               >
                 {label}

@@ -15,22 +15,18 @@ interface ThemeStore {
 export const useThemeStore = create<ThemeStore>()(
   persist(
     (set, get) => ({
-      theme: "dark",
+      theme: "light",
 
       setTheme: (theme) => {
         // Ensure theme is valid (migrate old "auto" to "dark")
         const validTheme = theme === "light" ? "light" : "dark";
         set({ theme: validTheme });
         
-        // Apply to document
         if (typeof document !== "undefined") {
           const root = document.documentElement;
-          if (validTheme === "light") {
-            root.classList.add("light");
-            root.classList.remove("dark");
-          } else {
+          root.classList.remove("light", "dark");
+          if (validTheme === "dark") {
             root.classList.add("dark");
-            root.classList.remove("light");
           }
         }
       },
@@ -53,9 +49,8 @@ export const useThemeStore = create<ThemeStore>()(
       // Handle migration from old store structure
       onRehydrateStorage: () => (state) => {
         if (state) {
-          // If theme is not valid, default to dark
           if (state.theme !== "light" && state.theme !== "dark") {
-            state.theme = "dark";
+            state.theme = "light";
           }
         }
       },

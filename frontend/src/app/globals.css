@@ -1,89 +1,141 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  /* Dark theme (default) */
   :root {
-    --background: 0 0% 8%;
-    --foreground: 0 0% 94%;
-    --card: 0 0% 12%;
-    --card-foreground: 0 0% 94%;
-    --popover: 0 0% 12%;
-    --popover-foreground: 0 0% 94%;
+    --background: 280 20% 97%;
+    --foreground: 0 0% 8%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 8%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 8%;
     --primary: 80 100% 50%;
     --primary-foreground: 0 0% 0%;
-    --secondary: 256 93% 63%;
+    --secondary: 263 90% 60%;
     --secondary-foreground: 0 0% 100%;
-    --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 53%;
+    --muted: 240 10% 94%;
+    --muted-foreground: 0 0% 45%;
+    --accent: 80 100% 50%;
+    --accent-foreground: 0 0% 0%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 89%;
+    --input: 240 10% 94%;
+    --ring: 263 90% 60%;
+    --radius: 1.5rem;
+  }
+
+  .dark {
+    --background: 0 0% 5%;
+    --foreground: 0 0% 95%;
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 95%;
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 95%;
+    --primary: 80 100% 50%;
+    --primary-foreground: 0 0% 0%;
+    --secondary: 263 90% 60%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 0 0% 14%;
+    --muted-foreground: 0 0% 55%;
     --accent: 80 100% 50%;
     --accent-foreground: 0 0% 0%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
     --border: 0 0% 18%;
-    --input: 0 0% 15%;
-    --ring: 80 100% 50%;
-    --radius: 1.25rem;
-
-    --gradient-page: linear-gradient(to bottom, #1A0D2E 0%, #141414 35%);
-    --shadow-card: none;
-    --shadow-nav: none;
-    --nav-bg: #1E1E1E;
-    --nav-border: rgba(255, 255, 255, 0.1);
-  }
-
-  /* Light theme */
-  .light {
-    --background: 0 0% 98%;
-    --foreground: 0 0% 10%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 10%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 10%;
-    --primary: 80 100% 50%;
-    --primary-foreground: 0 0% 0%;
-    --secondary: 256 93% 63%;
-    --secondary-foreground: 0 0% 100%;
-    --muted: 240 20% 96%;
-    --muted-foreground: 0 0% 53%;
-    --accent: 80 100% 50%;
-    --accent-foreground: 0 0% 0%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 92%;
-    --input: 240 20% 96%;
-    --ring: 80 100% 50%;
-
-    --gradient-page: linear-gradient(to bottom, #EDE0FF 0%, #F5E8FF 18%, #FAFAFA 48%);
-    --shadow-card: 0 2px 16px rgba(0, 0, 0, 0.07);
-    --shadow-nav: 0 8px 32px rgba(0, 0, 0, 0.12);
-    --nav-bg: #FFFFFF;
-    --nav-border: transparent;
+    --input: 0 0% 14%;
+    --ring: 263 90% 60%;
   }
 
   * {
     @apply border-border;
   }
-
   body {
     @apply bg-background text-foreground;
     font-family: 'DM Sans', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
-
   html {
     scroll-behavior: smooth;
   }
 }
 
-/* ─── Page gradient background ────────────────────────────────── */
-.page-gradient {
-  background: var(--gradient-page);
-  background-attachment: fixed;
+/* ─── Prominent top gradient (Hook's signature pink→white bleed) ── */
+.hook-gradient-bg {
+  background: linear-gradient(180deg, #f0d4f5 0%, #e8d0f0 8%, #f3e6f8 18%, hsl(var(--background)) 40%);
+}
+.dark .hook-gradient-bg {
+  background: linear-gradient(180deg, #1a0e24 0%, #120a1a 15%, hsl(var(--background)) 35%);
+}
+
+/* ─── The massive rounded content card (Hook's main card) ──────── */
+.content-card {
+  border-radius: 28px;
+  overflow: hidden;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.08);
+}
+.dark .content-card {
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
+}
+
+/* ─── Frosted glass nav bar ────────────────────────────────────── */
+.frosted-nav {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 32px;
+}
+.dark .frosted-nav {
+  background: rgba(30, 30, 30, 0.7);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ─── Action pill buttons (like Hook's heart/comment/share row) ── */
+.action-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: hsl(var(--muted));
+  font-size: 14px;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  transition: background-color 0.15s, transform 0.15s;
+}
+.action-pill:active {
+  transform: scale(0.95);
+}
+
+/* ─── Soft cards (like Hook's user rows / leaderboard cards) ───── */
+.soft-card {
+  background: hsl(var(--muted));
+  border-radius: 20px;
+  padding: 14px 16px;
+}
+
+/* ─── Filter pill (active = green/lime, inactive = grey pill) ──── */
+.filter-pill {
+  padding: 8px 20px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 600;
+  background: hsl(var(--muted));
+  color: hsl(var(--muted-foreground));
+  border: 1px solid hsl(var(--border));
+  transition: background-color 0.15s, color 0.15s;
+}
+.filter-pill-active {
+  background: #AAFF00;
+  color: #000;
+  border-color: #AAFF00;
 }
 
 /* ─── Hide scrollbars ─────────────────────────────────────────── */
@@ -95,12 +147,10 @@
   display: none;
 }
 
-/* ─── Snap scroll (TikTok feed) ───────────────────────────────── */
+/* ─── Snap scroll (feed) ──────────────────────────────────────── */
 .snap-container {
   scroll-snap-type: y mandatory;
   overflow-y: scroll;
-  height: 100dvh;
-  scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
 }
@@ -109,140 +159,32 @@
   scroll-snap-stop: always;
 }
 
-/* ─── Squircle cards ──────────────────────────────────────────── */
-.squircle {
-  border-radius: 24px;
-  overflow: hidden;
-}
-.squircle-sm {
-  border-radius: 16px;
-  overflow: hidden;
-}
-.squircle-lg {
-  border-radius: 28px;
-  overflow: hidden;
-}
-
-/* ─── Bottom gradient on game cards ───────────────────────────── */
+/* ─── Game overlay gradient ───────────────────────────────────── */
 .game-overlay {
-  background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 40%, transparent 100%);
+  background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.3) 50%, transparent 100%);
 }
 
-/* ─── Glass/Blur surfaces ─────────────────────────────────────── */
-.glass-dark {
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-
-.glass-surface {
-  background: var(--nav-bg);
-  border: 1px solid var(--nav-border);
-  box-shadow: var(--shadow-nav);
-}
-
-/* ─── Gradient CTA button ─────────────────────────────────────── */
-.btn-gradient {
-  background: linear-gradient(to right, #7748F8, #A259FF);
-  color: white;
-  font-weight: 700;
-  border-radius: 20px;
-  border: none;
-}
-.btn-gradient:hover {
-  opacity: 0.92;
-}
-.btn-gradient:active {
-  transform: scale(0.98);
-}
-
-/* ─── Neon green accent glow (dark mode only) ─────────────────── */
-.glow-accent {
-  box-shadow: 0 0 20px rgba(170, 255, 0, 0.25);
-}
-.glow-accent:hover {
-  box-shadow: 0 0 30px rgba(170, 255, 0, 0.4);
-}
-.light .glow-accent,
-.light .glow-accent:hover {
-  box-shadow: none;
-}
-
-/* ─── Card shadows per theme ──────────────────────────────────── */
-.card-elevated {
-  box-shadow: var(--shadow-card);
-  border: 1px solid var(--nav-border);
-}
-
-/* ─── Floating nav pill ───────────────────────────────────────── */
-.nav-pill {
-  background: var(--nav-bg);
-  border: 1px solid var(--nav-border);
-  box-shadow: var(--shadow-nav);
-  border-radius: 999px;
-}
-
-/* ─── Pill chip (filter tags) ─────────────────────────────────── */
-.chip {
-  border-radius: 999px;
-  padding: 6px 16px;
-  font-size: 13px;
-  font-weight: 500;
-  background: hsl(var(--muted));
-  color: hsl(var(--muted-foreground));
-  transition: background-color 0.2s, color 0.2s;
-}
-.chip-active {
-  background: #AAFF00;
-  color: #000000;
-}
-
-/* ─── Category gradient tiles ─────────────────────────────────── */
-.cat-tile {
-  border-radius: 20px;
-  position: relative;
-  overflow: hidden;
-}
-
-/* ─── Safe area padding ───────────────────────────────────────── */
+/* ─── Safe area ───────────────────────────────────────────────── */
 .pb-safe {
   padding-bottom: env(safe-area-inset-bottom, 20px);
 }
-
-/* ─── Touch target minimum size ───────────────────────────────── */
 .touch-target {
   min-height: 44px;
   min-width: 44px;
 }
 
-/* ─── Loading shimmer ─────────────────────────────────────────── */
+/* ─── Shimmer loading ─────────────────────────────────────────── */
 .shimmer {
-  background: linear-gradient(90deg, hsl(var(--card)) 25%, hsl(var(--muted)) 50%, hsl(var(--card)) 75%);
+  background: linear-gradient(90deg, hsl(var(--muted)) 25%, hsl(var(--card)) 50%, hsl(var(--muted)) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
-
 @keyframes shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
 
-/* ─── Pulse animation for play button ─────────────────────────── */
-@keyframes pulse-ring {
-  0% { transform: scale(0.8); opacity: 1; }
-  100% { transform: scale(1.5); opacity: 0; }
-}
-
-.pulse-ring::before {
-  content: "";
-  position: absolute;
-  inset: -10px;
-  border: 2px solid #AAFF00;
-  border-radius: 50%;
-  animation: pulse-ring 1.5s ease-out infinite;
-}
-
-/* ─── Game feed text — always white on video ──────────────────── */
+/* ─── Always-white text on game cards ─────────────────────────── */
 .game-feed-content,
 .game-feed-content h2,
 .game-feed-content p,
@@ -250,19 +192,47 @@
   color: white;
 }
 
-/* ─── Entrance animations ─────────────────────────────────────── */
+/* ─── Entrance animation ──────────────────────────────────────── */
 @keyframes fade-up {
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
 }
 .animate-fade-up {
   animation: fade-up 0.4s ease-out both;
 }
 
-/* ─── Active tap feedback ─────────────────────────────────────── */
-.tap-scale {
-  transition: transform 0.15s ease;
+/* ─── Squircle radius ─────────────────────────────────────────── */
+.squircle { border-radius: 24px; overflow: hidden; }
+.squircle-sm { border-radius: 16px; overflow: hidden; }
+
+/* ─── Purple center button glow ───────────────────────────────── */
+.center-btn-glow {
+  box-shadow: 0 4px 20px rgba(119, 72, 248, 0.35);
 }
-.tap-scale:active {
-  transform: scale(0.97);
+
+/* ─── Play count badge ────────────────────────────────────────── */
+.play-badge {
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: white;
+}
+
+/* ─── Search bar (Hook style) ─────────────────────────────────── */
+.search-bar {
+  border-radius: 999px;
+  background: hsl(var(--muted));
+  border: 1px solid hsl(var(--border));
+  padding: 14px 20px 14px 48px;
+  font-size: 16px;
+  width: 100%;
+  outline: none;
+  color: hsl(var(--foreground));
+}
+.search-bar::placeholder {
+  color: hsl(var(--muted-foreground));
 }
