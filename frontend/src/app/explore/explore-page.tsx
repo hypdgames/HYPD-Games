@@ -10,7 +10,7 @@ import type { Game } from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 const EXPLORE_CACHE_KEY = "hypd:explore_data";
-const EXPLORE_CACHE_TTL = 30 * 1000;
+const EXPLORE_CACHE_TTL = 300 * 1000;
 
 function sessionGet<T>(key: string, ttl: number): T | null {
   try {

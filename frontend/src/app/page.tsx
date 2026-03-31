@@ -14,7 +14,7 @@ const AD_FREQUENCY = 6;
 const VIDEO_CACHE_KEY = "hypd:video_cache_v2";
 const VIDEO_CACHE_TTL = 3600 * 1000;
 const GAMES_CACHE_KEY = "hypd:games_feed";
-const GAMES_CACHE_TTL = 30 * 1000;
+const GAMES_CACHE_TTL = 300 * 1000;
 
 const gameFingerprint = (games: Game[]) => games.map(g => g.id).sort().join("|");
 interface VideoCache { urls: Record<string, string>; fp: string; }

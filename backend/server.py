@@ -370,6 +370,17 @@ class GameResponse(BaseModel):
     embed_url: Optional[str] = None
     instructions: Optional[str] = None
 
+class GameFeedResponse(BaseModel):
+    """Lightweight response for feed/explore — omits heavy fields to cut payload ~60%."""
+    id: str
+    title: str
+    description: Optional[str] = None
+    category: str
+    thumbnail_url: Optional[str] = None
+    icon_url: Optional[str] = None
+    play_count: int = 0
+    created_at: Optional[str] = None
+
 class PlaySessionCreate(BaseModel):
     game_id: str
     duration_seconds: int
@@ -744,7 +755,7 @@ async def get_games(
     cached = _cache_get(cache_key, ttl=300)  # 5 min TTL — long enough to avoid frequent DB hits
     if cached is not None:
         response = JSONResponse(content=cached)
-        response.headers["Cache-Control"] = "public, max-age=15, stale-while-revalidate=60"
+        response.headers["Cache-Control"] = "public, max-age=60, stale-while-revalidate=300"
         return response
 
     query = select(Game)
@@ -759,11 +770,11 @@ async def get_games(
     result = await db.execute(query)
     games = result.scalars().all()
 
-    game_responses = [GameResponse(**g.to_dict()).model_dump() for g in games]
+    game_responses = [GameFeedResponse(**g.to_dict()).model_dump() for g in games]
     _cache_set(cache_key, game_responses)
 
     response = JSONResponse(content=game_responses)
-    response.headers["Cache-Control"] = "public, max-age=15, stale-while-revalidate=60"
+    response.headers["Cache-Control"] = "public, max-age=60, stale-while-revalidate=300"
     return response
 
 
@@ -3176,10 +3187,12 @@ async def get_global_leaderboard(
     db: AsyncSession = Depends(get_db)
 ):
     """Get global leaderboard (top players by total play time and games)"""
-    # Check cache first
-    cached = get_leaderboard("global")
-    if cached:
-        return {"leaderboard": cached, "cached": True}
+    cache_key = "leaderboard:global"
+    cached = _cache_get(cache_key, ttl=120)
+    if cached is not None:
+        response = JSONResponse(content={"leaderboard": cached, "cached": True})
+        response.headers["Cache-Control"] = "public, max-age=60, stale-while-revalidate=120"
+        return response
     
     result = await db.execute(
         select(User)
@@ -3192,15 +3205,16 @@ async def get_global_leaderboard(
     for i, u in enumerate(users, 1):
         leaderboard.append({
             "rank": i,
-            "user": u.to_dict(),
+            "user": {"id": u.id, "username": u.username, "avatar_url": getattr(u, 'avatar_url', None)},
             "total_games": u.total_games_played or 0,
             "total_time": u.total_play_time or 0
         })
     
-    # Cache the result
-    set_leaderboard(leaderboard, "global")
+    _cache_set(cache_key, leaderboard)
     
-    return {"leaderboard": leaderboard, "cached": False}
+    response = JSONResponse(content={"leaderboard": leaderboard, "cached": False})
+    response.headers["Cache-Control"] = "public, max-age=60, stale-while-revalidate=120"
+    return response
 
 @api_router.get("/leaderboard/game/{game_id}")
 async def get_game_leaderboard(
@@ -3209,34 +3223,36 @@ async def get_game_leaderboard(
     db: AsyncSession = Depends(get_db)
 ):
     """Get leaderboard for a specific game"""
-    # Check cache first
-    cached = get_leaderboard("game", game_id)
-    if cached:
-        return {"leaderboard": cached, "cached": True}
+    cache_key = f"leaderboard:game:{game_id}"
+    cached = _cache_get(cache_key, ttl=120)
+    if cached is not None:
+        response = JSONResponse(content={"leaderboard": cached, "cached": True})
+        response.headers["Cache-Control"] = "public, max-age=60, stale-while-revalidate=120"
+        return response
     
-    # Get high scores from users for this game
-    result = await db.execute(select(User))
+    # Only fetch users who have high_scores (filter in DB where possible)
+    result = await db.execute(
+        select(User).where(User.high_scores.is_not(None))
+    )
     users = result.scalars().all()
     
     scores = []
     for u in users:
         if u.high_scores and game_id in u.high_scores:
             scores.append({
-                "user": u.to_dict(),
+                "user": {"id": u.id, "username": u.username, "avatar_url": getattr(u, 'avatar_url', None)},
                 "score": u.high_scores[game_id]
             })
     
-    # Sort by score descending
     scores.sort(key=lambda x: x["score"], reverse=True)
     scores = scores[:limit]
-    
-    # Add ranks
     leaderboard = [{"rank": i + 1, **s} for i, s in enumerate(scores)]
     
-    # Cache the result
-    set_leaderboard(leaderboard, "game", game_id)
+    _cache_set(cache_key, leaderboard)
     
-    return {"leaderboard": leaderboard, "cached": False}
+    response = JSONResponse(content={"leaderboard": leaderboard, "cached": False})
+    response.headers["Cache-Control"] = "public, max-age=60, stale-while-revalidate=120"
+    return response
 
 @api_router.post("/leaderboard/submit")
 async def submit_score(
@@ -4363,7 +4379,7 @@ async def _prewarm_caches():
                 .order_by(Game.created_at.desc())
             )
             feed_games = result.scalars().all()
-            feed_responses = [GameResponse(**g.to_dict()).model_dump() for g in feed_games]
+            feed_responses = [GameFeedResponse(**g.to_dict()).model_dump() for g in feed_games]
             _cache_set("games:feed=True:cat=None", feed_responses)
 
             # Warm explore (all games) cache
@@ -4371,7 +4387,7 @@ async def _prewarm_caches():
                 select(Game).where(Game.is_visible.is_(True)).order_by(Game.created_at.desc())
             )
             all_games = result2.scalars().all()
-            all_responses = [GameResponse(**g.to_dict()).model_dump() for g in all_games]
+            all_responses = [GameFeedResponse(**g.to_dict()).model_dump() for g in all_games]
             _cache_set("games:feed=False:cat=None", all_responses)
 
             # Warm categories cache
