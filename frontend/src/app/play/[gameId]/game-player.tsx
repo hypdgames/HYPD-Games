@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { LogOut, Volume2, VolumeX, Loader2, X, Check } from "lucide-react";
 import { useAuthStore } from "@/store";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
@@ -11,24 +11,18 @@ export default function GamePlayer() {
   const params = useParams();
   const router = useRouter();
   const gameId = params.gameId as string;
-  const { token } = useAuthStore();
+  const { user, token } = useAuthStore();
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const startTimeRef = useRef<number | null>(null);
-  const dragTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [gameUrl, setGameUrl] = useState<string | null>(null);
-  const [buttonY, setButtonY] = useState(100);
-  const [isDragging, setIsDragging] = useState(false);
-  const [hasDragged, setHasDragged] = useState(false);
-  const dragStartY = useRef(0);
-  const buttonStartY = useRef(0);
+  const [muted, setMuted] = useState(false);
 
   useEffect(() => {
-    const url = `${API_URL}/api/games/${gameId}/play`;
-    setGameUrl(url);
+    setGameUrl(`${API_URL}/api/games/${gameId}/play`);
     startTimeRef.current = Date.now();
   }, [gameId]);
 
@@ -53,70 +47,37 @@ export default function GamePlayer() {
     } catch (e) { console.error("Failed to record play session:", e); }
   };
 
-  const handleDragStart = useCallback(
-    (e: React.MouseEvent | React.TouchEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      setIsDragging(true);
-      setHasDragged(false);
-      const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
-      dragStartY.current = clientY;
-      buttonStartY.current = buttonY;
-    },
-    [buttonY]
-  );
-
-  const handleDragMove = useCallback(
-    (e: MouseEvent | TouchEvent) => {
-      if (!isDragging) return;
-      e.preventDefault();
-      const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
-      const deltaY = clientY - dragStartY.current;
-      if (Math.abs(deltaY) > 5) setHasDragged(true);
-      const newY = Math.max(50, Math.min(window.innerHeight - 150, buttonStartY.current + deltaY));
-      setButtonY(newY);
-    },
-    [isDragging]
-  );
-
-  const handleDragEnd = useCallback(() => {
-    if (dragTimeoutRef.current) clearTimeout(dragTimeoutRef.current);
-    dragTimeoutRef.current = setTimeout(() => { setIsDragging(false); }, 50);
-  }, []);
-
-  useEffect(() => {
-    if (isDragging) {
-      window.addEventListener("mousemove", handleDragMove);
-      window.addEventListener("mouseup", handleDragEnd);
-      window.addEventListener("touchmove", handleDragMove, { passive: false });
-      window.addEventListener("touchend", handleDragEnd);
-    }
-    return () => {
-      window.removeEventListener("mousemove", handleDragMove);
-      window.removeEventListener("mouseup", handleDragEnd);
-      window.removeEventListener("touchmove", handleDragMove);
-      window.removeEventListener("touchend", handleDragEnd);
-    };
-  }, [isDragging, handleDragMove, handleDragEnd]);
-
-  const handleBack = () => {
+  const handleExit = () => {
     recordPlaySession();
     router.back();
+  };
+
+  const toggleMute = () => {
+    setMuted(prev => !prev);
+    // Attempt to mute iframe audio via postMessage (works for some game engines)
+    if (iframeRef.current?.contentWindow) {
+      try {
+        iframeRef.current.contentWindow.postMessage({ type: "mute", muted: !muted }, "*");
+      } catch {}
+    }
+  };
+
+  const handleProfileClick = () => {
+    if (!user) {
+      recordPlaySession();
+      router.push("/profile");
+    }
   };
 
   if (error) {
     return (
       <div className="fixed inset-0 bg-background flex flex-col items-center justify-center p-8 text-center">
         <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mb-4">
-          <ArrowLeft className="w-8 h-8 text-red-500" />
+          <X className="w-8 h-8 text-red-500" />
         </div>
         <h2 className="text-xl font-bold text-foreground mb-2">Game Not Found</h2>
         <p className="text-muted-foreground mb-6">{error}</p>
-        <button
-          onClick={handleBack}
-          className="px-6 py-3 bg-lime text-black font-bold rounded-pill"
-          data-testid="go-back-btn"
-        >
+        <button onClick={handleExit} className="px-6 py-3 bg-violet text-white font-bold rounded-pill" data-testid="go-back-btn">
           Go Back
         </button>
       </div>
@@ -125,13 +86,15 @@ export default function GamePlayer() {
 
   return (
     <div className="fixed inset-0 bg-black z-50" data-testid="game-player">
+      {/* Loading overlay */}
       {loading && (
-        <div className="absolute inset-0 bg-background flex flex-col items-center justify-center z-20">
-          <Loader2 className="w-12 h-12 text-lime animate-spin mb-4" />
+        <div className="absolute inset-0 bg-background flex flex-col items-center justify-center z-30">
+          <Loader2 className="w-12 h-12 text-violet animate-spin mb-4" />
           <p className="text-foreground font-medium text-[15px]">Loading game...</p>
         </div>
       )}
 
+      {/* Game iframe */}
       {gameUrl && (
         <iframe
           ref={iframeRef}
@@ -146,25 +109,46 @@ export default function GamePlayer() {
         />
       )}
 
-      {/* Draggable Back Button */}
-      <button
-        onMouseDown={handleDragStart}
-        onTouchStart={handleDragStart}
-        onClick={(e) => {
-          e.preventDefault();
-          if (!hasDragged) handleBack();
-          setHasDragged(false);
-        }}
-        className={`fixed left-4 z-30 w-11 h-11 rounded-pill flex items-center justify-center touch-target cursor-grab active:cursor-grabbing ${
-          isDragging
-            ? "scale-110 bg-lime glow-accent"
-            : "glass-dark"
-        }`}
-        style={{ top: `${buttonY}px`, touchAction: 'none' }}
-        data-testid="back-button"
-      >
-        <ArrowLeft className={`w-5 h-5 ${isDragging ? "text-black" : "text-white"}`} />
-      </button>
+      {/* ─── Top toolbar (like CrazyGames) ────────────────── */}
+      <div className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-3 py-2 bg-black/70 backdrop-blur-sm" data-testid="game-toolbar">
+        {/* Exit button — violet pill */}
+        <button
+          onClick={handleExit}
+          className="flex items-center gap-1.5 bg-violet hover:bg-violet-light px-4 py-2 rounded-pill text-white font-bold text-sm active:scale-95 transition-transform"
+          data-testid="exit-button"
+        >
+          <LogOut className="w-4 h-4" />
+          Exit
+        </button>
+
+        {/* Right side: Sound + Profile status */}
+        <div className="flex items-center gap-3">
+          {/* Sound toggle */}
+          <button
+            onClick={toggleMute}
+            className="w-9 h-9 rounded-full flex items-center justify-center text-white active:scale-90 transition-transform"
+            data-testid="sound-toggle"
+          >
+            {muted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+          </button>
+
+          {/* Profile status indicator */}
+          <button
+            onClick={handleProfileClick}
+            className={`w-9 h-9 rounded-full flex items-center justify-center active:scale-90 transition-transform ${
+              user ? "bg-green-500" : "bg-red-500"
+            }`}
+            data-testid="profile-status"
+            title={user ? `Logged in as ${user.username}` : "Not logged in — tap to sign in"}
+          >
+            {user ? (
+              <Check className="w-4 h-4 text-white" strokeWidth={3} />
+            ) : (
+              <X className="w-4 h-4 text-white" strokeWidth={3} />
+            )}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
