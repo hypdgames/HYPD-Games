@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { LogOut, Volume2, VolumeX, Loader2, X, Check } from "lucide-react";
+import { LogOut, Volume2, VolumeX, Loader2, X, UserCheck, UserX } from "lucide-react";
 import { useAuthStore } from "@/store";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
@@ -109,12 +109,12 @@ export default function GamePlayer() {
         />
       )}
 
-      {/* ─── Top toolbar (like CrazyGames) ────────────────── */}
-      <div className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-3 py-2 bg-black/70 backdrop-blur-sm" data-testid="game-toolbar">
-        {/* Exit button — violet pill */}
+      {/* ─── Top toolbar ─────────────────────────────────── */}
+      <div className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-3 py-2.5 bg-background/80 backdrop-blur-md border-b border-border/50" data-testid="game-toolbar">
+        {/* Exit button — themed pill */}
         <button
           onClick={handleExit}
-          className="flex items-center gap-1.5 bg-violet hover:bg-violet-light px-4 py-2 rounded-pill text-white font-bold text-sm active:scale-95 transition-transform"
+          className="flex items-center gap-1.5 bg-muted hover:bg-muted/80 px-4 py-2 rounded-pill text-foreground font-bold text-sm active:scale-95 transition-transform"
           data-testid="exit-button"
         >
           <LogOut className="w-4 h-4" />
@@ -122,29 +122,27 @@ export default function GamePlayer() {
         </button>
 
         {/* Right side: Sound + Profile status */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           {/* Sound toggle */}
           <button
             onClick={toggleMute}
-            className="w-9 h-9 rounded-full flex items-center justify-center text-white active:scale-90 transition-transform"
+            className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-foreground active:scale-90 transition-transform"
             data-testid="sound-toggle"
           >
             {muted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
           </button>
 
-          {/* Profile status indicator */}
+          {/* Profile icon — green with tick if logged in, red with X if not */}
           <button
             onClick={handleProfileClick}
-            className={`w-9 h-9 rounded-full flex items-center justify-center active:scale-90 transition-transform ${
-              user ? "bg-green-500" : "bg-red-500"
-            }`}
+            className="w-9 h-9 flex items-center justify-center active:scale-90 transition-transform"
             data-testid="profile-status"
             title={user ? `Logged in as ${user.username}` : "Not logged in — tap to sign in"}
           >
             {user ? (
-              <Check className="w-4 h-4 text-white" strokeWidth={3} />
+              <UserCheck className="w-6 h-6 text-green-500" strokeWidth={2} />
             ) : (
-              <X className="w-4 h-4 text-white" strokeWidth={3} />
+              <UserX className="w-6 h-6 text-red-500" strokeWidth={2} />
             )}
           </button>
         </div>
