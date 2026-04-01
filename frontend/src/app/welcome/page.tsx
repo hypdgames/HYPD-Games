@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Eye, EyeOff, Loader2, User, Mail, Lock } from "lucide-react";
+import { X, Eye, EyeOff, Loader2, User, Mail, Lock, Gamepad2 } from "lucide-react";
 import Image from "next/image";
 import { useAuthStore } from "@/store";
 import { toast } from "sonner";
@@ -256,21 +256,67 @@ export default function WelcomePage() {
         )}
       </motion.div>
 
-      {/* ── Slideshow card ───────────────────── */}
+      {/* ── Slideshow card + stickers ──────── */}
       <motion.div
         initial={{ opacity: 0, scale: 0.93 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.45, delay: 0.08 }}
         className="flex-1 min-h-0 flex items-center justify-center py-2"
+        style={{ overflow: "visible" }}
       >
+        {/* Relative wrapper — card + stickers positioned inside, overflow allowed */}
         <div
-          className="rounded-[28px] overflow-hidden shadow-2xl w-full"
-          style={{ maxWidth: "300px", height: "100%", maxHeight: "min(360px, 42dvh)" }}
+          className="relative"
+          style={{ width: "min(78%, 300px)", height: "min(100%, min(360px, 42dvh))" }}
         >
-          <div className="relative w-full h-full">
+          {/* Slideshow card */}
+          <div className="absolute inset-0 rounded-[28px] overflow-hidden shadow-2xl">
             <Slideshow images={images} />
             <div className="absolute inset-0 bg-gradient-to-t from-black/25 to-transparent pointer-events-none" />
           </div>
+
+          {/* Game controller sticker — overhangs left */}
+          <motion.div
+            initial={{ scale: 0, rotate: -40 }}
+            animate={{ scale: 1, rotate: -18 }}
+            transition={{ delay: 0.35, type: "spring", stiffness: 200, damping: 14 }}
+            className="absolute z-20 pointer-events-none"
+            style={{ left: "-46px", top: "28%" }}
+          >
+            <div className="relative" style={{ filter: "drop-shadow(2px 3px 8px rgba(0,0,0,0.4))" }}>
+              {/* Sparkles */}
+              <span className="absolute -top-3 right-0 text-white font-black leading-none" style={{ fontSize: 16, textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}>✦</span>
+              <span className="absolute top-0 -left-2 text-white font-black leading-none" style={{ fontSize: 10, textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}>✦</span>
+              <span className="absolute -bottom-1 right-2 text-white font-black leading-none" style={{ fontSize: 8, textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}>✦</span>
+              {/* Controller icon */}
+              <Gamepad2 className="w-16 h-16" strokeWidth={1.8} style={{ color: "#FFD700" }} />
+              {/* Rainbow stripe */}
+              <div
+                className="absolute rounded-full"
+                style={{
+                  bottom: "-10px", left: "50%", transform: "translateX(-50%)",
+                  width: "88%", height: "9px",
+                  background: "linear-gradient(90deg,#ff3366,#ff8c00,#ffff00,#00cc44,#0099ff,#9933ff)",
+                }}
+              />
+            </div>
+          </motion.div>
+
+          {/* "New games daily 🔥" badge — overhangs right */}
+          <motion.div
+            initial={{ scale: 0, rotate: 20 }}
+            animate={{ scale: 1, rotate: 8 }}
+            transition={{ delay: 0.45, type: "spring", stiffness: 200, damping: 14 }}
+            className="absolute z-20 pointer-events-none"
+            style={{ right: "-22px", top: "18%" }}
+          >
+            <div
+              className="px-3.5 py-1.5 rounded-full font-bold text-black text-xs whitespace-nowrap"
+              style={{ background: "#AAFF00", boxShadow: "3px 3px 0 rgba(0,0,0,0.18)" }}
+            >
+              New games daily 🔥
+            </div>
+          </motion.div>
         </div>
       </motion.div>
 
