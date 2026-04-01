@@ -1,0 +1,68 @@
+{
+  "summary": "Frontend-only testing for 3 targeted bug fixes: (1) Guest comment sheet CTA button visibility, (2) HTML entity decoding in game titles, (3) Real-time comment count badge update. All 5 requested test scenarios PASSED.",
+
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Feed - game titles",
+        "issues": [
+          "Some game titles have trailing whitespace (e.g., 'Blush Fashion Girl Room ', 'Stop The Lock ') - likely from source data, minor cosmetic issue",
+          "Titles 'Maze Survivor   Platform Adventure Game' and 'Archery Master   Bow and Arrow' show 3 spaces instead of em-dash separator — the data source appears to already have stored 3 spaces rather than &ndash; entity (pre-existing data issue, not a code bug)",
+          "decodeHtml() does not handle &nbsp; entity — if data sources contain &nbsp; it would render as raw text. No current titles show this issue."
+        ]
+      }
+    ]
+  },
+
+  "passed_tests": [
+    "TEST 1 PASS: Guest comment sheet - Login button bounding box y=708 bottom=748, viewport=844px, FULLY VISIBLE (not clipped by bottom nav). Sign Up button also fully visible.",
+    "TEST 2 PASS: HTML entity decoding - all 82 game titles scanned, zero raw HTML entities (&ndash;, &amp;, &lt;, &gt;, etc.) found. 'Bridge Rush – Draw Bridge Puzzle Game' shows en-dash correctly.",
+    "TEST 3 PASS: Comment sheet backdrop z-index=500 > bottom nav z-index=50 — bottom nav is blocked when sheet is open.",
+    "TEST 4 PASS: Close button (data-testid=comment-close-btn) dismisses comment sheet; backdrop + sheet both removed from DOM.",
+    "TEST 5 PASS: Clicking backdrop area above the sheet (mouse.click at y=288) closes the comment sheet successfully.",
+    "TEST 6 PASS: Logged-in (admin) comment flow — comment input shown (not guest CTA), comment posted, appears in sheet list, comment count badge on feed card increments from 0 to 1 immediately after onCommentPosted callback fires."
+  ],
+
+  "failed_tests": [],
+
+  "test_report_links": [
+    "/app/test_reports/iteration_23.json"
+  ],
+
+  "action_items": [],
+
+  "critical_code_review_comments": [
+    "decodeHtml() missing &nbsp; handler — add .replace(/&nbsp;/g, '\\u00A0') or \" \" to be safe if game data from external sources may contain &nbsp;",
+    "Backdrop onClick fires correctly but clicking via Playwright requires explicit mouse coordinates above the sheet due to z-index stacking — expected browser behavior, not a bug"
+  ],
+
+  "updated_files": [],
+
+  "success_rate": {
+    "backend": "N/A (frontend-only testing)",
+    "frontend": "100% (6/6 test scenarios passed)"
+  },
+
+  "test_credentials": {
+    "admin_email": "admin@hypd.games",
+    "admin_password": "admin123",
+    "guest_access": "Click 'Play as Guest' on /welcome page"
+  },
+
+  "seed_data_creation": "2 test comments posted to game 6caad3fd-e01d-4fc6-9253-e7e796520a6b (Bridge Rush) during testing",
+
+  "retest_needed": false,
+
+  "should_main_agent_self_test": false,
+
+  "context_for_next_testing_agent": "All 3 bug fixes verified working: (1) z-[500] on backdrop+sheet + paddingBottom calc(80px+safe-area) ensures guest CTA buttons visible at y=708 in 844px mobile viewport. (2) decodeHtml() strips all common HTML entities from titles/descriptions. (3) onCommentPosted callback in page.tsx increments commentCounts state in real-time. Mobile viewport 390x844 used throughout. Admin login uses button[type=submit] (data-testid=login-submit). Guest via button:has-text('Guest') on /welcome.",
+
+  "rca_of_issue": "Previous bug: Guest CTA buttons (Login/Sign Up) were hidden behind the frosted glass bottom nav (z=50) because the comment sheet input area lacked sufficient bottom padding. Fix: sheet and backdrop raised to z-[500] so they sit above the nav (z=50), and paddingBottom set to calc(80px + env(safe-area-inset-bottom)) which pushes buttons 80px above bottom edge, well above the nav pill. Verified: Login button bottom edge at 748px in 844px viewport, nav starts at ~808px."
+}

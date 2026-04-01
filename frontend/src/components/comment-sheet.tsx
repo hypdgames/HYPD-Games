@@ -22,6 +22,7 @@ interface CommentSheetProps {
   gameTitle: string;
   isOpen: boolean;
   onClose: () => void;
+  onCommentPosted?: () => void;
 }
 
 function timeAgo(iso: string) {
@@ -34,7 +35,7 @@ function timeAgo(iso: string) {
   return `${Math.floor(hours / 24)}d`;
 }
 
-export function CommentSheet({ gameId, gameTitle, isOpen, onClose }: CommentSheetProps) {
+export function CommentSheet({ gameId, gameTitle, isOpen, onClose, onCommentPosted }: CommentSheetProps) {
   const { user, token } = useAuthStore();
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(false);
@@ -71,6 +72,7 @@ export function CommentSheet({ gameId, gameTitle, isOpen, onClose }: CommentShee
         const newComment = await res.json();
         setComments(prev => [newComment, ...prev]);
         setText("");
+        onCommentPosted?.();
       } else {
         toast.error("Failed to post comment");
       }
@@ -100,7 +102,7 @@ export function CommentSheet({ gameId, gameTitle, isOpen, onClose }: CommentShee
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-[500] bg-black/60 backdrop-blur-sm"
             data-testid="comment-backdrop"
           />
           <motion.div
@@ -108,7 +110,7 @@ export function CommentSheet({ gameId, gameTitle, isOpen, onClose }: CommentShee
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 32, stiffness: 320 }}
-            className="fixed bottom-0 left-0 right-0 z-[60] mx-auto max-w-[540px] bg-background rounded-t-3xl flex flex-col shadow-2xl"
+            className="fixed bottom-0 left-0 right-0 z-[500] mx-auto max-w-[540px] bg-background rounded-t-3xl flex flex-col shadow-2xl"
             style={{ maxHeight: "82dvh" }}
             data-testid="comment-sheet"
           >
@@ -183,7 +185,7 @@ export function CommentSheet({ gameId, gameTitle, isOpen, onClose }: CommentShee
             </div>
 
             {/* Input area */}
-            <div className="flex-shrink-0 border-t border-border/60" style={{ paddingBottom: "max(0px, env(safe-area-inset-bottom))" }}>
+            <div className="flex-shrink-0 border-t border-border/60" style={{ paddingBottom: "calc(80px + max(0px, env(safe-area-inset-bottom)))" }}>
               {user ? (
                 <div className="flex items-center gap-2.5 px-4 py-3">
                   <div className="w-8 h-8 rounded-full bg-violet/20 flex items-center justify-center flex-shrink-0">

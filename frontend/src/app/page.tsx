@@ -18,6 +18,24 @@ const VIDEO_CACHE_TTL = 3600 * 1000;
 const GAMES_CACHE_KEY = "hypd:games_feed";
 const GAMES_CACHE_TTL = 300 * 1000;
 
+function decodeHtml(str: string): string {
+  return str
+    .replace(/&ndash;/g, "–")
+    .replace(/&mdash;/g, "—")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&rsquo;/g, "'")
+    .replace(/&lsquo;/g, "'")
+    .replace(/&rdquo;/g, '"')
+    .replace(/&ldquo;/g, '"')
+    .replace(/&hellip;/g, "…")
+    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)));
+}
+
 const gameFingerprint = (games: Game[]) => games.map(g => g.id).sort().join("|");
 interface VideoCache { urls: Record<string, string>; fp: string; }
 
@@ -75,8 +93,8 @@ function FeedCard({
 
         <div className="absolute bottom-0 left-0 right-0 p-5 z-10">
           <span className="text-[11px] font-bold uppercase tracking-wider text-lime bg-black/40 backdrop-blur-sm px-2.5 py-1 rounded-pill">{game.category}</span>
-          <h2 className="text-white font-bold text-2xl mt-2 leading-tight drop-shadow-lg">{game.title}</h2>
-          {game.description && <p className="text-white/50 text-sm mt-1 line-clamp-2">{game.description}</p>}
+          <h2 className="text-white font-bold text-2xl mt-2 leading-tight drop-shadow-lg">{decodeHtml(game.title)}</h2>
+          {game.description && <p className="text-white/50 text-sm mt-1 line-clamp-2">{decodeHtml(game.description)}</p>}
         </div>
 
         {(game.play_count ?? 0) > 0 && (
@@ -246,7 +264,7 @@ export default function GameFeed() {
               <FeedCard game={item.data!} isActive={currentIndex === index} isAdjacent={Math.abs(currentIndex - index) === 1}
                 videoUrl={videoUrls[item.data!.id] ?? null} onPlay={() => playGame(item.data!.id)}
                 onSave={(e) => toggleSave(item.data!.id, e)} isSaved={savedGames.has(item.data!.id)}
-                onComment={(e) => { e.stopPropagation(); setCommentGame({ id: item.data!.id, title: item.data!.title }); }}
+                onComment={(e) => { e.stopPropagation(); setCommentGame({ id: item.data!.id, title: decodeHtml(item.data!.title) }); }}
                 likeCount={(item.data!.like_count || 0) + (likeAdjustments[item.data!.id] || 0)}
                 commentCount={commentCounts[item.data!.id] || 0} />
             )}
@@ -259,6 +277,11 @@ export default function GameFeed() {
         gameTitle={commentGame?.title ?? ""}
         isOpen={!!commentGame}
         onClose={() => setCommentGame(null)}
+        onCommentPosted={() => {
+          if (commentGame) {
+            setCommentCounts(prev => ({ ...prev, [commentGame.id]: (prev[commentGame.id] || 0) + 1 }));
+          }
+        }}
       />
     </div>
   );
