@@ -11,7 +11,7 @@ Deep structural redesign matching the Hook app reference:
 - Large rounded content card (28px radius) with centered play button overlay
 - Play count badge (backdrop-blur pill) at top-right of card
 - Game info at bottom of card (lime category pill, bold title, description)
-- Action pills row below card: Play Now (lime), Heart, Share (bookmark removed)
+- Action pills row below card: Play Now (lime), Heart, Comment (replaces Share)
 - HYPD brand logo at top-left, theme toggle at top-right
 
 ### Discover/Explore Page
@@ -62,6 +62,7 @@ Deep structural redesign matching the Hook app reference:
 - Base Defence tower defense game
 - Performance caching (backend TTL + frontend sessionStorage)
 - Automatic cache invalidation on admin game imports
+- **Game Comments**: Players can comment on any game via bottom-sheet (GET/POST/DELETE `/api/games/{id}/comments`)
 
 ## Architecture
 ```

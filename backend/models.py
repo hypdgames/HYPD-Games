@@ -548,3 +548,26 @@ class IdleGameState(Base):
             "state": self.state_json,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
+
+
+class GameComment(Base):
+    """Player comments on games"""
+    __tablename__ = 'game_comments'
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    game_id = Column(String(36), ForeignKey('games.id', ondelete='CASCADE'), nullable=False, index=True)
+    user_id = Column(String(36), ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+    content = Column(String(500), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, index=True)
+
+    user = relationship('User')
+    game = relationship('Game')
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "game_id": self.game_id,
+            "user_id": self.user_id,
+            "content": self.content,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }

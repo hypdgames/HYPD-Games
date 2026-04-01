@@ -37,7 +37,7 @@ from models import (
     Friendship, FriendshipStatus, Challenge, ChallengeParticipant,
     ChallengeType, ChallengeStatus, LeaderboardEntry, AnalyticsEvent, DailyStats,
     WalletTransaction, TransactionType, TransactionStatus, CoinPackage, PremiumGame, UserUnlockedGame,
-    IdleGameState
+    IdleGameState, GameComment
 )
 from cache import (
     get_games_feed, set_games_feed, invalidate_games_cache,
@@ -1141,6 +1141,76 @@ async def get_categories(db: AsyncSession = Depends(get_db)):
     data = {"categories": categories}
     _cache_set("categories", data)
     return data
+
+# ==================== COMMENTS ENDPOINTS ====================
+
+class CommentCreate(BaseModel):
+    content: str = Field(..., min_length=1, max_length=500)
+
+@api_router.get("/games/{game_id}/comments")
+async def get_game_comments(game_id: str, limit: int = 50, db: AsyncSession = Depends(get_db)):
+    """Get comments for a game (public)."""
+    result = await db.execute(
+        select(GameComment, User.username, User.avatar_url)
+        .join(User, GameComment.user_id == User.id)
+        .where(GameComment.game_id == game_id)
+        .order_by(GameComment.created_at.desc())
+        .limit(limit)
+    )
+    rows = result.all()
+    comments = []
+    for comment, username, avatar_url in rows:
+        data = comment.to_dict()
+        data["username"] = username
+        data["avatar_url"] = avatar_url
+        comments.append(data)
+    return {"comments": comments, "count": len(comments)}
+
+@api_router.post("/games/{game_id}/comments")
+async def post_game_comment(
+    game_id: str,
+    comment_data: CommentCreate,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Post a comment on a game (requires auth)."""
+    game_result = await db.execute(select(Game).where(Game.id == game_id))
+    if not game_result.scalar_one_or_none():
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    comment = GameComment(
+        id=str(uuid.uuid4()),
+        game_id=game_id,
+        user_id=user.id,
+        content=comment_data.content.strip(),
+    )
+    db.add(comment)
+    await db.commit()
+    await db.refresh(comment)
+    data = comment.to_dict()
+    data["username"] = user.username
+    data["avatar_url"] = user.avatar_url
+    return data
+
+@api_router.delete("/games/{game_id}/comments/{comment_id}")
+async def delete_game_comment(
+    game_id: str,
+    comment_id: str,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Delete own comment or any comment if admin."""
+    result = await db.execute(
+        select(GameComment).where(GameComment.id == comment_id, GameComment.game_id == game_id)
+    )
+    comment = result.scalar_one_or_none()
+    if not comment:
+        raise HTTPException(status_code=404, detail="Comment not found")
+    if comment.user_id != user.id and not user.is_admin:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    await db.execute(delete(GameComment).where(GameComment.id == comment_id))
+    await db.commit()
+    return {"success": True}
 
 # ==================== ADMIN ENDPOINTS ====================
 

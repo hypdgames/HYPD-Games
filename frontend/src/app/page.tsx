@@ -3,10 +3,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Play, Heart, Share2, Loader2 } from "lucide-react";
+import { Play, Heart, MessageCircle, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { useAuthStore } from "@/store";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { CommentSheet } from "@/components/comment-sheet";
 import { toast } from "sonner";
 import type { Game, FeedItem } from "@/types";
 
@@ -34,10 +35,11 @@ function sessionSet(key: string, data: unknown): void {
 }
 
 function FeedCard({
-  game, isActive, isAdjacent, videoUrl, onPlay, onSave, isSaved,
+  game, isActive, isAdjacent, videoUrl, onPlay, onSave, isSaved, onComment,
 }: {
   game: Game; isActive: boolean; isAdjacent: boolean; videoUrl: string | null;
   onPlay: () => void; onSave: (e: React.MouseEvent) => void; isSaved: boolean;
+  onComment: (e: React.MouseEvent) => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -91,8 +93,9 @@ function FeedCard({
           className={`action-pill ${isSaved ? "bg-red-500/15 text-red-500" : ""}`} data-testid={`save-btn-${game.id}`}>
           <Heart className={`w-4 h-4 ${isSaved ? "fill-red-500 text-red-500" : ""}`} />
         </motion.button>
-        <motion.button whileTap={{ scale: 0.85 }} className="action-pill" data-testid={`share-btn-${game.id}`}>
-          <Share2 className="w-4 h-4" />
+        <motion.button whileTap={{ scale: 0.85 }} onClick={onComment}
+          className="action-pill" data-testid={`comment-btn-${game.id}`}>
+          <MessageCircle className="w-4 h-4" />
         </motion.button>
       </div>
     </div>
@@ -109,6 +112,7 @@ export default function GameFeed() {
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [savedGames, setSavedGames] = useState<Set<string>>(new Set());
+  const [commentGame, setCommentGame] = useState<{ id: string; title: string } | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -204,11 +208,19 @@ export default function GameFeed() {
             ) : (
               <FeedCard game={item.data!} isActive={currentIndex === index} isAdjacent={Math.abs(currentIndex - index) === 1}
                 videoUrl={videoUrls[item.data!.id] ?? null} onPlay={() => playGame(item.data!.id)}
-                onSave={(e) => toggleSave(item.data!.id, e)} isSaved={savedGames.has(item.data!.id)} />
+                onSave={(e) => toggleSave(item.data!.id, e)} isSaved={savedGames.has(item.data!.id)}
+                onComment={(e) => { e.stopPropagation(); setCommentGame({ id: item.data!.id, title: item.data!.title }); }} />
             )}
           </div>
         ))}
       </div>
+
+      <CommentSheet
+        gameId={commentGame?.id ?? ""}
+        gameTitle={commentGame?.title ?? ""}
+        isOpen={!!commentGame}
+        onClose={() => setCommentGame(null)}
+      />
     </div>
   );
 }
