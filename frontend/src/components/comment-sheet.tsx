@@ -169,24 +169,19 @@ export function CommentSheet({ gameId, gameTitle, isOpen, onClose, onCommentPost
               </div>
               <div className="flex items-center gap-2">
                 {comments.length > 0 && (
-                  <div className="flex items-center gap-0.5 bg-muted rounded-full p-0.5" data-testid="sort-toggle">
+                  <div className="flex items-center bg-muted rounded-full p-0.5" data-testid="sort-toggle">
                     {(["newest", "top"] as const).map(mode => (
                       <motion.button
                         key={mode}
-                        layout
+                        whileTap={{ scale: 0.93 }}
                         onClick={() => setSort(mode)}
-                        className={`relative px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
-                          sort === mode ? "text-background" : "text-muted-foreground hover:text-foreground"
+                        className={`relative px-3.5 py-1.5 rounded-full text-xs font-bold transition-all duration-200 ${
+                          sort === mode
+                            ? "bg-foreground text-background shadow-sm"
+                            : "text-muted-foreground"
                         }`}
                         data-testid={`sort-${mode}`}
                       >
-                        {sort === mode && (
-                          <motion.span
-                            layoutId="sort-pill"
-                            className="absolute inset-0 bg-foreground rounded-full"
-                            style={{ zIndex: -1 }}
-                          />
-                        )}
                         {mode === "newest" ? "New" : "Top"}
                       </motion.button>
                     ))}
