@@ -105,7 +105,7 @@ Deep structural redesign matching the Hook app reference:
 ## Completed
 - CommentSheet z-index + padding fix (Login/Sign Up buttons fully visible above nav) — Apr 2026
 - HTML entity decoding in game titles (decodeHtml util in page.tsx) — Apr 2026
-- Real-time comment count badge update via onCommentPosted callback — Apr 2026
+- Comment Like feature: heart button per comment, optimistic toggle, like_count + liked_by_me via batch query, guest toast prompt — Apr 2026
 
 ## Credentials
 - Admin: admin@hypd.games / admin123
