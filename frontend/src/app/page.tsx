@@ -110,12 +110,19 @@ export default function GameFeed() {
   const router = useRouter();
   const { user, token, settings, loading: authLoading } = useAuthStore();
 
-  // Auth gate: redirect to welcome if not logged in and not a guest
+  // feedReady: blocks ALL feed rendering until we know the user is allowed to see it.
+  // This prevents the feed from flashing before the redirect to /welcome.
+  const [feedReady, setFeedReady] = useState(false);
+
   useEffect(() => {
-    if (authLoading) return;
-    if (!user) {
-      const isGuest = typeof window !== "undefined" && sessionStorage.getItem("hypd:guest");
-      if (!isGuest) router.replace("/welcome");
+    const isGuest = sessionStorage.getItem("hypd:guest") === "1";
+    if (user || isGuest) {
+      setFeedReady(true);
+      return;
+    }
+    // No user, no guest — wait for auth check to complete before redirecting
+    if (!authLoading) {
+      router.replace("/welcome");
     }
   }, [user, authLoading, router]);
 
@@ -204,6 +211,9 @@ export default function GameFeed() {
       toast.error("Failed to update");
     }
   };
+
+  // Block ALL rendering until auth is resolved — prevents feed flash before /welcome redirect
+  if (!feedReady) return <div className="h-dvh hook-gradient-bg" />;
 
   if (loading) return <div className="h-screen flex items-center justify-center"><Loader2 className="w-10 h-10 text-violet animate-spin" /></div>;
   if (games.length === 0) return (
