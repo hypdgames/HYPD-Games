@@ -43,19 +43,6 @@ function fmtCount(n: number) {
   return n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n);
 }
 
-function TopGameTile({ game, onClick }: { game: Game; onClick: () => void }) {
-  const imgSrc = game.icon_url || game.thumbnail_url || "";
-  return (
-    <motion.div whileTap={{ scale: 0.97 }} onClick={onClick} className="flex-shrink-0 w-[28%] min-w-[110px] max-w-[140px] cursor-pointer" data-testid={`top-game-${game.id}`}>
-      <div className="squircle-sm w-full relative" style={{ aspectRatio: "1" }}>
-        {imgSrc ? <Image src={imgSrc} alt={game.title} fill className="object-cover" sizes="140px" /> : <div className="w-full h-full bg-muted" />}
-      </div>
-      <p className="font-semibold text-xs mt-2 line-clamp-1 text-foreground px-0.5">{game.title}</p>
-      <p className="text-[11px] text-muted-foreground px-0.5">{game.category}</p>
-    </motion.div>
-  );
-}
-
 function TrendingCard({ game, onClick }: { game: Game; onClick: () => void }) {
   const imgSrc = game.thumbnail_url || game.icon_url || "";
   return (
@@ -229,7 +216,6 @@ export default function ExplorePage() {
   const playGame = (id: string) => router.push(`/play/${id}`);
 
   const trending = [...games].sort((a, b) => (b.play_count || 0) - (a.play_count || 0));
-  const topGames = trending.slice(0, 3);
   const newGames = [...games].sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()).slice(0, 10);
   const categoriesWithGames = categories.map(cat => {
     const catGames = games.filter(g => g.category === cat);
@@ -299,7 +285,6 @@ export default function ExplorePage() {
       </AnimatePresence>
 
       <div className="space-y-7">
-        {topGames.length >= 3 && <Section title="Top Games">{topGames.map((g) => <TopGameTile key={g.id} game={g} onClick={() => playGame(g.id)} />)}</Section>}
         {trending.length > 0 && <Section title="Trending">{trending.slice(0, 8).map(g => <TrendingCard key={g.id} game={g} onClick={() => playGame(g.id)} />)}</Section>}
         {categoriesWithGames.length > 0 && <Section title="Categories">{categoriesWithGames.map(({ name, games: g, previewImg, firstGameId }) => <CategoryTile key={name} name={name} gameCount={g.length} previewImg={previewImg} firstGameId={firstGameId} onSelect={() => setSelectedCategory(name)} onQuickPlay={() => playGame(firstGameId!)} />)}</Section>}
         {newGames.length > 0 && <Section title="New Games">{newGames.map(g => <GameTile key={g.id} game={g} onClick={() => playGame(g.id)} />)}</Section>}
