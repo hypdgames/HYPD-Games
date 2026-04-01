@@ -33,6 +33,7 @@ function decodeHtml(str: string): string {
     .replace(/&rdquo;/g, '"')
     .replace(/&ldquo;/g, '"')
     .replace(/&hellip;/g, "…")
+    .replace(/&nbsp;/g, "\u00A0")
     .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)));
 }
 

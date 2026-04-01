@@ -100,6 +100,12 @@ Deep structural redesign matching the Hook app reference:
 - Social features, notifications, SEO
 - Fix friends API fetch error
 - Re-enable Pro/Ad-Free features
+- Real-time comment count in feed already DONE (Feb 2026)
+
+## Completed
+- CommentSheet z-index + padding fix (Login/Sign Up buttons fully visible above nav) — Apr 2026
+- HTML entity decoding in game titles (decodeHtml util in page.tsx) — Apr 2026
+- Real-time comment count badge update via onCommentPosted callback — Apr 2026
 
 ## Credentials
 - Admin: admin@hypd.games / admin123
