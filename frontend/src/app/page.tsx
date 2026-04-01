@@ -157,6 +157,7 @@ export default function GameFeed() {
 
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingLikes = useRef<Set<string>>(new Set());
 
   const fetchGames = useCallback(async () => {
     try {
@@ -211,23 +212,45 @@ export default function GameFeed() {
   const toggleSave = async (gameId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!user) { toast.error("Please login to save games"); router.push("/profile"); return; }
+    // Prevent double-tap race: if a request is already in-flight for this game, ignore
+    if (pendingLikes.current.has(gameId)) return;
+    pendingLikes.current.add(gameId);
+
     const isSaved = savedGames.has(gameId);
-    // Optimistic update for like count
+
+    // Optimistic update — both the heart colour AND the count change immediately
+    setSavedGames(prev => {
+      const next = new Set(prev);
+      if (isSaved) next.delete(gameId); else next.add(gameId);
+      return next;
+    });
     setLikeAdjustments(prev => ({ ...prev, [gameId]: (prev[gameId] || 0) + (isSaved ? -1 : 1) }));
+
     try {
       const res = await fetch(`${API_URL}/api/auth/save-game/${gameId}`, {
         method: isSaved ? "DELETE" : "POST", headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
-        setSavedGames(prev => { const next = new Set(prev); if (isSaved) next.delete(gameId); else next.add(gameId); return next; });
         toast.success(isSaved ? "Removed from liked" : "Added to liked!");
       } else {
-        // Revert optimistic update on failure
+        // Revert both optimistic updates on server failure
+        setSavedGames(prev => {
+          const next = new Set(prev);
+          if (isSaved) next.add(gameId); else next.delete(gameId);
+          return next;
+        });
         setLikeAdjustments(prev => ({ ...prev, [gameId]: (prev[gameId] || 0) + (isSaved ? 1 : -1) }));
       }
     } catch {
+      setSavedGames(prev => {
+        const next = new Set(prev);
+        if (isSaved) next.add(gameId); else next.delete(gameId);
+        return next;
+      });
       setLikeAdjustments(prev => ({ ...prev, [gameId]: (prev[gameId] || 0) + (isSaved ? 1 : -1) }));
       toast.error("Failed to update");
+    } finally {
+      pendingLikes.current.delete(gameId);
     }
   };
 
