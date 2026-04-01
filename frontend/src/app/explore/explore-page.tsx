@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Search, ChevronRight, Play, Flame, ArrowLeft, Loader2, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -88,10 +88,45 @@ function GameTile({ game, onClick }: { game: Game; onClick: () => void }) {
   );
 }
 
-function CategoryTile({ name, gameCount, previewImg, onSelect }: { name: string; gameCount: number; previewImg?: string; onSelect: () => void }) {
+function CategoryTile({ name, gameCount, previewImg, firstGameId, onSelect, onQuickPlay }: {
+  name: string; gameCount: number; previewImg?: string; firstGameId?: string;
+  onSelect: () => void; onQuickPlay: () => void;
+}) {
+  const [overlayVisible, setOverlayVisible] = useState(false);
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wasLongPress = useRef(false);
+
+  const handleTouchStart = useCallback(() => {
+    wasLongPress.current = false;
+    pressTimer.current = setTimeout(() => {
+      wasLongPress.current = true;
+      setOverlayVisible(true);
+    }, 500);
+  }, []);
+
+  const cancelPress = useCallback(() => {
+    if (pressTimer.current) clearTimeout(pressTimer.current);
+  }, []);
+
+  const handleClick = useCallback(() => {
+    if (wasLongPress.current) { wasLongPress.current = false; return; }
+    if (overlayVisible) { setOverlayVisible(false); return; }
+    onSelect();
+  }, [overlayVisible, onSelect]);
+
+  const handleQuickPlay = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setOverlayVisible(false);
+    if (firstGameId) onQuickPlay();
+  }, [firstGameId, onQuickPlay]);
+
   return (
-    <motion.div whileTap={{ scale: 0.93 }} onClick={onSelect}
-      className="flex-shrink-0 w-[42%] min-w-[155px] max-w-[185px] cursor-pointer"
+    <motion.div
+      onClick={handleClick}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={cancelPress}
+      onTouchMove={cancelPress}
+      className="flex-shrink-0 w-[42%] min-w-[155px] max-w-[185px] cursor-pointer group"
       data-testid={`category-tile-${name}`}>
       <div className="relative w-full rounded-2xl overflow-hidden" style={{ aspectRatio: "3/2" }}>
         {previewImg ? (
@@ -101,6 +136,21 @@ function CategoryTile({ name, gameCount, previewImg, onSelect }: { name: string;
         )}
         <div className={`absolute inset-0 bg-gradient-to-br ${getCatGrad(name)} opacity-60`} />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+
+        {/* Quick Play overlay — hover on desktop, long-press on mobile */}
+        <div className={`absolute inset-0 flex items-center justify-center bg-black/40 transition-opacity duration-200
+          ${overlayVisible ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>
+          {firstGameId && (
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={handleQuickPlay}
+              className="flex items-center gap-1.5 bg-lime text-black font-bold text-xs px-3.5 py-2 rounded-full shadow-lg"
+              data-testid={`quick-play-${name}`}>
+              <Play className="w-3 h-3 fill-black" /> Play Now
+            </motion.button>
+          )}
+        </div>
+
         <div className="absolute bottom-0 left-0 right-0 p-3">
           <p className="text-white font-bold text-sm leading-tight">{name}</p>
           <p className="text-white/60 text-[11px] mt-0.5">{gameCount} games</p>
@@ -184,7 +234,8 @@ export default function ExplorePage() {
   const categoriesWithGames = categories.map(cat => {
     const catGames = games.filter(g => g.category === cat);
     const previewImg = catGames.find(g => g.thumbnail_url)?.thumbnail_url || catGames.find(g => g.icon_url)?.icon_url;
-    return { name: cat, games: catGames, previewImg };
+    const firstGameId = [...catGames].sort((a, b) => (b.play_count || 0) - (a.play_count || 0))[0]?.id;
+    return { name: cat, games: catGames, previewImg, firstGameId };
   }).filter(c => c.games.length >= 1).sort((a, b) => b.games.length - a.games.length);
 
   const searchResults = searchQuery.trim()
@@ -250,7 +301,7 @@ export default function ExplorePage() {
       <div className="space-y-7">
         {topGames.length >= 3 && <Section title="Top Games">{topGames.map((g) => <TopGameTile key={g.id} game={g} onClick={() => playGame(g.id)} />)}</Section>}
         {trending.length > 0 && <Section title="Trending">{trending.slice(0, 8).map(g => <TrendingCard key={g.id} game={g} onClick={() => playGame(g.id)} />)}</Section>}
-        {categoriesWithGames.length > 0 && <Section title="Categories">{categoriesWithGames.map(({ name, games: g, previewImg }) => <CategoryTile key={name} name={name} gameCount={g.length} previewImg={previewImg} onSelect={() => setSelectedCategory(name)} />)}</Section>}
+        {categoriesWithGames.length > 0 && <Section title="Categories">{categoriesWithGames.map(({ name, games: g, previewImg, firstGameId }) => <CategoryTile key={name} name={name} gameCount={g.length} previewImg={previewImg} firstGameId={firstGameId} onSelect={() => setSelectedCategory(name)} onQuickPlay={() => playGame(firstGameId!)} />)}</Section>}
         {newGames.length > 0 && <Section title="New Games">{newGames.map(g => <GameTile key={g.id} game={g} onClick={() => playGame(g.id)} />)}</Section>}
         {categoriesWithGames.slice(0, 5).map(({ name, games: catGames }) => (
           <Section key={name} title={name} onViewAll={() => setSelectedCategory(name)}>{catGames.slice(0, 8).map(g => <GameTile key={g.id} game={g} onClick={() => playGame(g.id)} />)}</Section>

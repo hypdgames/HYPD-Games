@@ -20,6 +20,7 @@ Deep structural redesign matching the Hook app reference:
 - "Top Games" horizontal scroll — clean game tiles (no rank numbers, no card borders)
 - "Trending" section with large squircle cards + play count badges
 - "Categories" visual tiles with game screenshot backgrounds + gradient overlays + name/count overlay
+- Quick-launch "Play Now" button on category tiles (hover on desktop, long-press on mobile) — launches top game from that category instantly
 - "New Games" tiles
 - Per-category horizontal scrolls
 
