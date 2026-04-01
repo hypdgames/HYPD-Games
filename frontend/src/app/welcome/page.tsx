@@ -3,13 +3,13 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Eye, EyeOff, Loader2, User, Mail, Lock, Gamepad2 } from "lucide-react";
+import { X, Eye, EyeOff, Loader2, User, Mail, Lock } from "lucide-react";
 import Image from "next/image";
 import { useAuthStore } from "@/store";
 import { toast } from "sonner";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
-const SLIDE_INTERVAL = 1500;
+const SLIDE_INTERVAL = 2000;
 
 type AuthMode = null | "login" | "signup";
 
@@ -281,21 +281,55 @@ export default function WelcomePage() {
             animate={{ scale: 1, rotate: -18 }}
             transition={{ delay: 0.35, type: "spring", stiffness: 200, damping: 14 }}
             className="absolute z-20 pointer-events-none"
-            style={{ left: "-46px", top: "28%" }}
+            style={{ left: "-52px", top: "26%" }}
           >
-            <div className="relative" style={{ filter: "drop-shadow(2px 3px 8px rgba(0,0,0,0.4))" }}>
+            <div className="relative" style={{ filter: "drop-shadow(2px 4px 8px rgba(0,0,0,0.45))" }}>
               {/* Sparkles */}
-              <span className="absolute -top-3 right-0 text-white font-black leading-none" style={{ fontSize: 16, textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}>✦</span>
-              <span className="absolute top-0 -left-2 text-white font-black leading-none" style={{ fontSize: 10, textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}>✦</span>
-              <span className="absolute -bottom-1 right-2 text-white font-black leading-none" style={{ fontSize: 8, textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}>✦</span>
-              {/* Controller icon */}
-              <Gamepad2 className="w-16 h-16" strokeWidth={1.8} style={{ color: "#FFD700" }} />
+              <span className="absolute -top-4 right-1 text-white font-black leading-none" style={{ fontSize: 17, textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}>✦</span>
+              <span className="absolute top-1 -left-3 text-white font-black leading-none" style={{ fontSize: 11, textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}>✦</span>
+              <span className="absolute -bottom-1 right-3 text-white font-black leading-none" style={{ fontSize: 8, textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}>✦</span>
+
+              {/* Custom SVG controller — cartoon sticker style */}
+              <svg width="78" height="62" viewBox="0 0 78 62" fill="none" xmlns="http://www.w3.org/2000/svg">
+                {/* Left grip */}
+                <ellipse cx="15" cy="46" rx="13" ry="13" fill="#7C3AED" stroke="#111" strokeWidth="3.5"/>
+                {/* Right grip */}
+                <ellipse cx="63" cy="46" rx="13" ry="13" fill="#7C3AED" stroke="#111" strokeWidth="3.5"/>
+                {/* Body */}
+                <rect x="8" y="10" width="62" height="40" rx="13" fill="#8B5CF6" stroke="#111" strokeWidth="3.5"/>
+                {/* Left shoulder bumper */}
+                <rect x="9" y="4" width="22" height="10" rx="5" fill="#6D28D9" stroke="#111" strokeWidth="3"/>
+                {/* Right shoulder bumper */}
+                <rect x="47" y="4" width="22" height="10" rx="5" fill="#6D28D9" stroke="#111" strokeWidth="3"/>
+                {/* D-pad horizontal bar */}
+                <rect x="18" y="25" width="16" height="6" rx="3" fill="#1C1C1E"/>
+                {/* D-pad vertical bar */}
+                <rect x="23" y="20" width="6" height="16" rx="3" fill="#1C1C1E"/>
+                {/* Face button — top (Y/green) */}
+                <circle cx="54" cy="21" r="5" fill="#22C55E" stroke="#111" strokeWidth="2.5"/>
+                {/* Face button — right (B/red) */}
+                <circle cx="63" cy="30" r="5" fill="#EF4444" stroke="#111" strokeWidth="2.5"/>
+                {/* Face button — left (X/blue) */}
+                <circle cx="45" cy="30" r="5" fill="#3B82F6" stroke="#111" strokeWidth="2.5"/>
+                {/* Face button — bottom (A/yellow) */}
+                <circle cx="54" cy="39" r="5" fill="#F59E0B" stroke="#111" strokeWidth="2.5"/>
+                {/* Centre/Home button */}
+                <circle cx="39" cy="30" r="6" fill="#1C1C1E" stroke="#111" strokeWidth="2"/>
+                <circle cx="39" cy="30" r="3.5" fill="#8B5CF6"/>
+                {/* Left analog stick */}
+                <circle cx="24" cy="44" r="7" fill="#5B21B6" stroke="#111" strokeWidth="2.5"/>
+                <circle cx="24" cy="44" r="3" fill="#1C1C1E"/>
+                {/* Right analog stick */}
+                <circle cx="52" cy="44" r="7" fill="#5B21B6" stroke="#111" strokeWidth="2.5"/>
+                <circle cx="52" cy="44" r="3" fill="#1C1C1E"/>
+              </svg>
+
               {/* Rainbow stripe */}
               <div
                 className="absolute rounded-full"
                 style={{
-                  bottom: "-10px", left: "50%", transform: "translateX(-50%)",
-                  width: "88%", height: "9px",
+                  bottom: "-11px", left: "50%", transform: "translateX(-50%)",
+                  width: "85%", height: "9px",
                   background: "linear-gradient(90deg,#ff3366,#ff8c00,#ffff00,#00cc44,#0099ff,#9933ff)",
                 }}
               />
