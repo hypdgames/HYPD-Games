@@ -43,11 +43,20 @@ export function CommentSheet({ gameId, gameTitle, isOpen, onClose, onCommentPost
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [text, setText] = useState("");
+  const [sort, setSort] = useState<"newest" | "top">("newest");
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
+  const sortedComments = sort === "top"
+    ? [...comments].sort((a, b) =>
+        b.like_count - a.like_count ||
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      )
+    : comments;
+
   useEffect(() => {
     if (!isOpen) return;
+    setSort("newest");
     setLoading(true);
     fetch(`${API_URL}/api/games/${gameId}/comments`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -158,13 +167,39 @@ export function CommentSheet({ gameId, gameTitle, isOpen, onClose, onCommentPost
                 </h3>
                 <p className="text-xs text-muted-foreground line-clamp-1">{gameTitle}</p>
               </div>
-              <button
-                onClick={onClose}
-                className="w-8 h-8 rounded-full bg-muted flex items-center justify-center"
-                data-testid="comment-close-btn"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-2">
+                {comments.length > 0 && (
+                  <div className="flex items-center gap-0.5 bg-muted rounded-full p-0.5" data-testid="sort-toggle">
+                    {(["newest", "top"] as const).map(mode => (
+                      <motion.button
+                        key={mode}
+                        layout
+                        onClick={() => setSort(mode)}
+                        className={`relative px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
+                          sort === mode ? "text-background" : "text-muted-foreground hover:text-foreground"
+                        }`}
+                        data-testid={`sort-${mode}`}
+                      >
+                        {sort === mode && (
+                          <motion.span
+                            layoutId="sort-pill"
+                            className="absolute inset-0 bg-foreground rounded-full"
+                            style={{ zIndex: -1 }}
+                          />
+                        )}
+                        {mode === "newest" ? "New" : "Top"}
+                      </motion.button>
+                    ))}
+                  </div>
+                )}
+                <button
+                  onClick={onClose}
+                  className="w-8 h-8 rounded-full bg-muted flex items-center justify-center"
+                  data-testid="comment-close-btn"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
             {/* Comments list */}
@@ -180,7 +215,7 @@ export function CommentSheet({ gameId, gameTitle, isOpen, onClose, onCommentPost
                   <p className="text-xs text-muted-foreground mt-1">Be the first to comment!</p>
                 </div>
               ) : (
-                comments.map(c => (
+                sortedComments.map(c => (
                   <motion.div
                     key={c.id}
                     initial={{ opacity: 0, y: 8 }}
