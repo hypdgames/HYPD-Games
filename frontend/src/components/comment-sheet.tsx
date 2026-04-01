@@ -183,9 +183,9 @@ export function CommentSheet({ gameId, gameTitle, isOpen, onClose }: CommentShee
             </div>
 
             {/* Input area */}
-            <div className="flex-shrink-0 px-4 py-3 border-t border-border/60 flex items-center gap-2.5" style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
+            <div className="flex-shrink-0 border-t border-border/60" style={{ paddingBottom: "max(0px, env(safe-area-inset-bottom))" }}>
               {user ? (
-                <>
+                <div className="flex items-center gap-2.5 px-4 py-3">
                   <div className="w-8 h-8 rounded-full bg-violet/20 flex items-center justify-center flex-shrink-0">
                     <span className="text-xs font-bold text-violet uppercase">{user.username[0]}</span>
                   </div>
@@ -211,11 +211,30 @@ export function CommentSheet({ gameId, gameTitle, isOpen, onClose }: CommentShee
                       : <Send className="w-4 h-4 text-black" />
                     }
                   </motion.button>
-                </>
+                </div>
               ) : (
-                <p className="text-sm text-muted-foreground text-center w-full py-1">
-                  <a href="/profile" className="text-violet font-bold">Sign in</a> to leave a comment
-                </p>
+                <div className="flex flex-col items-center gap-3 px-5 py-4">
+                  <p className="text-sm font-semibold text-foreground">Join the conversation</p>
+                  <p className="text-xs text-muted-foreground -mt-1">Login or create an account to comment</p>
+                  <div className="flex gap-2.5 w-full">
+                    <motion.a
+                      whileTap={{ scale: 0.96 }}
+                      href="/welcome"
+                      className="flex-1 bg-foreground text-background font-bold text-sm py-2.5 rounded-2xl text-center"
+                      data-testid="comment-login-btn"
+                    >
+                      Login
+                    </motion.a>
+                    <motion.a
+                      whileTap={{ scale: 0.96 }}
+                      href="/welcome"
+                      className="flex-1 bg-lime text-black font-bold text-sm py-2.5 rounded-2xl text-center"
+                      data-testid="comment-signup-btn"
+                    >
+                      Sign Up
+                    </motion.a>
+                  </div>
+                </div>
               )}
             </div>
           </motion.div>
