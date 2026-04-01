@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Play, Heart, Share2, Bookmark, Loader2 } from "lucide-react";
+import { Play, Heart, Share2, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { useAuthStore } from "@/store";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -93,9 +93,6 @@ function FeedCard({
         </motion.button>
         <motion.button whileTap={{ scale: 0.85 }} className="action-pill" data-testid={`share-btn-${game.id}`}>
           <Share2 className="w-4 h-4" />
-        </motion.button>
-        <motion.button whileTap={{ scale: 0.85 }} className="action-pill" data-testid={`bookmark-btn-${game.id}`}>
-          <Bookmark className="w-4 h-4" />
         </motion.button>
       </div>
     </div>

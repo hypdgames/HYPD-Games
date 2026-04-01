@@ -11,16 +11,15 @@ Deep structural redesign matching the Hook app reference:
 - Large rounded content card (28px radius) with centered play button overlay
 - Play count badge (backdrop-blur pill) at top-right of card
 - Game info at bottom of card (lime category pill, bold title, description)
-- Action pills row below card: Play Now (lime), Heart, Share, Bookmark
-- Prev/Next navigation arrows with page counter
+- Action pills row below card: Play Now (lime), Heart, Share (bookmark removed)
 - HYPD brand logo at top-left, theme toggle at top-right
 
 ### Discover/Explore Page
 - "Discover" extrabold title
 - Full-width pill search bar ("What are you looking for?")
-- "Top Games" horizontal scroll with giant rank numbers (1, 2, 3)
+- "Top Games" horizontal scroll — clean game tiles (no rank numbers, no card borders)
 - "Trending" section with large squircle cards + play count badges
-- "Categories" gradient tiles with game counts
+- "Categories" visual tiles with game screenshot backgrounds + gradient overlays + name/count overlay
 - "New Games" tiles
 - Per-category horizontal scrolls
 

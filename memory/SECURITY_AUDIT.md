@@ -45,7 +45,7 @@
 **Configuration:**
 ```python
 # backend/.env
-CORS_ORIGINS="https://pill-nav-feed.preview.emergentagent.com,http://localhost:3000"
+CORS_ORIGINS="https://instant-play-preview.preview.emergentagent.com,http://localhost:3000"
 ```
 
 **Verified:**

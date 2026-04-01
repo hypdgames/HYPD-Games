@@ -43,22 +43,15 @@ function fmtCount(n: number) {
   return n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n);
 }
 
-function LeaderCard({ game, rank, onClick }: { game: Game; rank: number; onClick: () => void }) {
-  const colors = ["text-yellow-400", "text-gray-400", "text-amber-600"];
+function TopGameTile({ game, onClick }: { game: Game; onClick: () => void }) {
   const imgSrc = game.icon_url || game.thumbnail_url || "";
   return (
-    <motion.div whileTap={{ scale: 0.97 }} onClick={onClick} className="flex-shrink-0 w-[160px] soft-card relative cursor-pointer" data-testid={`top-game-${rank}`}>
-      <span className={`absolute -top-1 -left-1 text-5xl font-extrabold ${colors[rank - 1]} opacity-40 leading-none z-0 select-none`}>{rank}</span>
-      <div className="relative z-10 flex flex-col items-center pt-4 pb-2">
-        <div className="w-16 h-16 rounded-2xl overflow-hidden mb-2 shadow-md relative">
-          {imgSrc ? <Image src={imgSrc} alt={game.title} fill className="object-cover" sizes="64px" /> : <div className="w-full h-full bg-muted" />}
-        </div>
-        <p className="font-bold text-sm text-center line-clamp-1">{game.title}</p>
-        <div className="flex items-center gap-1 mt-1">
-          <Play className="w-3 h-3 text-muted-foreground fill-muted-foreground" />
-          <span className="text-xs text-muted-foreground font-semibold">{fmtCount(game.play_count ?? 0)} plays</span>
-        </div>
+    <motion.div whileTap={{ scale: 0.97 }} onClick={onClick} className="flex-shrink-0 w-[28%] min-w-[110px] max-w-[140px] cursor-pointer" data-testid={`top-game-${game.id}`}>
+      <div className="squircle-sm w-full relative" style={{ aspectRatio: "1" }}>
+        {imgSrc ? <Image src={imgSrc} alt={game.title} fill className="object-cover" sizes="140px" /> : <div className="w-full h-full bg-muted" />}
       </div>
+      <p className="font-semibold text-xs mt-2 line-clamp-1 text-foreground px-0.5">{game.title}</p>
+      <p className="text-[11px] text-muted-foreground px-0.5">{game.category}</p>
     </motion.div>
   );
 }
@@ -95,14 +88,25 @@ function GameTile({ game, onClick }: { game: Game; onClick: () => void }) {
   );
 }
 
-function CategoryTile({ name, gameCount, onSelect }: { name: string; gameCount: number; onSelect: () => void }) {
+function CategoryTile({ name, gameCount, previewImg, onSelect }: { name: string; gameCount: number; previewImg?: string; onSelect: () => void }) {
   return (
-    <motion.button whileTap={{ scale: 0.93 }} onClick={onSelect}
-      className={`flex-shrink-0 flex flex-col items-center justify-center w-[22%] min-w-[90px] max-w-[110px] h-[80px] rounded-2xl bg-gradient-to-br ${getCatGrad(name)} shadow-md`}
+    <motion.div whileTap={{ scale: 0.93 }} onClick={onSelect}
+      className="flex-shrink-0 w-[42%] min-w-[155px] max-w-[185px] cursor-pointer"
       data-testid={`category-tile-${name}`}>
-      <span className="text-white font-bold text-sm leading-tight text-center px-2 line-clamp-1">{name}</span>
-      <span className="text-white/60 text-[11px] mt-0.5">{gameCount} games</span>
-    </motion.button>
+      <div className="relative w-full rounded-2xl overflow-hidden" style={{ aspectRatio: "3/2" }}>
+        {previewImg ? (
+          <Image src={previewImg} alt={name} fill className="object-cover" sizes="185px" />
+        ) : (
+          <div className={`absolute inset-0 bg-gradient-to-br ${getCatGrad(name)}`} />
+        )}
+        <div className={`absolute inset-0 bg-gradient-to-br ${getCatGrad(name)} opacity-60`} />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 p-3">
+          <p className="text-white font-bold text-sm leading-tight">{name}</p>
+          <p className="text-white/60 text-[11px] mt-0.5">{gameCount} games</p>
+        </div>
+      </div>
+    </motion.div>
   );
 }
 
@@ -177,7 +181,11 @@ export default function ExplorePage() {
   const trending = [...games].sort((a, b) => (b.play_count || 0) - (a.play_count || 0));
   const topGames = trending.slice(0, 3);
   const newGames = [...games].sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()).slice(0, 10);
-  const categoriesWithGames = categories.map(cat => ({ name: cat, games: games.filter(g => g.category === cat) })).filter(c => c.games.length >= 1).sort((a, b) => b.games.length - a.games.length);
+  const categoriesWithGames = categories.map(cat => {
+    const catGames = games.filter(g => g.category === cat);
+    const previewImg = catGames.find(g => g.thumbnail_url)?.thumbnail_url || catGames.find(g => g.icon_url)?.icon_url;
+    return { name: cat, games: catGames, previewImg };
+  }).filter(c => c.games.length >= 1).sort((a, b) => b.games.length - a.games.length);
 
   const searchResults = searchQuery.trim()
     ? games.filter(g => g.title.toLowerCase().includes(searchQuery.toLowerCase()) || (g.description || "").toLowerCase().includes(searchQuery.toLowerCase()))
@@ -240,9 +248,9 @@ export default function ExplorePage() {
       </AnimatePresence>
 
       <div className="space-y-7">
-        {topGames.length >= 3 && <Section title="Top Games">{topGames.map((g, i) => <LeaderCard key={g.id} game={g} rank={i + 1} onClick={() => playGame(g.id)} />)}</Section>}
+        {topGames.length >= 3 && <Section title="Top Games">{topGames.map((g) => <TopGameTile key={g.id} game={g} onClick={() => playGame(g.id)} />)}</Section>}
         {trending.length > 0 && <Section title="Trending">{trending.slice(0, 8).map(g => <TrendingCard key={g.id} game={g} onClick={() => playGame(g.id)} />)}</Section>}
-        {categoriesWithGames.length > 0 && <Section title="Categories">{categoriesWithGames.map(({ name, games: g }) => <CategoryTile key={name} name={name} gameCount={g.length} onSelect={() => setSelectedCategory(name)} />)}</Section>}
+        {categoriesWithGames.length > 0 && <Section title="Categories">{categoriesWithGames.map(({ name, games: g, previewImg }) => <CategoryTile key={name} name={name} gameCount={g.length} previewImg={previewImg} onSelect={() => setSelectedCategory(name)} />)}</Section>}
         {newGames.length > 0 && <Section title="New Games">{newGames.map(g => <GameTile key={g.id} game={g} onClick={() => playGame(g.id)} />)}</Section>}
         {categoriesWithGames.slice(0, 5).map(({ name, games: catGames }) => (
           <Section key={name} title={name} onViewAll={() => setSelectedCategory(name)}>{catGames.slice(0, 8).map(g => <GameTile key={g.id} game={g} onClick={() => playGame(g.id)} />)}</Section>

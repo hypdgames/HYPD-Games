@@ -5,4 +5,4 @@
 - Password: admin123
 
 ## App URL
-- Preview: https://pill-nav-feed.preview.emergentagent.com
+- Preview: https://instant-play-preview.preview.emergentagent.com
