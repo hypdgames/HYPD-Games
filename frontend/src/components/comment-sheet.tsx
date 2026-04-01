@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, MessageCircle, Send, Loader2, Trash2 } from "lucide-react";
+import { X, MessageCircle, Send, Loader2, Trash2, Heart } from "lucide-react";
 import { useAuthStore } from "@/store";
 import { toast } from "sonner";
 
@@ -15,6 +15,8 @@ interface Comment {
   avatar_url?: string;
   content: string;
   created_at: string;
+  like_count: number;
+  liked_by_me: boolean;
 }
 
 interface CommentSheetProps {
@@ -47,7 +49,9 @@ export function CommentSheet({ gameId, gameTitle, isOpen, onClose, onCommentPost
   useEffect(() => {
     if (!isOpen) return;
     setLoading(true);
-    fetch(`${API_URL}/api/games/${gameId}/comments`)
+    fetch(`${API_URL}/api/games/${gameId}/comments`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
       .then(r => r.json())
       .then(d => setComments(d.comments || []))
       .catch(() => {})
@@ -70,7 +74,7 @@ export function CommentSheet({ gameId, gameTitle, isOpen, onClose, onCommentPost
       });
       if (res.ok) {
         const newComment = await res.json();
-        setComments(prev => [newComment, ...prev]);
+        setComments(prev => [{ ...newComment, like_count: 0, liked_by_me: false }, ...prev]);
         setText("");
         onCommentPosted?.();
       } else {
@@ -91,6 +95,33 @@ export function CommentSheet({ gameId, gameTitle, isOpen, onClose, onCommentPost
       });
       if (res.ok) setComments(prev => prev.filter(c => c.id !== commentId));
     } catch {}
+  };
+
+  const handleLike = async (commentId: string) => {
+    if (!user) { toast.error("Sign in to like comments"); return; }
+    const target = comments.find(c => c.id === commentId);
+    if (!target) return;
+    const wasLiked = target.liked_by_me;
+    // Optimistic update
+    setComments(prev => prev.map(c =>
+      c.id === commentId
+        ? { ...c, liked_by_me: !wasLiked, like_count: c.like_count + (wasLiked ? -1 : 1) }
+        : c
+    ));
+    try {
+      const res = await fetch(`${API_URL}/api/games/${gameId}/comments/${commentId}/like`, {
+        method: wasLiked ? "DELETE" : "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      // Revert on failure
+      setComments(prev => prev.map(c =>
+        c.id === commentId
+          ? { ...c, liked_by_me: wasLiked, like_count: c.like_count + (wasLiked ? 1 : -1) }
+          : c
+      ));
+    }
   };
 
   return (
@@ -178,8 +209,18 @@ export function CommentSheet({ gameId, gameTitle, isOpen, onClose, onCommentPost
                         )}
                       </div>
                       <p className="text-sm text-foreground/85 mt-0.5 break-words leading-relaxed">{c.content}</p>
-                    </div>
-                  </motion.div>
+                      <div className="flex items-center mt-1.5">
+                        <motion.button
+                          whileTap={{ scale: 0.85 }}
+                          onClick={() => handleLike(c.id)}
+                          className={`flex items-center gap-1 text-xs transition-colors ${c.liked_by_me ? "text-red-500" : "text-muted-foreground hover:text-foreground"}`}
+                          data-testid={`like-comment-${c.id}`}
+                        >
+                          <Heart className={`w-3.5 h-3.5 ${c.liked_by_me ? "fill-red-500" : ""}`} />
+                          {c.like_count > 0 && <span className="font-medium">{c.like_count}</span>}
+                        </motion.button>
+                      </div>
+                    </div>                  </motion.div>
                 ))
               )}
             </div>

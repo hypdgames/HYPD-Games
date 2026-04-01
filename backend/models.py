@@ -5,7 +5,7 @@ Migrated from MongoDB to PostgreSQL/Supabase
 
 import uuid
 from datetime import datetime, timezone, date
-from sqlalchemy import Column, String, Text, Boolean, Integer, DateTime, Date, ForeignKey, JSON, Float, Enum as SQLEnum
+from sqlalchemy import Column, String, Text, Boolean, Integer, DateTime, Date, ForeignKey, JSON, Float, Enum as SQLEnum, UniqueConstraint
 from sqlalchemy.orm import relationship
 from database import Base
 import enum
@@ -573,3 +573,15 @@ class GameComment(Base):
             "content": self.content,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
+
+
+class CommentLike(Base):
+    """Tracks per-user likes on game comments"""
+    __tablename__ = 'comment_likes'
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    comment_id = Column(String(36), ForeignKey('game_comments.id', ondelete='CASCADE'), nullable=False, index=True)
+    user_id = Column(String(36), ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+
+    __table_args__ = (UniqueConstraint('comment_id', 'user_id', name='uq_comment_like'),)

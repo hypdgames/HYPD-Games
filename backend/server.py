@@ -37,7 +37,7 @@ from models import (
     Friendship, FriendshipStatus, Challenge, ChallengeParticipant,
     ChallengeType, ChallengeStatus, LeaderboardEntry, AnalyticsEvent, DailyStats,
     WalletTransaction, TransactionType, TransactionStatus, CoinPackage, PremiumGame, UserUnlockedGame,
-    IdleGameState, GameComment
+    IdleGameState, GameComment, CommentLike
 )
 from cache import (
     get_games_feed, set_games_feed, invalidate_games_cache,
@@ -1168,8 +1168,13 @@ class CommentCreate(BaseModel):
     content: str = Field(..., min_length=1, max_length=500)
 
 @api_router.get("/games/{game_id}/comments")
-async def get_game_comments(game_id: str, limit: int = 50, db: AsyncSession = Depends(get_db)):
-    """Get comments for a game (public)."""
+async def get_game_comments(
+    game_id: str,
+    limit: int = 50,
+    user: Optional[User] = Depends(get_optional_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get comments for a game with like counts and current user's like status."""
     result = await db.execute(
         select(GameComment, User.username, User.avatar_url)
         .join(User, GameComment.user_id == User.id)
@@ -1178,12 +1183,37 @@ async def get_game_comments(game_id: str, limit: int = 50, db: AsyncSession = De
         .limit(limit)
     )
     rows = result.all()
+    if not rows:
+        return {"comments": [], "count": 0}
+
+    comment_ids = [row[0].id for row in rows]
+
+    # Batch fetch like counts
+    like_count_result = await db.execute(
+        select(CommentLike.comment_id, func.count(CommentLike.id).label("cnt"))
+        .where(CommentLike.comment_id.in_(comment_ids))
+        .group_by(CommentLike.comment_id)
+    )
+    like_counts = {row[0]: row[1] for row in like_count_result.all()}
+
+    # Fetch which comments the current user has liked
+    user_liked_ids: set = set()
+    if user:
+        liked_result = await db.execute(
+            select(CommentLike.comment_id)
+            .where(CommentLike.comment_id.in_(comment_ids), CommentLike.user_id == user.id)
+        )
+        user_liked_ids = {row[0] for row in liked_result.all()}
+
     comments = []
     for comment, username, avatar_url in rows:
         data = comment.to_dict()
         data["username"] = username
         data["avatar_url"] = avatar_url
+        data["like_count"] = like_counts.get(comment.id, 0)
+        data["liked_by_me"] = comment.id in user_liked_ids
         comments.append(data)
+
     return {"comments": comments, "count": len(comments)}
 
 @api_router.post("/games/{game_id}/comments")
@@ -1231,6 +1261,44 @@ async def delete_game_comment(
     await db.execute(delete(GameComment).where(GameComment.id == comment_id))
     await db.commit()
     return {"success": True}
+
+
+@api_router.post("/games/{game_id}/comments/{comment_id}/like")
+async def like_comment(
+    game_id: str,
+    comment_id: str,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Like a comment. Idempotent — calling again returns liked=True without error."""
+    result = await db.execute(
+        select(GameComment).where(GameComment.id == comment_id, GameComment.game_id == game_id)
+    )
+    if not result.scalar_one_or_none():
+        raise HTTPException(status_code=404, detail="Comment not found")
+
+    existing = await db.execute(
+        select(CommentLike).where(CommentLike.comment_id == comment_id, CommentLike.user_id == user.id)
+    )
+    if not existing.scalar_one_or_none():
+        db.add(CommentLike(id=str(uuid.uuid4()), comment_id=comment_id, user_id=user.id))
+        await db.commit()
+    return {"liked": True}
+
+
+@api_router.delete("/games/{game_id}/comments/{comment_id}/like")
+async def unlike_comment(
+    game_id: str,
+    comment_id: str,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Unlike a comment."""
+    await db.execute(
+        delete(CommentLike).where(CommentLike.comment_id == comment_id, CommentLike.user_id == user.id)
+    )
+    await db.commit()
+    return {"liked": False}
 
 # ==================== ADMIN ENDPOINTS ====================
 
@@ -4452,6 +4520,9 @@ def init_storage_buckets():
 @app.on_event("startup")
 async def startup():
     logger.info("Starting Hypd Games API with Supabase PostgreSQL")
+    # Auto-create any missing tables (e.g. comment_likes added in latest version)
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
     # Initialize storage buckets
     init_storage_buckets()
     # Pre-warm caches in background, then keep them warm periodically
