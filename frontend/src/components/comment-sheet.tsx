@@ -256,7 +256,7 @@ export function CommentSheet({ gameId, gameTitle, isOpen, onClose, onCommentPost
             </div>
 
             {/* Input area */}
-            <div className="flex-shrink-0 border-t border-border/60" style={{ paddingBottom: "calc(80px + max(0px, env(safe-area-inset-bottom)))" }}>
+            <div className="flex-shrink-0 border-t border-border/60" style={{ paddingBottom: "max(0px, env(safe-area-inset-bottom))" }}>
               {user ? (
                 <div className="flex items-center gap-2.5 px-4 py-3">
                   <div className="w-8 h-8 rounded-full bg-violet/20 flex items-center justify-center flex-shrink-0">
