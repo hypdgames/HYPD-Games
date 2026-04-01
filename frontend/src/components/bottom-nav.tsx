@@ -15,7 +15,7 @@ const navItems = [
 export default function BottomNav() {
   const pathname = usePathname();
 
-  if (pathname.startsWith("/play/") || pathname.startsWith("/admin")) return null;
+  if (pathname.startsWith("/play/") || pathname.startsWith("/admin") || pathname === "/welcome") return null;
 
   return (
     <nav

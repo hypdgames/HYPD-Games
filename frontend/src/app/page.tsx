@@ -108,7 +108,16 @@ function FeedCard({
 
 export default function GameFeed() {
   const router = useRouter();
-  const { user, token, settings } = useAuthStore();
+  const { user, token, settings, loading: authLoading } = useAuthStore();
+
+  // Auth gate: redirect to welcome if not logged in and not a guest
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      const isGuest = typeof window !== "undefined" && sessionStorage.getItem("hypd:guest");
+      if (!isGuest) router.replace("/welcome");
+    }
+  }, [user, authLoading, router]);
 
   const [games, setGames] = useState<Game[]>([]);
   const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
