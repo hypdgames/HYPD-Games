@@ -319,6 +319,7 @@ class Game(Base):
     is_visible = Column(Boolean, default=True, index=True)
     show_in_feed = Column(Boolean, default=True, index=True)
     play_count = Column(Integer, default=0)
+    like_count = Column(Integer, default=0)
     created_at = Column(DateTime(timezone=True), default=utc_now, index=True)
     
     # GameDistribution specific fields
@@ -350,6 +351,7 @@ class Game(Base):
             "is_visible": self.is_visible,
             "show_in_feed": self.show_in_feed if self.show_in_feed is not None else True,
             "play_count": self.play_count,
+            "like_count": self.like_count or 0,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "gd_game_id": self.gd_game_id,
             "source": self.source or "custom",

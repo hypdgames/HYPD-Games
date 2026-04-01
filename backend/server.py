@@ -379,6 +379,7 @@ class GameFeedResponse(BaseModel):
     thumbnail_url: Optional[str] = None
     icon_url: Optional[str] = None
     play_count: int = 0
+    like_count: int = 0
     created_at: Optional[str] = None
 
     def model_post_init(self, __context):
@@ -733,7 +734,9 @@ async def save_game(game_id: str, user: User = Depends(get_current_user), db: As
     if game_id not in saved:
         saved.append(game_id)
         await db.execute(update(User).where(User.id == user.id).values(saved_games=saved))
+        await db.execute(update(Game).where(Game.id == game_id).values(like_count=Game.like_count + 1))
         await db.commit()
+        _invalidate_games_cache()
     return {"saved_games": saved}
 
 @api_router.delete("/auth/save-game/{game_id}")
@@ -742,7 +745,9 @@ async def unsave_game(game_id: str, user: User = Depends(get_current_user), db: 
     if game_id in saved:
         saved.remove(game_id)
         await db.execute(update(User).where(User.id == user.id).values(saved_games=saved))
+        await db.execute(update(Game).where(Game.id == game_id).values(like_count=func.greatest(0, Game.like_count - 1)))
         await db.commit()
+        _invalidate_games_cache()
     return {"saved_games": saved}
 
 # ==================== GAMES ENDPOINTS ====================
@@ -827,6 +832,21 @@ async def get_video_previews_batch(db: AsyncSession = Depends(get_db)):
     response = JSONResponse(content=batch)
     response.headers["Cache-Control"] = "public, max-age=1800, stale-while-revalidate=3600"
     return response
+
+
+@api_router.get("/games/comment-counts")
+async def get_comment_counts(db: AsyncSession = Depends(get_db)):
+    """Batch comment counts for all games — used for badge display on feed. Cached 60s."""
+    cached = _cache_get("comment_counts", ttl=60)
+    if cached is not None:
+        return cached
+    result = await db.execute(
+        select(GameComment.game_id, func.count(GameComment.id).label("count"))
+        .group_by(GameComment.game_id)
+    )
+    counts = {row[0]: row[1] for row in result.all()}
+    _cache_set("comment_counts", counts)
+    return counts
 
 
 @api_router.get("/games/{game_id}", response_model=GameResponse)

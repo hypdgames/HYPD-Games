@@ -62,7 +62,8 @@ Deep structural redesign matching the Hook app reference:
 - Base Defence tower defense game
 - Performance caching (backend TTL + frontend sessionStorage)
 - Automatic cache invalidation on admin game imports
-- **Game Comments**: Players can comment on any game via bottom-sheet (GET/POST/DELETE `/api/games/{id}/comments`)
+- **Game Comments**: Players can comment on any game via bottom-sheet (GET/POST/DELETE `/api/games/{id}/comments`); comment count badge on feed button
+- **Like Count**: `like_count` column on `games` table; increments on save, decrements on unsave; shown as badge on heart button with optimistic updates
 
 ## Architecture
 ```

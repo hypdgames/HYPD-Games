@@ -18,6 +18,7 @@ export interface Game {
   is_visible: boolean;
   show_in_feed: boolean;
   play_count: number;
+  like_count?: number;
   created_at: string;
   // Game network fields
   gd_game_id?: string;

@@ -21,6 +21,8 @@ const GAMES_CACHE_TTL = 300 * 1000;
 const gameFingerprint = (games: Game[]) => games.map(g => g.id).sort().join("|");
 interface VideoCache { urls: Record<string, string>; fp: string; }
 
+const fmtCount = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n);
+
 function sessionGet<T>(key: string, ttl: number): T | null {
   try {
     const raw = sessionStorage.getItem(key);
@@ -35,11 +37,11 @@ function sessionSet(key: string, data: unknown): void {
 }
 
 function FeedCard({
-  game, isActive, isAdjacent, videoUrl, onPlay, onSave, isSaved, onComment,
+  game, isActive, isAdjacent, videoUrl, onPlay, onSave, isSaved, onComment, likeCount, commentCount,
 }: {
   game: Game; isActive: boolean; isAdjacent: boolean; videoUrl: string | null;
   onPlay: () => void; onSave: (e: React.MouseEvent) => void; isSaved: boolean;
-  onComment: (e: React.MouseEvent) => void;
+  onComment: (e: React.MouseEvent) => void; likeCount: number; commentCount: number;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -90,12 +92,14 @@ function FeedCard({
           <Play className="w-4 h-4 fill-black" /> Play Now
         </button>
         <motion.button whileTap={{ scale: 0.85 }} onClick={onSave}
-          className={`action-pill ${isSaved ? "bg-red-500/15 text-red-500" : ""}`} data-testid={`save-btn-${game.id}`}>
+          className={`action-pill gap-1.5 ${isSaved ? "bg-red-500/15 text-red-500" : ""}`} data-testid={`save-btn-${game.id}`}>
           <Heart className={`w-4 h-4 ${isSaved ? "fill-red-500 text-red-500" : ""}`} />
+          {likeCount > 0 && <span className="text-xs font-semibold">{fmtCount(likeCount)}</span>}
         </motion.button>
         <motion.button whileTap={{ scale: 0.85 }} onClick={onComment}
-          className="action-pill" data-testid={`comment-btn-${game.id}`}>
+          className="action-pill gap-1.5" data-testid={`comment-btn-${game.id}`}>
           <MessageCircle className="w-4 h-4" />
+          {commentCount > 0 && <span className="text-xs font-semibold">{fmtCount(commentCount)}</span>}
         </motion.button>
       </div>
     </div>
@@ -113,6 +117,8 @@ export default function GameFeed() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [savedGames, setSavedGames] = useState<Set<string>>(new Set());
   const [commentGame, setCommentGame] = useState<{ id: string; title: string } | null>(null);
+  const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
+  const [likeAdjustments, setLikeAdjustments] = useState<Record<string, number>>({});
 
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -150,6 +156,10 @@ export default function GameFeed() {
 
   useEffect(() => { fetchGames().then(() => setLoading(false)); }, [fetchGames]);
   useEffect(() => { if (user?.saved_games) setSavedGames(new Set(user.saved_games)); }, [user]);
+  useEffect(() => {
+    fetch(`${API_URL}/api/games/comment-counts`)
+      .then(r => r.json()).then(setCommentCounts).catch(() => {});
+  }, []);
 
   const handleScroll = useCallback(() => {
     if (!containerRef.current) return;
@@ -167,15 +177,23 @@ export default function GameFeed() {
     e.stopPropagation();
     if (!user) { toast.error("Please login to save games"); router.push("/profile"); return; }
     const isSaved = savedGames.has(gameId);
+    // Optimistic update for like count
+    setLikeAdjustments(prev => ({ ...prev, [gameId]: (prev[gameId] || 0) + (isSaved ? -1 : 1) }));
     try {
       const res = await fetch(`${API_URL}/api/auth/save-game/${gameId}`, {
         method: isSaved ? "DELETE" : "POST", headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
         setSavedGames(prev => { const next = new Set(prev); if (isSaved) next.delete(gameId); else next.add(gameId); return next; });
-        toast.success(isSaved ? "Removed from saved" : "Game saved!");
+        toast.success(isSaved ? "Removed from liked" : "Added to liked!");
+      } else {
+        // Revert optimistic update on failure
+        setLikeAdjustments(prev => ({ ...prev, [gameId]: (prev[gameId] || 0) + (isSaved ? 1 : -1) }));
       }
-    } catch { toast.error("Failed to save game"); }
+    } catch {
+      setLikeAdjustments(prev => ({ ...prev, [gameId]: (prev[gameId] || 0) + (isSaved ? 1 : -1) }));
+      toast.error("Failed to update");
+    }
   };
 
   if (loading) return <div className="h-screen flex items-center justify-center"><Loader2 className="w-10 h-10 text-violet animate-spin" /></div>;
@@ -209,7 +227,9 @@ export default function GameFeed() {
               <FeedCard game={item.data!} isActive={currentIndex === index} isAdjacent={Math.abs(currentIndex - index) === 1}
                 videoUrl={videoUrls[item.data!.id] ?? null} onPlay={() => playGame(item.data!.id)}
                 onSave={(e) => toggleSave(item.data!.id, e)} isSaved={savedGames.has(item.data!.id)}
-                onComment={(e) => { e.stopPropagation(); setCommentGame({ id: item.data!.id, title: item.data!.title }); }} />
+                onComment={(e) => { e.stopPropagation(); setCommentGame({ id: item.data!.id, title: item.data!.title }); }}
+                likeCount={(item.data!.like_count || 0) + (likeAdjustments[item.data!.id] || 0)}
+                commentCount={commentCounts[item.data!.id] || 0} />
             )}
           </div>
         ))}
