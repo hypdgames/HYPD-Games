@@ -179,15 +179,15 @@ export function GameMonetizeTab({
       </div>
 
       {/* Selection Actions Bar */}
-      {gmzGames.length > 0 && (
+      {selectableGames.length > 0 && (
         <div className="flex items-center justify-between bg-card border border-border rounded-lg p-3">
           <div className="flex items-center gap-3">
             <span className="text-sm text-muted-foreground">
-              Showing <span className="font-bold text-foreground">{gmzGames.length}</span>
+              Showing <span className="font-bold text-foreground">{selectableGames.length}</span>
               {gmzTotal > 0 && (
                 <> of <span className="font-bold text-purple-400">{gmzTotal.toLocaleString()}</span></>
               )}
-              {" "}games
+              {" "}games to import
               {searchQuery && (
                 <span className="ml-1 text-purple-400">
                   matching &quot;{searchQuery}&quot;
@@ -252,26 +252,28 @@ export function GameMonetizeTab({
             {searchQuery ? `No results for "${searchQuery}" — try a different search term` : "Try a different category or refresh"}
           </p>
         </div>
+      ) : selectableGames.length === 0 ? (
+        <div className="text-center py-12 bg-card rounded-xl border border-border">
+          <Check className="w-12 h-12 text-purple-500 mx-auto mb-4" />
+          <p className="font-semibold text-foreground">All games on this page are already added</p>
+          <p className="text-sm text-muted-foreground mt-1">Load more to find new games to import</p>
+        </div>
       ) : (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {gmzGames.map((game) => {
-              const imported = isGmzGameImported(game.gmz_game_id);
+            {selectableGames.map((game) => {
               const selected = selectedGmzGames.has(game.gmz_game_id);
-              
               return (
                 <motion.div
                   key={game.gmz_game_id}
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   className={`relative bg-card border rounded-xl overflow-hidden cursor-pointer transition-all ${
-                    imported
-                      ? "border-purple-500/50 opacity-60"
-                      : selected
+                    selected
                       ? "border-purple-500 ring-2 ring-purple-500/30"
                       : "border-border hover:border-purple-500/50"
                   }`}
-                  onClick={() => !imported && onToggleSelection(game.gmz_game_id)}
+                  onClick={() => onToggleSelection(game.gmz_game_id)}
                   data-testid={`gmz-game-${game.gmz_game_id}`}
                 >
                   <div className="aspect-video relative">
@@ -284,14 +286,7 @@ export function GameMonetizeTab({
                         (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1637734373619-af1e76434bec?w=200&q=80";
                       }}
                     />
-                    {imported && (
-                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                        <div className="bg-purple-500 text-white px-3 py-1 rounded-full text-xs font-bold">
-                          Already Added
-                        </div>
-                      </div>
-                    )}
-                    {selected && !imported && (
+                    {selected && (
                       <div className="absolute top-2 right-2 w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
                         <Check className="w-4 h-4 text-white" />
                       </div>
