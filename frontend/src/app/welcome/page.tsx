@@ -282,75 +282,13 @@ export default function WelcomePage() {
             <div className="absolute inset-0 bg-gradient-to-t from-black/25 to-transparent pointer-events-none" />
           </div>
 
-          {/* Game controller sticker — overhangs left */}
-          <motion.div
-            initial={{ scale: 0, rotate: -40 }}
-            animate={{ scale: 1, rotate: -18 }}
-            transition={{ delay: 0.35, type: "spring", stiffness: 200, damping: 14 }}
-            className="absolute z-20 pointer-events-none"
-            style={{ left: "-58px", top: "24%" }}
-          >
-            <div className="relative" style={{ filter: "drop-shadow(2px 4px 8px rgba(0,0,0,0.45))" }}>
-              {/* Sparkles */}
-              <span className="absolute -top-4 right-1 text-white font-black leading-none" style={{ fontSize: 17, textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}>✦</span>
-              <span className="absolute top-1 -left-3 text-white font-black leading-none" style={{ fontSize: 11, textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}>✦</span>
-              <span className="absolute -bottom-1 right-3 text-white font-black leading-none" style={{ fontSize: 8, textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}>✦</span>
-
-              {/* Custom SVG controller — flat style matching reference */}
-              <svg width="90" height="78" viewBox="0 0 110 90" fill="none" xmlns="http://www.w3.org/2000/svg">
-                {/* Body shadow (depth layer) */}
-                <path d="M 24 16 H 86 Q 100 16 100 30 L 100 57 C 100 69 102 78 102 85 Q 102 95 88 95 Q 76 95 72 85 C 68 75 64 69 55 69 C 46 69 42 75 38 85 Q 34 95 22 95 Q 8 95 8 85 C 8 78 10 69 10 57 L 10 30 Q 10 16 24 16 Z" fill="#AABCCC" transform="translate(0 3)"/>
-                {/* Shoulder bumpers (behind body) */}
-                <rect x="16" y="5" width="26" height="13" rx="6.5" fill="#8EA5B8"/>
-                <rect x="68" y="5" width="26" height="13" rx="6.5" fill="#8EA5B8"/>
-                {/* Main body */}
-                <path d="M 24 13 H 86 Q 100 13 100 27 L 100 54 C 100 66 102 75 102 82 Q 102 92 88 92 Q 76 92 72 82 C 68 72 64 66 55 66 C 46 66 42 72 38 82 Q 34 92 22 92 Q 8 92 8 82 C 8 75 10 66 10 54 L 10 27 Q 10 13 24 13 Z" fill="#C8D9EA"/>
-                {/* Upper body highlight */}
-                <path d="M 24 13 H 86 Q 100 13 100 27 L 100 44 C 90 40 78 37 66 36 H 44 C 32 37 20 40 10 44 L 10 27 Q 10 13 24 13 Z" fill="#D8E8F6" opacity="0.8"/>
-                {/* Shoulder bumper fronts */}
-                <rect x="16" y="11" width="26" height="8" rx="4" fill="#9CB2C5"/>
-                <rect x="68" y="11" width="26" height="8" rx="4" fill="#9CB2C5"/>
-                {/* Left analog stick */}
-                <circle cx="30" cy="35" r="13" fill="#3D4E60"/>
-                <circle cx="30" cy="35" r="7.5" fill="#2C3A48"/>
-                {/* Select / Options buttons (center) */}
-                <circle cx="46" cy="35" r="5.5" fill="#A8C0D4"/>
-                <circle cx="64" cy="35" r="5.5" fill="#A8C0D4"/>
-                {/* Face buttons — teal top, pink sides, teal bottom */}
-                <circle cx="82" cy="26" r="7" fill="#00D4B0"/>
-                <circle cx="92" cy="36" r="7" fill="#FF4D88"/>
-                <circle cx="72" cy="36" r="7" fill="#FF4D88"/>
-                <circle cx="82" cy="46" r="7" fill="#00D4B0"/>
-                {/* D-pad base circle */}
-                <circle cx="30" cy="63" r="14" fill="#B0C6D8"/>
-                {/* D-pad cross — horizontal */}
-                <rect x="22.5" y="59.5" width="15" height="7" rx="3" fill="#4A5C6E"/>
-                {/* D-pad cross — vertical */}
-                <rect x="26.5" y="55.5" width="7" height="15" rx="3" fill="#4A5C6E"/>
-                {/* Right analog stick */}
-                <circle cx="68" cy="63" r="13" fill="#3D4E60"/>
-                <circle cx="68" cy="63" r="7.5" fill="#2C3A48"/>
-              </svg>
-
-              {/* Rainbow stripe */}
-              <div
-                className="absolute rounded-full"
-                style={{
-                  bottom: "-11px", left: "50%", transform: "translateX(-50%)",
-                  width: "85%", height: "9px",
-                  background: "linear-gradient(90deg,#ff3366,#ff8c00,#ffff00,#00cc44,#0099ff,#9933ff)",
-                }}
-              />
-            </div>
-          </motion.div>
-
-          {/* "New games daily 🔥" badge — overhangs right */}
+          {/* "New games daily 🔥" badge — middle-right of card */}
           <motion.div
             initial={{ scale: 0, rotate: 20 }}
             animate={{ scale: 1, rotate: 8 }}
             transition={{ delay: 0.45, type: "spring", stiffness: 200, damping: 14 }}
             className="absolute z-20 pointer-events-none"
-            style={{ right: "-22px", top: "18%" }}
+            style={{ right: "-22px", top: "45%" }}
           >
             <div
               className="px-3.5 py-1.5 rounded-full font-bold text-black text-xs whitespace-nowrap"
