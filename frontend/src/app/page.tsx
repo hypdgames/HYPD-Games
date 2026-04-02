@@ -15,8 +15,6 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 const AD_FREQUENCY = 6;
 const VIDEO_CACHE_KEY = "hypd:video_cache_v2";
 const VIDEO_CACHE_TTL = 3600 * 1000;
-const GAMES_CACHE_KEY = "hypd:games_feed";
-const GAMES_CACHE_TTL = 300 * 1000;
 
 function decodeHtml(str: string): string {
   return str
@@ -158,18 +156,16 @@ export default function GameFeed() {
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const pendingLikes = useRef<Set<string>>(new Set());
+  // New random seed per page-load — drives the feed shuffle, changes every visit
+  const feedSeed = useRef(Math.random().toString(36).slice(2, 10));
 
   const fetchGames = useCallback(async () => {
     try {
-      const cachedGames = sessionGet<Game[]>(GAMES_CACHE_KEY, GAMES_CACHE_TTL);
-      let data: Game[];
-      if (cachedGames) { data = cachedGames; }
-      else {
-        const res = await fetch(`${API_URL}/api/games`);
-        if (!res.ok) return;
-        data = await res.json();
-        sessionSet(GAMES_CACHE_KEY, data);
-      }
+      const headers: Record<string, string> = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      const res = await fetch(`${API_URL}/api/games/feed?seed=${feedSeed.current}`, { headers });
+      if (!res.ok) return;
+      const data: Game[] = await res.json();
       setGames(data);
       const items: FeedItem[] = [];
       data.forEach((game, i) => {
@@ -188,7 +184,7 @@ export default function GameFeed() {
           .catch(() => {});
       }
     } catch {}
-  }, []);
+  }, [token]);
 
   useEffect(() => { fetchGames().then(() => setLoading(false)); }, [fetchGames]);
   useEffect(() => { if (user?.saved_games) setSavedGames(new Set(user.saved_games)); }, [user]);
