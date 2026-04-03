@@ -285,9 +285,9 @@ export default function ExplorePage() {
       </AnimatePresence>
 
       <div className="space-y-7">
-        {trending.length > 0 && <Section title="Trending">{trending.slice(0, 8).map(g => <TrendingCard key={g.id} game={g} onClick={() => playGame(g.id)} />)}</Section>}
-        {categoriesWithGames.length > 0 && <Section title="Categories">{categoriesWithGames.map(({ name, games: g, previewImg, firstGameId }) => <CategoryTile key={name} name={name} gameCount={g.length} previewImg={previewImg} firstGameId={firstGameId} onSelect={() => setSelectedCategory(name)} onQuickPlay={() => playGame(firstGameId!)} />)}</Section>}
         {newGames.length > 0 && <Section title="New Games">{newGames.map(g => <GameTile key={g.id} game={g} onClick={() => playGame(g.id)} />)}</Section>}
+        {categoriesWithGames.length > 0 && <Section title="Categories">{categoriesWithGames.map(({ name, games: g, previewImg, firstGameId }) => <CategoryTile key={name} name={name} gameCount={g.length} previewImg={previewImg} firstGameId={firstGameId} onSelect={() => setSelectedCategory(name)} onQuickPlay={() => playGame(firstGameId!)} />)}</Section>}
+        {trending.length > 0 && <Section title="Trending">{trending.slice(0, 8).map(g => <TrendingCard key={g.id} game={g} onClick={() => playGame(g.id)} />)}</Section>}
         {categoriesWithGames.slice(0, 5).map(({ name, games: catGames }) => (
           <Section key={name} title={name} onViewAll={() => setSelectedCategory(name)}>{catGames.slice(0, 8).map(g => <GameTile key={g.id} game={g} onClick={() => playGame(g.id)} />)}</Section>
         ))}
