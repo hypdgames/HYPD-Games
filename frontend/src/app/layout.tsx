@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   title: "HYPD Games - Play Instant Games",
   description: "TikTok-style instant gaming platform. Swipe through endless games and play instantly - no downloads required!",
   manifest: "/manifest.json",
-  metadataBase: new URL("https://hypd.games"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_API_URL || "https://hypd.games"),
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://hypd.games",
+    url: process.env.NEXT_PUBLIC_API_URL || "https://hypd.games",
     siteName: "HYPD Games",
     title: "HYPD Games - Play Instant Games",
     description: "TikTok-style instant gaming platform. Swipe through endless games and play instantly!",
