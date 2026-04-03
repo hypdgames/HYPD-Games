@@ -2874,7 +2874,7 @@ async def bulk_import_gamepix_games(
 GAMEMONETIZE_FEED_URL = "https://gamemonetize.com/feed.php"
 
 # In-memory cache for the full GameMonetize feed (avoids re-fetching on every browse request)
-_gmz_cache: dict = {"games": [], "fetched_at": 0, "ttl": 300}  # 5-min TTL
+_gmz_cache: dict = {"games": [], "fetched_at": 0, "ttl": 1800}  # 30-min TTL
 
 async def _fetch_full_gmz_feed() -> list:
     """Fetch the full GameMonetize feed, using cache when fresh."""
@@ -2883,11 +2883,19 @@ async def _fetch_full_gmz_feed() -> list:
         return _gmz_cache["games"]
 
     all_games: list = []
+    rate_limited = False
     async with httpx.AsyncClient(timeout=60.0) as client:
-        # The feed returns up to 2000 games per page. Fetch pages until exhausted.
         for feed_page in range(1, 20):  # safety cap at 20 pages (40k games)
             params = {"format": "0", "page": str(feed_page)}
-            response = await client.get(GAMEMONETIZE_FEED_URL, params=params)
+            try:
+                response = await client.get(GAMEMONETIZE_FEED_URL, params=params)
+            except Exception as e:
+                logger.warning(f"GameMonetize feed page {feed_page} request failed: {e}")
+                break
+            if response.status_code == 429:
+                logger.warning(f"GameMonetize feed rate-limited (429) on page {feed_page}")
+                rate_limited = True
+                break
             if response.status_code != 200:
                 logger.warning(f"GameMonetize feed page {feed_page} returned {response.status_code}")
                 break
@@ -2895,14 +2903,24 @@ async def _fetch_full_gmz_feed() -> list:
             if not isinstance(page_games, list) or len(page_games) == 0:
                 break
             all_games.extend(page_games)
-            # If we got fewer than 2000, that was the last page
             if len(page_games) < 2000:
                 break
 
-    logger.info(f"GameMonetize feed fetched: {len(all_games)} total games")
-    _gmz_cache["games"] = all_games
-    _gmz_cache["fetched_at"] = now
-    return all_games
+    if all_games:
+        # Success: update cache with fresh data
+        logger.info(f"GameMonetize feed fetched: {len(all_games)} total games")
+        _gmz_cache["games"] = all_games
+        _gmz_cache["fetched_at"] = now
+    elif rate_limited and _gmz_cache["games"]:
+        # Rate-limited but stale cache exists — keep serving it, retry in 2 min
+        logger.warning(f"GameMonetize rate-limited; serving {len(_gmz_cache['games'])} stale cached games, retry in 2 min")
+        _gmz_cache["fetched_at"] = now - _gmz_cache["ttl"] + 120
+    else:
+        # Truly empty (rate-limited with no cache) — schedule a quick retry in 90 s
+        logger.warning("GameMonetize feed returned no games; will retry in 90 s")
+        _gmz_cache["fetched_at"] = now - _gmz_cache["ttl"] + 90
+
+    return _gmz_cache["games"]
 
 # GameMonetize categories (will be populated from feed)
 GAMEMONETIZE_CATEGORIES = [
@@ -4632,6 +4650,24 @@ async def _prewarm_caches():
             logger.info(f"Cache pre-warmed: {len(feed_responses)} feed games, {len(all_responses)} total games, {len(categories)} categories")
     except Exception as e:
         logger.warning(f"Cache pre-warm failed (non-critical): {e}")
+
+    # Warm the GMZ feed in the background — doesn't block DB warming
+    asyncio.create_task(_prewarm_gmz_feed())
+
+
+async def _prewarm_gmz_feed():
+    """Pre-warm the GameMonetize full-catalog cache in the background.
+    Delayed by 30 s to avoid triggering rate limits during rapid restarts."""
+    import asyncio
+    await asyncio.sleep(30)  # Brief wait so any previous rate-limit window clears
+    try:
+        games = await _fetch_full_gmz_feed()
+        if games:
+            logger.info(f"GMZ feed pre-warmed: {len(games)} games cached (TTL 30 min)")
+        else:
+            logger.warning("GMZ feed pre-warm returned no games (rate-limited; will retry on first user request)")
+    except Exception as e:
+        logger.warning(f"GMZ feed pre-warm failed (non-critical): {e}")
 
 async def _periodic_rewarm():
     """Re-warm caches every 4 minutes so they never expire in low-traffic scenarios."""

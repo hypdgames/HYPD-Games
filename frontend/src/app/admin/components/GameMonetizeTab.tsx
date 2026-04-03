@@ -247,10 +247,16 @@ export function GameMonetizeTab({
       ) : gmzGames.length === 0 ? (
         <div className="text-center py-12 bg-card rounded-xl border border-border">
           <Globe className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground">No games found</p>
-          <p className="text-sm text-muted-foreground/70">
-            {searchQuery ? `No results for "${searchQuery}" — try a different search term` : "Try a different category or refresh"}
+          <p className="font-semibold text-foreground">No games found</p>
+          <p className="text-sm text-muted-foreground/70 mt-1">
+            {searchQuery ? `No results for "${searchQuery}" — try a different search term` : "The catalogue may still be loading. Click below to retry."}
           </p>
+          <button
+            onClick={() => onRefresh()}
+            className="mt-4 px-5 py-2 rounded-full bg-foreground text-background text-sm font-semibold hover:opacity-80 transition-opacity"
+          >
+            Refresh catalogue
+          </button>
         </div>
       ) : selectableGames.length === 0 ? (
         <div className="text-center py-12 bg-card rounded-xl border border-border">
