@@ -60,7 +60,7 @@ security_logger = logging.getLogger('security')
 security_logger.setLevel(logging.INFO)
 
 # JWT Configuration
-JWT_SECRET = os.environ.get('JWT_SECRET', 'hypd-games-secret-key-2024')
+JWT_SECRET = os.environ.get('JWT_SECRET')
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRATION_HOURS = 24
 
