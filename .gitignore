@@ -102,6 +102,9 @@ frontend/node_modules/@next/swc-linux-arm64-gnu/next-swc.linux-arm64-gnu.node
 *.env
 *.env.*
 !*.env.example
+
+# Test credentials (contains admin passwords — never commit)
+memory/test_credentials.md
 -e 
 # Environment files
 *.env
