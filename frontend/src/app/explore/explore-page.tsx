@@ -189,7 +189,6 @@ export default function ExplorePage() {
   const { user } = useAuthStore();
 
   const [games, setGames] = useState<Game[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchActive, setSearchActive] = useState(false);
@@ -197,18 +196,12 @@ export default function ExplorePage() {
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const cached = sessionGet<{ games: Game[]; categories: string[] }>(EXPLORE_CACHE_KEY, EXPLORE_CACHE_TTL);
-    if (cached) { setGames(cached.games); setCategories(cached.categories); setLoading(false); return; }
-    Promise.all([
-      fetch(`${API_URL}/api/games?feed_only=false`),
-      fetch(`${API_URL}/api/categories`),
-    ]).then(async ([gRes, cRes]) => {
-      const gData = gRes.ok ? await gRes.json() : [];
-      const cData = cRes.ok ? (await cRes.json()).categories || [] : [];
-      setGames(gData); setCategories(cData);
-      sessionSet(EXPLORE_CACHE_KEY, { games: gData, categories: cData });
-      setLoading(false);
-    }).catch(() => setLoading(false));
+    const cached = sessionGet<Game[]>(EXPLORE_CACHE_KEY, EXPLORE_CACHE_TTL);
+    if (cached) { setGames(cached); setLoading(false); return; }
+    fetch(`${API_URL}/api/games?feed_only=false`)
+      .then(res => res.ok ? res.json() : [])
+      .then(gData => { setGames(gData); sessionSet(EXPLORE_CACHE_KEY, gData); setLoading(false); })
+      .catch(() => setLoading(false));
   }, []);
 
   useEffect(() => { if (searchActive) setTimeout(() => searchRef.current?.focus(), 100); }, [searchActive]);
@@ -217,12 +210,17 @@ export default function ExplorePage() {
 
   const trending = [...games].sort((a, b) => (b.play_count || 0) - (a.play_count || 0));
   const newGames = [...games].sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()).slice(0, 10);
-  const categoriesWithGames = categories.map(cat => {
-    const catGames = games.filter(g => g.category === cat);
-    const previewImg = catGames.find(g => g.thumbnail_url)?.thumbnail_url || catGames.find(g => g.icon_url)?.icon_url;
-    const firstGameId = [...catGames].sort((a, b) => (b.play_count || 0) - (a.play_count || 0))[0]?.id;
-    return { name: cat, games: catGames, previewImg, firstGameId };
-  }).filter(c => c.games.length >= 1).sort((a, b) => b.games.length - a.games.length);
+
+  // Derive every category directly from the games list — always in sync, no separate API call
+  const categoriesWithGames = Array.from(new Set(games.map(g => g.category).filter((c): c is string => !!c)))
+    .map(cat => {
+      const catGames = games.filter(g => g.category === cat);
+      const previewImg = catGames.find(g => g.thumbnail_url)?.thumbnail_url || catGames.find(g => g.icon_url)?.icon_url;
+      const firstGameId = [...catGames].sort((a, b) => (b.play_count || 0) - (a.play_count || 0))[0]?.id;
+      return { name: cat, games: catGames, previewImg, firstGameId };
+    })
+    .filter(c => c.games.length >= 1)
+    .sort((a, b) => b.games.length - a.games.length);
 
   const searchResults = searchQuery.trim()
     ? games.filter(g => g.title.toLowerCase().includes(searchQuery.toLowerCase()) || (g.description || "").toLowerCase().includes(searchQuery.toLowerCase()))
