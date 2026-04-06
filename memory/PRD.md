@@ -106,6 +106,11 @@ Deep structural redesign matching the Hook app reference:
 - CommentSheet z-index + padding fix (Login/Sign Up buttons fully visible above nav) — Apr 2026
 - HTML entity decoding in game titles (decodeHtml util in page.tsx) — Apr 2026
 - Categories in Explore derived dynamically from games list (no separate /api/categories call) — Apr 2026
+- **Performance Optimization** — Apr 2026:
+  - Backend: `comment-counts` cache TTL increased 60s → 300s; `Cache-Control: public, max-age=300, stale-while-revalidate=600` header added to `/api/games/comment-counts`
+  - Frontend: `FeedCard` wrapped with `React.memo` to prevent re-renders during scroll
+  - Frontend: `categoriesWithGames`, `trending`, `newGames`, `searchResults` memoized with `useMemo` in explore page
+  - Frontend: CDN preconnect hints and Welcome hero image `priority` were already present
 
 ## Credentials
 - Admin: admin@hypd.games / admin123
