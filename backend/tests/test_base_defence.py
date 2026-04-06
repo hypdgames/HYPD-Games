@@ -7,7 +7,7 @@ import requests
 import os
 import json
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://instant-play-69.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://hypd-games-fast.preview.emergentagent.com')
 
 # Test credentials
 TEST_EMAIL = "admin@hypd.games"

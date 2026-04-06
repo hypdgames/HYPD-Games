@@ -3,7 +3,7 @@ Hypd Games API Server
 Backend powered by FastAPI + Supabase PostgreSQL + Supabase Storage
 """
 
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, UploadFile, File, Form, status, Request
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, UploadFile, File, Form, status, Request, Response
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import StreamingResponse, HTMLResponse, JSONResponse
 from fastapi.middleware.gzip import GZipMiddleware
@@ -852,10 +852,11 @@ async def get_video_previews_batch(db: AsyncSession = Depends(get_db)):
 
 
 @api_router.get("/games/comment-counts")
-async def get_comment_counts(db: AsyncSession = Depends(get_db)):
-    """Batch comment counts for all games — used for badge display on feed. Cached 60s."""
-    cached = _cache_get("comment_counts", ttl=60)
+async def get_comment_counts(response: Response, db: AsyncSession = Depends(get_db)):
+    """Batch comment counts for all games — used for badge display on feed. Cached 5 min."""
+    cached = _cache_get("comment_counts", ttl=300)
     if cached is not None:
+        response.headers["Cache-Control"] = "public, max-age=300, stale-while-revalidate=600"
         return cached
     result = await db.execute(
         select(GameComment.game_id, func.count(GameComment.id).label("count"))
@@ -863,6 +864,7 @@ async def get_comment_counts(db: AsyncSession = Depends(get_db)):
     )
     counts = {row[0]: row[1] for row in result.all()}
     _cache_set("comment_counts", counts)
+    response.headers["Cache-Control"] = "public, max-age=300, stale-while-revalidate=600"
     return counts
 
 

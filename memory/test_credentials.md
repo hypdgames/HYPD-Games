@@ -5,4 +5,4 @@
 - Password: admin123
 
 ## App URL
-- Preview: https://instant-play-69.preview.emergentagent.com
+- Preview: https://hypd-games-fast.preview.emergentagent.com

@@ -8,7 +8,7 @@ import requests
 import os
 import time
 
-BASE_URL = os.environ.get('NEXT_PUBLIC_API_URL', 'https://instant-play-69.preview.emergentagent.com')
+BASE_URL = os.environ.get('NEXT_PUBLIC_API_URL', 'https://hypd-games-fast.preview.emergentagent.com')
 
 # Test credentials
 ADMIN_EMAIL = "admin@hypd.games"
@@ -214,7 +214,7 @@ class TestWalletPurchaseFlow:
             f"{BASE_URL}/api/wallet/purchase",
             json={
                 "package_id": "starter",
-                "origin_url": "https://instant-play-69.preview.emergentagent.com"
+                "origin_url": "https://hypd-games-fast.preview.emergentagent.com"
             }
         )
         
@@ -237,7 +237,7 @@ class TestWalletPurchaseFlow:
             f"{BASE_URL}/api/wallet/purchase",
             json={
                 "package_id": "invalid_package",
-                "origin_url": "https://instant-play-69.preview.emergentagent.com"
+                "origin_url": "https://hypd-games-fast.preview.emergentagent.com"
             }
         )
         
@@ -253,7 +253,7 @@ class TestWalletPurchaseFlow:
             f"{BASE_URL}/api/wallet/purchase",
             json={
                 "package_id": "starter",
-                "origin_url": "https://instant-play-69.preview.emergentagent.com"
+                "origin_url": "https://hypd-games-fast.preview.emergentagent.com"
             }
         )
         

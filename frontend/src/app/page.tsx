@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, memo } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Play, Heart, MessageCircle, Loader2 } from "lucide-react";
@@ -53,7 +53,7 @@ function sessionSet(key: string, data: unknown): void {
   try { sessionStorage.setItem(key, JSON.stringify({ data, ts: Date.now() })); } catch {}
 }
 
-function FeedCard({
+const FeedCard = memo(function FeedCard({
   game, isActive, isAdjacent, videoUrl, onPlay, onSave, isSaved, onComment, likeCount, commentCount,
 }: {
   game: Game; isActive: boolean; isAdjacent: boolean; videoUrl: string | null;
@@ -121,7 +121,8 @@ function FeedCard({
       </div>
     </div>
   );
-}
+});
+FeedCard.displayName = "FeedCard";
 
 export default function GameFeed() {
   const router = useRouter();

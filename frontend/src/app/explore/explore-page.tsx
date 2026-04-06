@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Search, ChevronRight, Play, Flame, ArrowLeft, Loader2, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -208,23 +208,37 @@ export default function ExplorePage() {
 
   const playGame = (id: string) => router.push(`/play/${id}`);
 
-  const trending = [...games].sort((a, b) => (b.play_count || 0) - (a.play_count || 0));
-  const newGames = [...games].sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()).slice(0, 10);
+  const trending = useMemo(
+    () => [...games].sort((a, b) => (b.play_count || 0) - (a.play_count || 0)),
+    [games]
+  );
+  const newGames = useMemo(
+    () => [...games].sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()).slice(0, 10),
+    [games]
+  );
 
   // Derive every category directly from the games list — always in sync, no separate API call
-  const categoriesWithGames = Array.from(new Set(games.map(g => g.category).filter((c): c is string => !!c)))
-    .map(cat => {
-      const catGames = games.filter(g => g.category === cat);
-      const previewImg = catGames.find(g => g.thumbnail_url)?.thumbnail_url || catGames.find(g => g.icon_url)?.icon_url;
-      const firstGameId = [...catGames].sort((a, b) => (b.play_count || 0) - (a.play_count || 0))[0]?.id;
-      return { name: cat, games: catGames, previewImg, firstGameId };
-    })
-    .filter(c => c.games.length >= 1)
-    .sort((a, b) => b.games.length - a.games.length);
+  const categoriesWithGames = useMemo(
+    () =>
+      Array.from(new Set(games.map(g => g.category).filter((c): c is string => !!c)))
+        .map(cat => {
+          const catGames = games.filter(g => g.category === cat);
+          const previewImg = catGames.find(g => g.thumbnail_url)?.thumbnail_url || catGames.find(g => g.icon_url)?.icon_url;
+          const firstGameId = [...catGames].sort((a, b) => (b.play_count || 0) - (a.play_count || 0))[0]?.id;
+          return { name: cat, games: catGames, previewImg, firstGameId };
+        })
+        .filter(c => c.games.length >= 1)
+        .sort((a, b) => b.games.length - a.games.length),
+    [games]
+  );
 
-  const searchResults = searchQuery.trim()
-    ? games.filter(g => g.title.toLowerCase().includes(searchQuery.toLowerCase()) || (g.description || "").toLowerCase().includes(searchQuery.toLowerCase()))
-    : [];
+  const searchResults = useMemo(
+    () =>
+      searchQuery.trim()
+        ? games.filter(g => g.title.toLowerCase().includes(searchQuery.toLowerCase()) || (g.description || "").toLowerCase().includes(searchQuery.toLowerCase()))
+        : [],
+    [games, searchQuery]
+  );
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-10 h-10 text-violet animate-spin" /></div>;
 
