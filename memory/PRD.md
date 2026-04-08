@@ -111,6 +111,11 @@ Deep structural redesign matching the Hook app reference:
   - Frontend: `FeedCard` wrapped with `React.memo` to prevent re-renders during scroll
   - Frontend: `categoriesWithGames`, `trending`, `newGames`, `searchResults` memoized with `useMemo` in explore page
   - Frontend: CDN preconnect hints and Welcome hero image `priority` were already present
+- **Security Hardening (RLS)** — Apr 2026:
+  - Enabled Row-Level Security (RLS) on all 18 Supabase tables (users, games, wallet_transactions, friendships, game_comments, comment_likes, etc.)
+  - Supabase PostgREST API now returns `[]` for all tables when accessed without policies (anon/public access blocked)
+  - FastAPI backend is unaffected — it connects as PostgreSQL superuser via direct connection, bypassing RLS
+  - Script saved at `/app/backend/scripts/enable_rls.py`
 
 ## Credentials
 - Admin: admin@hypd.games / admin123
