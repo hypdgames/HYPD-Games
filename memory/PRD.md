@@ -112,10 +112,15 @@ Deep structural redesign matching the Hook app reference:
   - Frontend: `categoriesWithGames`, `trending`, `newGames`, `searchResults` memoized with `useMemo` in explore page
   - Frontend: CDN preconnect hints and Welcome hero image `priority` were already present
 - **Security Hardening (RLS)** — Apr 2026:
-  - Enabled Row-Level Security (RLS) on all 18 Supabase tables (users, games, wallet_transactions, friendships, game_comments, comment_likes, etc.)
-  - Supabase PostgREST API now returns `[]` for all tables when accessed without policies (anon/public access blocked)
-  - FastAPI backend is unaffected — it connects as PostgreSQL superuser via direct connection, bypassing RLS
-  - Script saved at `/app/backend/scripts/enable_rls.py`
+  - Enabled Row-Level Security (RLS) on all 18 Supabase tables
+  - Added 8 RLS policies with least-privilege access:
+    - PUBLIC READ: `games` (visible only), `app_settings`, `coin_packages` (active only), `game_comments`, `comment_likes`
+    - AUTHENTICATED OWN-DATA: `users` (own row), `wallet_transactions` (own), `play_sessions` (own)
+    - NO PostgREST writes on any table — all writes via FastAPI (validated + rate-limited)
+  - Updated JWT to include `role: "authenticated"` + `iss: "hypd-games"` claims
+  - FastAPI backend unaffected (superuser bypasses RLS)
+  - Per-user policies activate once Supabase JWT secret = `hypd-games-prod-secret-key-xK9mP2nQ7vL4wR8t` in Dashboard → Project Settings → API → JWT Settings
+  - Scripts: `/app/backend/scripts/enable_rls.py`, `/app/backend/scripts/apply_rls_policies.py`
 
 ## Credentials
 - Admin: admin@hypd.games / admin123
