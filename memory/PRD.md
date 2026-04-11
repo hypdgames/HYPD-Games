@@ -102,7 +102,16 @@ Deep structural redesign matching the Hook app reference:
 - Re-enable Pro/Ad-Free features
 - Real-time comment count in feed already DONE (Feb 2026)
 
-## Completed
+## Critical Infrastructure Note
+**Frontend runs `next start` (production build mode) — NOT hot reload.**
+After any source code changes, you MUST run:
+```
+cd /app/frontend && yarn build
+sudo supervisorctl restart frontend
+```
+Then wait ~2 min for the build to complete before testing. The testing agent confirmed this on Apr 11 2026.
+
+
 - CommentSheet z-index + padding fix (Login/Sign Up buttons fully visible above nav) — Apr 2026
 - HTML entity decoding in game titles (decodeHtml util in page.tsx) — Apr 2026
 - Categories in Explore derived dynamically from games list (no separate /api/categories call) — Apr 2026
@@ -121,6 +130,14 @@ Deep structural redesign matching the Hook app reference:
   - FastAPI backend unaffected (superuser bypasses RLS)
   - Per-user policies activate once Supabase JWT secret = `hypd-games-prod-secret-key-xK9mP2nQ7vL4wR8t` in Dashboard → Project Settings → API → JWT Settings
   - Scripts: `/app/backend/scripts/enable_rls.py`, `/app/backend/scripts/apply_rls_policies.py`
+- **GMZ Walkthrough Video Ads** — Apr 2026:
+  - Admin toggle in GameMonetize tab: "Walkthrough Video Ads" ON/OFF switch (stored in `app_settings.gmz_video_ads_enabled`)
+  - "Watch Walkthrough" button in game play toolbar for all GMZ games — opens official GameMonetize video.js player in full-screen sheet
+  - Player uses `window.VIDEO_OPTIONS` with `getAds: "true"/"false"` based on admin setting
+  - Revenue earned automatically by domain when ads ON (per GMZ docs — no publisher ID needed)
+  - Testing: 13/13 backend + 10/10 frontend flows passed
 
-## Credentials
+## Critical Infrastructure Note
+**Frontend runs `next start` (production build mode) — NOT hot reload.**
+After any source code changes, run: `cd /app/frontend && yarn build && sudo supervisorctl restart frontend`
 - Admin: admin@hypd.games / admin123
