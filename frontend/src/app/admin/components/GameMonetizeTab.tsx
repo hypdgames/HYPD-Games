@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { Globe, Loader2, Plus, Check, Search, X } from "lucide-react";
+import { Globe, Loader2, Plus, Check, Search, X, Video, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import type { Game } from "./types";
 
 export interface GMZGame {
@@ -33,6 +34,8 @@ interface GameMonetizeTabProps {
   selectedGmzGames: Set<string>;
   games: Game[];
   importing: boolean;
+  gmzVideoAdsEnabled: boolean;
+  onGmzVideoAdsToggle: (enabled: boolean) => void;
   onCategoryChange: (category: string) => void;
   onSortChange: (sort: string) => void;
   onSearch: (query: string) => void;
@@ -62,6 +65,8 @@ export function GameMonetizeTab({
   selectedGmzGames,
   games,
   importing,
+  gmzVideoAdsEnabled,
+  onGmzVideoAdsToggle,
   onCategoryChange,
   onSortChange,
   onSearch,
@@ -116,6 +121,42 @@ export function GameMonetizeTab({
             </p>
           </div>
         </div>
+      </div>
+
+      {/* Walkthrough Video Ads Setting */}
+      <div className="bg-card border border-border rounded-xl p-4">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-start gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
+              {gmzVideoAdsEnabled
+                ? <DollarSign className="w-5 h-5 text-green-500" />
+                : <Video className="w-5 h-5 text-muted-foreground" />}
+            </div>
+            <div className="min-w-0">
+              <h3 className="font-bold text-foreground">Walkthrough Video Ads</h3>
+              <p className="text-sm text-muted-foreground leading-snug mt-0.5">
+                {gmzVideoAdsEnabled
+                  ? "Ads are shown in walkthrough videos (1 pre-roll + 1 banner). You earn revenue tracked by your domain."
+                  : "Ads are hidden in walkthrough videos. No revenue generated from walkthroughs."}
+              </p>
+              <p className="text-xs text-muted-foreground/60 mt-1">
+                GameMonetize walkthroughs play on the game page when a user taps &quot;Watch Walkthrough&quot;.
+              </p>
+            </div>
+          </div>
+          <Switch
+            checked={gmzVideoAdsEnabled}
+            onCheckedChange={onGmzVideoAdsToggle}
+            data-testid="gmz-video-ads-toggle"
+            className="flex-shrink-0"
+          />
+        </div>
+        {gmzVideoAdsEnabled && (
+          <div className="mt-3 pt-3 border-t border-border/50 flex items-center gap-2 text-xs text-green-500/80">
+            <Check className="w-3.5 h-3.5 flex-shrink-0" />
+            <span>Earnings are automatically tracked through your domain — no publisher ID needed.</span>
+          </div>
+        )}
       </div>
 
       {/* Filters Row */}

@@ -1,0 +1,101 @@
+{
+  "summary": "Full e2e testing of GMZ Walkthrough Video Ads feature. 13/13 backend tests pass. All 10 feature flows verified. Critical note: The frontend runs `next start` (production mode) without hot reload — the new feature code was present in source files (modified Apr 11) but the build was from Apr 6. A `yarn build` + supervisor restart was required before the Walkthrough Video Ads toggle was visible in the GMZ tab. After rebuild all features work correctly.",
+
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "GMZ Walkthrough sheet",
+        "issues": ["The walkthrough video container shows a black background while waiting for video.js to load the actual video — expected behavior since video.js loads an external script from api.gamemonetize.com. Not a bug, but the UX could benefit from a loading spinner/placeholder."]
+      }
+    ]
+  },
+
+  "passed_tests": [
+    "BACKEND: Admin login with admin@hypd.games/admin123 returns access_token (200)",
+    "BACKEND: Invalid credentials returns 401",
+    "BACKEND: GET /api/settings returns 200 with dict",
+    "BACKEND: GET /api/settings includes gmz_video_ads_enabled key",
+    "BACKEND: POST /api/admin/settings without auth returns 401/403",
+    "BACKEND: POST /api/admin/settings with gmz_video_ads_enabled=true returns success=True",
+    "BACKEND: POST /api/admin/settings with gmz_video_ads_enabled=false returns success=True",
+    "BACKEND: gmz_video_ads_enabled=false persists correctly in GET /api/settings",
+    "BACKEND: gmz_video_ads_enabled=true persists correctly in GET /api/settings",
+    "BACKEND: GET /api/games returns list with games",
+    "BACKEND: GET /api/games/{id} for GMZ game returns source=gamemonetize",
+    "BACKEND: GET /api/games/{id} for GMZ game returns non-empty embed_url",
+    "BACKEND: GMZ embed_url has valid hash segment",
+    "FRONTEND: Admin login via profile page works (Welcome back! toast shown)",
+    "FRONTEND: Admin dashboard loads at /admin with Games/GMZ/Upload/Users/Stats/Settings tabs",
+    "FRONTEND: GMZ tab click loads GameMonetize content",
+    "FRONTEND: Walkthrough Video Ads toggle card is visible in GMZ tab",
+    "FRONTEND: DollarSign icon shown when ads enabled (SVG DollarSign path confirmed)",
+    "FRONTEND: Video icon shown when ads disabled",
+    "FRONTEND: Earnings banner visible when ads enabled, hidden when disabled",
+    "FRONTEND: Toggle click calls POST /api/admin/settings (200 response)",
+    "FRONTEND: Toast shows 'Walkthrough ads enabled/disabled' on toggle",
+    "FRONTEND: Walkthrough button visible in game toolbar for GMZ game (source=gamemonetize)",
+    "FRONTEND: Walkthrough button text is 'Walkthrough'",
+    "FRONTEND: Clicking Walkthrough opens full-screen overlay (data-testid=walkthrough-sheet)",
+    "FRONTEND: Walkthrough sheet has 'Walkthrough Video' title",
+    "FRONTEND: Walkthrough sheet has X close button (data-testid=close-walkthrough-btn)",
+    "FRONTEND: Walkthrough sheet has bottom dismiss button (data-testid=dismiss-walkthrough-btn)",
+    "FRONTEND: VIDEO_OPTIONS set with correct gameid (hash from embed_url), getAds=true/false",
+    "FRONTEND: Ad-free badge visible in sheet when ads are disabled (getAds=false)",
+    "FRONTEND: Close button dismisses walkthrough sheet",
+    "FRONTEND: Walkthrough button visible again after sheet is closed"
+  ],
+
+  "failed_tests": [],
+
+  "test_report_links": [
+    "/app/backend/tests/test_gmz_walkthrough_ads.py",
+    "/app/test_reports/pytest/pytest_gmz_walkthrough.xml"
+  ],
+
+  "action_items": [
+    "INFO: The frontend runs in `next start` (production mode) — NOT hot reload. Whenever source code changes are made, `yarn build` must be run in /app/frontend and the frontend supervisor must be restarted for changes to take effect. The current running build was from Apr 6; the new feature code (Apr 11 changes) was NOT visible until a rebuild was performed. This is critical: E1 must rebuild before testing/deploying any future changes.",
+    "INFO: All 119 games in DB have source=gamemonetize, so the 'non-GMZ game does NOT show Walkthrough button' test case cannot be verified with a real game. Code logic is correct (button only renders when gmzHash is set, and gmzHash only set when source===gamemonetize && embed_url exists), but recommend adding at least 1 non-GMZ game to verify end-to-end."
+  ],
+
+  "critical_code_review_comments": [
+    "CRITICAL: Frontend running `next start` (production build) without hot reload. Source changes require `yarn build` + supervisor restart to take effect. This was the root cause of the feature not being visible initially in this test run.",
+    "NOTE: settings.gmz_video_ads_enabled is compared as string in game-player.tsx: `settings.gmz_video_ads_enabled !== 'false'` — this correctly defaults to `true` when the key is not yet set in DB (since undefined !== 'false' is true). Correct behavior.",
+    "NOTE: The public /api/games list endpoint returns source=null for all games (uses GameFeedResponse which may exclude source). The individual /api/games/{id} endpoint correctly returns source=gamemonetize. Game player uses individual endpoint so it works correctly.",
+    "NOTE: gmzPage prop is passed to GameMonetizeTab but is destructured but never used in the component body (only gmzTotal/gmzHasMore are used for display). Minor dead prop."
+  ],
+
+  "updated_files": [
+    "/app/backend/tests/test_gmz_walkthrough_ads.py",
+    "/app/frontend/.next (rebuilt via yarn build)"
+  ],
+
+  "success_rate": {
+    "backend": "100% (13/13 tests pass)",
+    "frontend": "100% (all 10 feature flows verified, after required frontend rebuild)"
+  },
+
+  "test_credentials": {
+    "admin_email": "admin@hypd.games",
+    "admin_password": "admin123",
+    "gmz_game_id": "370c059e-4680-473f-a4ea-c309896a54c0",
+    "gmz_game_title": "Poop Away",
+    "gmz_game_embed_url": "https://html5.gamemonetize.co/7101lwi19j9cicrhb2soic22wa92ew8p/"
+  },
+
+  "seed_data_creation": "None. All 119 games in DB are already gamemonetize source.",
+
+  "retest_needed": false,
+
+  "should_main_agent_self_test": false,
+
+  "context_for_next_testing_agent": "GMZ Walkthrough Video Ads feature fully tested and working. Key selectors: [data-testid='gmz-video-ads-toggle'] (Switch in GameMonetize tab), [data-testid='walkthrough-button'] (in game toolbar), [data-testid='walkthrough-sheet'] (full-screen overlay), [data-testid='close-walkthrough-btn'] (X button in sheet header), [data-testid='dismiss-walkthrough-btn'] (bottom Close button). Admin login uses data-testid='login-submit' (not 'auth-submit-btn'). The frontend runs in next start (production build) — always run `yarn build` + restart supervisor after code changes. Known GMZ game: id=370c059e-4680-473f-a4ea-c309896a54c0 (Poop Away, embed_url=https://html5.gamemonetize.co/7101lwi19j9cicrhb2soic22wa92ew8p/). Settings toggle key: gmz_video_ads_enabled (string 'true'/'false' in DB). Backend test file: /app/backend/tests/test_gmz_walkthrough_ads.py.",
+
+  "rca_of_issue": "Root Cause of initial test failure (Walkthrough Video Ads not visible): The frontend server runs `next start` in PRODUCTION mode. This serves a pre-compiled `.next/` build directory. The build in `.next/server/app/admin/page.js` was last compiled on Apr 6 06:20 UTC, while the GameMonetizeTab.tsx source was updated on Apr 11. Since `next start` has no hot reload, the new code was never compiled into the running bundle. Fix applied: ran `yarn build` in /app/frontend to regenerate the bundle, then restarted the frontend supervisor. After this, the feature was visible and working correctly."
+}

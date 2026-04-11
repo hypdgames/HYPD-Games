@@ -87,6 +87,7 @@ export default function AdminDashboard() {
   const [primaryColor, setPrimaryColor] = useState<string>("#CCFF00");
   const [gamepixEnabled, setGamepixEnabled] = useState<boolean>(true);
   const [gamemonetizeEnabled, setGamemonetizeEnabled] = useState<boolean>(true);
+  const [gmzVideoAdsEnabled, setGmzVideoAdsEnabled] = useState<boolean>(true);
 
   // Check admin status
   useEffect(() => {
@@ -130,6 +131,7 @@ export default function AdminDashboard() {
         // Game network settings (default to true if not set)
         setGamepixEnabled(data.gamepix_enabled !== "false");
         setGamemonetizeEnabled(data.gamemonetize_enabled !== "false");
+        setGmzVideoAdsEnabled(data.gmz_video_ads_enabled !== "false");
       }
     } catch (error) {
       console.error("Error fetching settings:", error);
@@ -758,6 +760,22 @@ export default function AdminDashboard() {
                 selectedGmzGames={selectedGmzGames}
                 games={games}
                 importing={gmzImporting}
+                gmzVideoAdsEnabled={gmzVideoAdsEnabled}
+                onGmzVideoAdsToggle={async (enabled: boolean) => {
+                  try {
+                    const res = await fetch(`${API_URL}/api/admin/settings`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                      body: JSON.stringify({ gmz_video_ads_enabled: enabled ? "true" : "false" }),
+                    });
+                    if (res.ok) {
+                      setGmzVideoAdsEnabled(enabled);
+                      toast.success(`Walkthrough ads ${enabled ? "enabled" : "disabled"}`);
+                    }
+                  } catch {
+                    toast.error("Failed to update setting");
+                  }
+                }}
                 onCategoryChange={(cat) => {
                   setGmzCategory(cat);
                   fetchGmzGames(cat, 1, false, gmzSearch, gmzSort);
