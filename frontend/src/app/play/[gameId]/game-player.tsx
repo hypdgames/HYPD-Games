@@ -14,6 +14,7 @@ function GMZWalkthroughPlayer({ gameHash, adsEnabled, onClose }: {
   onClose: () => void;
 }) {
   const initialized = useRef(false);
+  const [scriptLoaded, setScriptLoaded] = useState(false);
 
   useEffect(() => {
     if (!gameHash || initialized.current) return;
@@ -23,7 +24,7 @@ function GMZWalkthroughPlayer({ gameHash, adsEnabled, onClose }: {
     (window as Window & { VIDEO_OPTIONS?: object }).VIDEO_OPTIONS = {
       gameid: gameHash,
       width: "100%",
-      height: "360px",
+      height: "100%",
       color: "#AAFF00",
       getAds: adsEnabled ? "true" : "false",
     };
@@ -33,7 +34,7 @@ function GMZWalkthroughPlayer({ gameHash, adsEnabled, onClose }: {
     if (old) old.remove();
 
     // Reset container
-    const container = document.getElementById("gmz-video-container");
+    const container = document.getElementById("gamemonetize-video");
     if (container) container.innerHTML = "";
 
     // Inject the official GMZ video.js
@@ -41,6 +42,7 @@ function GMZWalkthroughPlayer({ gameHash, adsEnabled, onClose }: {
     script.id = "gamemonetize-video-api";
     script.src = "https://api.gamemonetize.com/video.js";
     script.type = "text/javascript";
+    script.onload = () => setScriptLoaded(true);
     document.body.appendChild(script);
 
     return () => {
@@ -51,14 +53,13 @@ function GMZWalkthroughPlayer({ gameHash, adsEnabled, onClose }: {
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex flex-col"
-      style={{ background: "rgba(0,0,0,0.92)" }}
+      className="fixed inset-0 z-[60] flex flex-col bg-black"
       data-testid="walkthrough-sheet"
     >
       {/* Header */}
-      <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-white/10">
+      <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 bg-black border-b border-white/10">
         <div className="flex items-center gap-2">
-          <PlayCircle className="w-4 h-4 text-[var(--violet)]" />
+          <PlayCircle className="w-4 h-4 text-[#AAFF00]" />
           <span className="font-bold text-white text-sm">Walkthrough Video</span>
           {!adsEnabled && (
             <span className="text-[10px] bg-white/10 text-white/60 px-2 py-0.5 rounded-full">Ad-free</span>
@@ -66,31 +67,39 @@ function GMZWalkthroughPlayer({ gameHash, adsEnabled, onClose }: {
         </div>
         <button
           onClick={onClose}
-          className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center active:scale-90 transition-transform"
+          className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 active:bg-white/30 px-3 py-1.5 rounded-full text-white text-xs font-semibold active:scale-95 transition-all"
           data-testid="close-walkthrough-btn"
         >
-          <X className="w-4 h-4 text-white" />
+          <X className="w-3.5 h-3.5" />
+          Close
         </button>
       </div>
 
-      {/* Video player container — video.js populates this div */}
-      <div className="flex-1 flex flex-col items-center justify-center px-4 py-6">
-        <div id="gmz-video-container" className="w-full max-w-[540px]">
-          <div id="gamemonetize-video" className="w-full" />
-        </div>
-        <p className="text-white/40 text-xs mt-4 text-center">
-          Video walkthrough provided by GameMonetize
-        </p>
+      {/* Tap hint */}
+      <div className="flex-shrink-0 flex items-center justify-center gap-1.5 py-2 bg-black/80 border-b border-white/5">
+        <PlayCircle className="w-3 h-3 text-[#AAFF00]/70" />
+        <span className="text-[11px] text-white/50">Tap the video to start playing</span>
       </div>
 
-      {/* Dismiss handle */}
+      {/* Player fills remaining height */}
+      <div className="flex-1 relative overflow-hidden bg-black">
+        {!scriptLoaded && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 z-10 pointer-events-none">
+            <Loader2 className="w-8 h-8 text-[#AAFF00] animate-spin" />
+            <span className="text-white/50 text-sm">Loading walkthrough...</span>
+          </div>
+        )}
+        <div id="gamemonetize-video" className="w-full h-full" />
+      </div>
+
+      {/* Bottom close strip */}
       <button
         onClick={onClose}
-        className="flex-shrink-0 flex items-center justify-center gap-1 py-4 text-white/40 active:text-white/60 transition-colors"
+        className="flex-shrink-0 flex items-center justify-center gap-2 py-4 bg-black border-t border-white/10 text-white/50 active:text-white/80 transition-colors"
         data-testid="dismiss-walkthrough-btn"
       >
         <ChevronDown className="w-4 h-4" />
-        <span className="text-xs">Close</span>
+        <span className="text-xs font-medium">Close Walkthrough</span>
       </button>
     </div>
   );
