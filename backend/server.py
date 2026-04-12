@@ -1515,17 +1515,17 @@ async def admin_bulk_delete_games(
 @api_router.delete("/admin/games/cleanup/by-source")
 async def admin_cleanup_games_by_source(
     source: str,
+    dry_run: bool = False,
     user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db)
 ):
-    """Delete all games from a specific source (custom, gamemonetize)"""
+    """Delete all games from a specific source (custom, gamemonetize). Use dry_run=true to preview without deleting."""
     valid_sources = ["custom", "gamemonetize"]
     if source not in valid_sources:
         raise HTTPException(status_code=400, detail=f"Invalid source. Must be one of: {valid_sources}")
     
     # Get games to delete
     if source == "custom":
-        # Custom games have source=None or source='custom'
         result = await db.execute(
             select(Game).where(
                 (Game.source == None) | (Game.source == "custom")
@@ -1537,6 +1537,14 @@ async def admin_cleanup_games_by_source(
     games_to_delete = result.scalars().all()
     deleted_ids = [g.id for g in games_to_delete]
     deleted_titles = [g.title for g in games_to_delete]
+
+    if dry_run:
+        return {
+            "dry_run": True,
+            "source": source,
+            "would_delete_count": len(deleted_ids),
+            "would_delete_games": deleted_titles
+        }
     
     # Clear from cache
     for game_id in deleted_ids:

@@ -175,7 +175,7 @@ export function AnalyticsTab({
             <Calendar className="w-5 h-5 text-lime" />
             Daily Activity (Last 14 Days)
           </h3>
-          <div className="h-64">
+          <div className="h-64 min-w-0 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={dailyStats}>
                 <defs>
@@ -240,7 +240,7 @@ export function AnalyticsTab({
               <Target className="w-5 h-5 text-lime" />
               Plays by Category
             </h3>
-            <div className="h-48">
+            <div className="h-48 min-w-0 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -294,7 +294,7 @@ export function AnalyticsTab({
               <TrendingUp className="w-5 h-5 text-lime" />
               User Retention
             </h3>
-            <div className="h-48">
+            <div className="h-48 min-w-0 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={[
                   { name: "Day 1", value: retention.day_1_pct || 0 },

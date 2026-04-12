@@ -55,8 +55,8 @@ Deep structural redesign matching the Hook app reference:
 - Key CSS classes: hook-gradient-bg, frosted-nav, content-card, soft-card, filter-pill, action-pill, search-bar, play-badge
 
 ## Core Features
-- Multi-network game integration (GamePix, GameMonetize)
-- Admin dashboard with 7 tabs
+- Multi-network game integration (GameMonetize only — GamePix removed)
+- Admin dashboard with 6 tabs (Games, GMZ, Upload, Users, Stats, Settings)
 - Daily login streaks & coin system
 - Friends system (search, add, accept, remove)
 - Base Defence tower defense game
@@ -130,7 +130,19 @@ Then wait ~2 min for the build to complete before testing. The testing agent con
   - FastAPI backend unaffected (superuser bypasses RLS)
   - Per-user policies activate once Supabase JWT secret = `hypd-games-prod-secret-key-xK9mP2nQ7vL4wR8t` in Dashboard → Project Settings → API → JWT Settings
   - Scripts: `/app/backend/scripts/enable_rls.py`, `/app/backend/scripts/apply_rls_policies.py`
-- **GMZ Walkthrough Video Ads** — Apr 2026:
+- **Dead Code Removal & Optimization** — Apr 2026:
+  - Removed entire GameDistribution integration (~290 lines): 5 endpoints, `GDGameImport` model, `GD_API_BASE` constant, mock data helper
+  - Removed duplicate `POST /analytics/event` endpoint (kept richer `POST /analytics/track`)
+  - Updated `valid_sources` in delete-by-source endpoint: now only accepts `custom` | `gamemonetize`
+  - Added `dry_run=true` query param to DELETE `/api/admin/games/cleanup/by-source` (preview without deleting)
+  - Removed GameDistribution `preconnect` hint from `layout.tsx`
+  - Removed dead GamePix source badge from `GamesTab.tsx`
+  - Updated `types/index.ts` source union: `'custom' | 'gamemonetize'` (removed `gamedistribution` & `gamepix`)
+  - Added `next/dynamic` lazy imports for `AnalyticsTab` and `UsersTab` in `admin/page.tsx` (reduces initial admin page JS)
+  - Fixed Recharts chart container sizing (`min-w-0 w-full`) on narrow mobile viewports
+  - Backend reduced by ~320 lines; all 27 tests passed (100% backend + frontend)
+
+
   - Admin toggle in GameMonetize tab: "Walkthrough Video Ads" ON/OFF switch (stored in `app_settings.gmz_video_ads_enabled`)
   - "Watch Walkthrough" button in game play toolbar for all GMZ games — opens official GameMonetize video.js player in full-screen sheet
   - Player uses `window.VIDEO_OPTIONS` with `getAds: "true"/"false"` based on admin setting
