@@ -885,6 +885,39 @@ async def get_personalized_feed(
     return sorted(games_data, key=_score, reverse=True)
 
 
+@api_router.get("/games/recently-played")
+async def get_recently_played(
+    limit: int = 5,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Return the last N unique games the authenticated user has played, most recent first."""
+    subq = (
+        select(PlaySession.game_id, func.max(PlaySession.played_at).label("last_played"))
+        .where(PlaySession.user_id == user.id)
+        .group_by(PlaySession.game_id)
+        .subquery()
+    )
+    result = await db.execute(
+        select(Game, subq.c.last_played)
+        .join(subq, Game.id == subq.c.game_id)
+        .where(Game.is_visible.is_(True))
+        .order_by(desc(subq.c.last_played))
+        .limit(limit)
+    )
+    rows = result.all()
+    return [
+        {
+            "id": g.id,
+            "title": g.title,
+            "thumbnail_url": g.thumbnail_url,
+            "icon_url": g.icon_url,
+            "category": g.category,
+        }
+        for g, _ in rows
+    ]
+
+
 @api_router.get("/games/{game_id}", response_model=GameResponse)
 async def get_game(game_id: str, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Game).where(Game.id == game_id))

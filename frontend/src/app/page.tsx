@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback, memo } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-import { Play, Heart, MessageCircle, Loader2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Play, Heart, MessageCircle, Loader2, History, X, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import { useAuthStore } from "@/store";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -54,11 +54,12 @@ function sessionSet(key: string, data: unknown): void {
 }
 
 const FeedCard = memo(function FeedCard({
-  game, isActive, isAdjacent, videoUrl, onPlay, onSave, isSaved, onComment, likeCount, commentCount,
+  game, isActive, isAdjacent, videoUrl, onPlay, onSave, isSaved, onComment, likeCount, commentCount, topPad,
 }: {
   game: Game; isActive: boolean; isAdjacent: boolean; videoUrl: string | null;
   onPlay: () => void; onSave: (e: React.MouseEvent) => void; isSaved: boolean;
   onComment: (e: React.MouseEvent) => void; likeCount: number; commentCount: number;
+  topPad: number;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -71,7 +72,7 @@ const FeedCard = memo(function FeedCard({
   const imgSrc = game.thumbnail_url || game.icon_url || "";
 
   return (
-    <div className="flex flex-col h-full pt-[68px] pb-[84px] px-4">
+    <div className="flex flex-col h-full pb-[84px] px-4" style={{ paddingTop: `${topPad}px` }}>
       <div className="content-card relative bg-black w-full flex-1 min-h-0 cursor-pointer" onClick={onPlay} data-testid={`game-card-${game.id}`}>
         {videoUrl ? (
           <video ref={videoRef} src={videoUrl} className="absolute inset-0 w-full h-full object-cover"
@@ -124,6 +125,62 @@ const FeedCard = memo(function FeedCard({
 });
 FeedCard.displayName = "FeedCard";
 
+// ---- Recently Played Strip ----
+interface RecentGame { id: string; title: string; thumbnail_url?: string; icon_url?: string; category: string; }
+
+const RecentlyPlayedStrip = memo(function RecentlyPlayedStrip({
+  games, onPlay, onDismiss,
+}: { games: RecentGame[]; onPlay: (id: string) => void; onDismiss: () => void; }) {
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -8 }}
+        transition={{ duration: 0.25 }}
+        className="w-full px-4 pb-2"
+        data-testid="recently-played-strip"
+      >
+        <div className="frosted-nav rounded-2xl px-3 py-2.5">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-1.5">
+              <History className="w-3.5 h-3.5 text-violet" />
+              <span className="text-xs font-bold text-foreground uppercase tracking-widest">Recently Played</span>
+            </div>
+            <button onClick={onDismiss} className="text-muted-foreground hover:text-foreground transition-colors p-0.5" data-testid="recently-played-dismiss" aria-label="Dismiss recently played">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          <div className="flex gap-2.5 overflow-x-auto hide-scrollbar pb-0.5">
+            {games.map((g) => {
+              const imgSrc = g.thumbnail_url || g.icon_url || "";
+              return (
+                <button key={g.id} onClick={() => onPlay(g.id)} data-testid={`recent-game-${g.id}`}
+                  className="flex-shrink-0 flex flex-col items-center gap-1 group">
+                  <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-muted ring-2 ring-transparent group-hover:ring-violet transition-all">
+                    {imgSrc ? (
+                      <Image src={imgSrc} alt={g.title} fill className="object-cover" sizes="56px" />
+                    ) : (
+                      <div className="absolute inset-0 bg-zinc-800 flex items-center justify-center">
+                        <Play className="w-5 h-5 text-white/50" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                      <ChevronRight className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-medium text-muted-foreground w-14 text-center truncate leading-tight">{g.title}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </motion.div>
+    </AnimatePresence>
+  );
+});
+RecentlyPlayedStrip.displayName = "RecentlyPlayedStrip";
+
 export default function GameFeed() {
   const router = useRouter();
   const { user, token, settings, loading: authLoading } = useAuthStore();
@@ -153,6 +210,8 @@ export default function GameFeed() {
   const [commentGame, setCommentGame] = useState<{ id: string; title: string } | null>(null);
   const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
   const [likeAdjustments, setLikeAdjustments] = useState<Record<string, number>>({});
+  const [recentGames, setRecentGames] = useState<RecentGame[]>([]);
+  const [recentDismissed, setRecentDismissed] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -193,6 +252,13 @@ export default function GameFeed() {
     fetch(`${API_URL}/api/games/comment-counts`)
       .then(r => r.json()).then(setCommentCounts).catch(() => {});
   }, []);
+  useEffect(() => {
+    if (!token) return;
+    fetch(`${API_URL}/api/games/recently-played?limit=5`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.ok ? r.json() : [])
+      .then((data: RecentGame[]) => { if (data.length > 0) setRecentGames(data); })
+      .catch(() => {});
+  }, [token]);
 
   const handleScroll = useCallback(() => {
     if (!containerRef.current) return;
@@ -261,18 +327,31 @@ export default function GameFeed() {
     </div>
   );
 
+  const showRecent = recentGames.length > 0 && !recentDismissed;
+  // Header: ~52px logo row + 8px gap; strip: ~124px when visible
+  const topPad = showRecent ? 188 : 68;
+
   return (
     <div className="relative h-[100dvh] hook-gradient-bg" data-testid="game-feed">
       <div className="fixed top-0 left-0 right-0 z-40 pointer-events-none">
-        <div className="mx-auto w-full max-w-[540px] flex items-center justify-between px-5 pt-4 pb-2 pointer-events-auto">
-          <div>
-            {settings?.logo_url ? (
-              <Image src={settings.logo_url} alt={settings?.site_name || "Logo"} width={120} height={28} className="object-contain" style={{ height: settings.logo_height ? `${settings.logo_height}px` : "28px", width: "auto" }} priority />
-            ) : (
-              <h1 className="font-extrabold text-2xl text-foreground tracking-tight">{settings?.site_name || "HYPD"}</h1>
-            )}
+        <div className="mx-auto w-full max-w-[540px] pointer-events-auto">
+          <div className="flex items-center justify-between px-5 pt-4 pb-2">
+            <div>
+              {settings?.logo_url ? (
+                <Image src={settings.logo_url} alt={settings?.site_name || "Logo"} width={120} height={28} className="object-contain" style={{ height: settings.logo_height ? `${settings.logo_height}px` : "28px", width: "auto" }} priority />
+              ) : (
+                <h1 className="font-extrabold text-2xl text-foreground tracking-tight">{settings?.site_name || "HYPD"}</h1>
+              )}
+            </div>
+            <ThemeToggle />
           </div>
-          <ThemeToggle />
+          {showRecent && (
+            <RecentlyPlayedStrip
+              games={recentGames}
+              onPlay={(id) => playGame(id)}
+              onDismiss={() => setRecentDismissed(true)}
+            />
+          )}
         </div>
       </div>
 
@@ -287,7 +366,8 @@ export default function GameFeed() {
                 onSave={(e) => toggleSave(item.data!.id, e)} isSaved={savedGames.has(item.data!.id)}
                 onComment={(e) => { e.stopPropagation(); setCommentGame({ id: item.data!.id, title: decodeHtml(item.data!.title) }); }}
                 likeCount={(item.data!.like_count || 0) + (likeAdjustments[item.data!.id] || 0)}
-                commentCount={commentCounts[item.data!.id] || 0} />
+                commentCount={commentCounts[item.data!.id] || 0}
+                topPad={topPad} />
             )}
           </div>
         ))}
