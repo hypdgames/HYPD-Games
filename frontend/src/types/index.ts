@@ -22,7 +22,7 @@ export interface Game {
   created_at: string;
   // Game network fields
   gd_game_id?: string;
-  source?: 'custom' | 'gamedistribution' | 'gamepix' | 'gamemonetize';
+  source?: 'custom' | 'gamemonetize';
   embed_url?: string;
   instructions?: string;
 }

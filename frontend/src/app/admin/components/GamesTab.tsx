@@ -120,9 +120,6 @@ export function GamesTab({ games, loading, onToggleVisibility, onToggleFeedVisib
             <div className="flex-1 min-w-0 cursor-pointer" onClick={() => toggleSelection(game.id)}>
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="font-bold text-foreground truncate">{game.title}</h3>
-                {game.source === "gamepix" && (
-                  <span className="text-[10px] bg-lime/20 text-lime px-1.5 py-0.5 rounded font-medium">GPX</span>
-                )}
                 {game.source === "gamemonetize" && (
                   <span className="text-[10px] bg-purple-500/20 text-purple-400 px-1.5 py-0.5 rounded font-medium">GMZ</span>
                 )}

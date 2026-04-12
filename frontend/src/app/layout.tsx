@@ -85,8 +85,6 @@ export default function RootLayout({
           crossOrigin="anonymous"
         ></script>
         
-        <link rel="preconnect" href="https://html5.gamedistribution.com" />
-        <link rel="dns-prefetch" href="https://html5.gamedistribution.com" />
         <link rel="preconnect" href="https://html5.gamemonetize.co" />
         <link rel="dns-prefetch" href="https://html5.gamemonetize.co" />
         <link rel="preconnect" href="https://img.gamemonetize.com" />

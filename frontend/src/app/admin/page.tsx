@@ -7,12 +7,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuthStore } from "@/store";
 import { toast } from "sonner";
 import type { Game } from "@/types";
+import dynamic from "next/dynamic";
 import {
   GamesTab,
   GameMonetizeTab,
   UploadTab,
-  AnalyticsTab,
-  UsersTab,
   SettingsTab,
   AnalyticsOverview,
   DailyStats,
@@ -25,6 +24,22 @@ import {
   UserStats,
 } from "./components";
 import type { GMZGame } from "./components/GameMonetizeTab";
+
+const TabLoader = () => (
+  <div className="flex items-center justify-center p-12">
+    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+  </div>
+);
+
+const AnalyticsTab = dynamic(
+  () => import("./components/AnalyticsTab").then((m) => ({ default: m.AnalyticsTab })),
+  { loading: TabLoader, ssr: false }
+);
+
+const UsersTab = dynamic(
+  () => import("./components/UsersTab").then((m) => ({ default: m.UsersTab })),
+  { loading: TabLoader, ssr: false }
+);
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
