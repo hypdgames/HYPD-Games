@@ -8,48 +8,19 @@ import { useAuthStore } from "@/store";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 // ─── GMZ Walkthrough Video Player ──────────────────────────────────────────
+// video.js uses jQuery ($(...).append) which is not available in Next.js.
+// We replicate its behaviour directly: construct the iframe URL ourselves.
 function GMZWalkthroughPlayer({ gameHash, adsEnabled, onClose }: {
   gameHash: string;
   adsEnabled: boolean;
   onClose: () => void;
 }) {
-  const initialized = useRef(false);
-  const [scriptLoaded, setScriptLoaded] = useState(false);
+  const [iframeLoaded, setIframeLoaded] = useState(false);
 
-  useEffect(() => {
-    if (!gameHash || initialized.current) return;
-    initialized.current = true;
-
-    // Set VIDEO_OPTIONS BEFORE loading the script
-    (window as Window & { VIDEO_OPTIONS?: object }).VIDEO_OPTIONS = {
-      gameid: gameHash,
-      width: "100%",
-      height: "100%",
-      color: "#AAFF00",
-      getAds: adsEnabled ? "true" : "false",
-    };
-
-    // Remove any previous instance of the script
-    const old = document.getElementById("gamemonetize-video-api");
-    if (old) old.remove();
-
-    // Reset container
-    const container = document.getElementById("gamemonetize-video");
-    if (container) container.innerHTML = "";
-
-    // Inject the official GMZ video.js
-    const script = document.createElement("script");
-    script.id = "gamemonetize-video-api";
-    script.src = "https://api.gamemonetize.com/video.js";
-    script.type = "text/javascript";
-    script.onload = () => setScriptLoaded(true);
-    document.body.appendChild(script);
-
-    return () => {
-      const s = document.getElementById("gamemonetize-video-api");
-      if (s) s.remove();
-    };
-  }, [gameHash, adsEnabled]);
+  const domain = typeof window !== "undefined" ? window.location.hostname : "hypd.games";
+  const color = encodeURIComponent("#AAFF00");
+  const getAds = adsEnabled ? "true" : "false";
+  const iframeSrc = `https://gamemonetize.video/index.php?domain=${domain}&gameid=${encodeURIComponent(gameHash)}&game=&getads=${encodeURIComponent(getAds)}&color=${color}`;
 
   return (
     <div
@@ -75,21 +46,25 @@ function GMZWalkthroughPlayer({ gameHash, adsEnabled, onClose }: {
         </button>
       </div>
 
-      {/* Tap hint */}
-      <div className="flex-shrink-0 flex items-center justify-center gap-1.5 py-2 bg-black/80 border-b border-white/5">
-        <PlayCircle className="w-3 h-3 text-[#AAFF00]/70" />
-        <span className="text-[11px] text-white/50">Tap the video to start playing</span>
-      </div>
-
-      {/* Player fills remaining height */}
-      <div className="flex-1 relative overflow-hidden bg-black">
-        {!scriptLoaded && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 z-10 pointer-events-none">
+      {/* Player — fills remaining height */}
+      <div className="flex-1 relative bg-black">
+        {!iframeLoaded && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 pointer-events-none z-10">
             <Loader2 className="w-8 h-8 text-[#AAFF00] animate-spin" />
             <span className="text-white/50 text-sm">Loading walkthrough...</span>
           </div>
         )}
-        <div id="gamemonetize-video" className="w-full h-full" />
+        <iframe
+          src={iframeSrc}
+          className="w-full h-full border-0"
+          scrolling="no"
+          allowFullScreen
+          allow="autoplay; fullscreen"
+          onLoad={() => setIframeLoaded(true)}
+          data-testid="walkthrough-iframe"
+          title="Game Walkthrough"
+          style={{ borderRadius: "5px" }}
+        />
       </div>
 
       {/* Bottom close strip */}
