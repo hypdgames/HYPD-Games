@@ -9,13 +9,11 @@ import { toast } from "sonner";
 import type { Game } from "@/types";
 import {
   GamesTab,
-  GamePixTab,
   GameMonetizeTab,
   UploadTab,
   AnalyticsTab,
   UsersTab,
   SettingsTab,
-  GPXGame,
   AnalyticsOverview,
   DailyStats,
   CategoryStats,
@@ -37,17 +35,6 @@ export default function AdminDashboard() {
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // GamePix state
-  const [gpxGames, setGpxGames] = useState<GPXGame[]>([]);
-  const [gpxLoading, setGpxLoading] = useState(false);
-  const [gpxCategory, setGpxCategory] = useState<string>("");
-  const [gpxOrder, setGpxOrder] = useState<string>("quality");
-  const [gpxPage, setGpxPage] = useState(1);
-  const [gpxHasMore, setGpxHasMore] = useState(false);
-  const [selectedGpxGames, setSelectedGpxGames] = useState<Set<string>>(new Set());
-  const [gpxCategories, setGpxCategories] = useState<{id: string; name: string; icon: string}[]>([]);
-  const [importing, setImporting] = useState(false);
-
   // GameMonetize state
   const [gmzGames, setGmzGames] = useState<GMZGame[]>([]);
   const [gmzLoading, setGmzLoading] = useState(false);
@@ -85,7 +72,6 @@ export default function AdminDashboard() {
   const [siteName, setSiteName] = useState<string>("HYPD");
   const [faviconUrl, setFaviconUrl] = useState<string>("");
   const [primaryColor, setPrimaryColor] = useState<string>("#CCFF00");
-  const [gamepixEnabled, setGamepixEnabled] = useState<boolean>(true);
   const [gamemonetizeEnabled, setGamemonetizeEnabled] = useState<boolean>(true);
   const [gmzVideoAdsEnabled, setGmzVideoAdsEnabled] = useState<boolean>(true);
 
@@ -129,7 +115,6 @@ export default function AdminDashboard() {
         if (data.favicon_url) setFaviconUrl(data.favicon_url);
         if (data.primary_color) setPrimaryColor(data.primary_color);
         // Game network settings (default to true if not set)
-        setGamepixEnabled(data.gamepix_enabled !== "false");
         setGamemonetizeEnabled(data.gamemonetize_enabled !== "false");
         setGmzVideoAdsEnabled(data.gmz_video_ads_enabled !== "false");
       }
@@ -307,49 +292,8 @@ export default function AdminDashboard() {
     setAnalyticsLoading(false);
   };
 
-  // Fetch GamePix games
-  const fetchGpxGames = async (category?: string, page: number = 1, append: boolean = false, order: string = gpxOrder) => {
-    setGpxLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (category && category !== "all") params.append("category", category);
-      params.append("page", String(page));
-      params.append("limit", "12");
-      params.append("order", order);
-      
-      const res = await fetch(`${API_URL}/api/gamepix/browse?${params}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (append) {
-          setGpxGames(prev => [...prev, ...(data.games || [])]);
-        } else {
-          setGpxGames(data.games || []);
-        }
-        setGpxHasMore(data.has_more || false);
-        setGpxPage(page);
-      }
-    } catch (error) {
-      console.error("Error fetching GamePix games:", error);
-      toast.error("Failed to load games from GamePix");
-    }
-    setGpxLoading(false);
-  };
-
-  const fetchGpxCategories = async () => {
-    try {
-      const res = await fetch(`${API_URL}/api/gamepix/categories`);
-      if (res.ok) {
-        const data = await res.json();
-        setGpxCategories(data.categories || []);
-      }
-    } catch (error) {
-      console.error("Error fetching GamePix categories:", error);
-    }
-  };
 
   useEffect(() => {
-    fetchGpxCategories();
-    fetchGpxGames();
     fetchGmzCategories();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -485,69 +429,6 @@ export default function AdminDashboard() {
     setGmzImporting(false);
   };
 
-  const toggleGpxGameSelection = (namespace: string) => {
-    setSelectedGpxGames(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(namespace)) {
-        newSet.delete(namespace);
-      } else {
-        newSet.add(namespace);
-      }
-      return newSet;
-    });
-  };
-
-  const importSelectedGpxGames = async () => {
-    if (selectedGpxGames.size === 0) {
-      toast.error("Please select at least one game to import");
-      return;
-    }
-
-    setImporting(true);
-    try {
-      const gamesToImport = gpxGames
-        .filter(g => selectedGpxGames.has(g.namespace))
-        .map(g => ({
-          gpx_game_id: g.gpx_game_id,
-          title: g.title,
-          namespace: g.namespace,
-          description: g.description,
-          category: g.category,
-          thumbnail_url: g.thumbnail_url,
-          icon_url: g.icon_url,
-          play_url: g.play_url,
-          orientation: g.orientation,
-          quality_score: g.quality_score
-        }));
-
-      const res = await fetch(`${API_URL}/api/admin/gamepix/bulk-import`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(gamesToImport),
-      });
-
-      if (res.ok) {
-        const result = await res.json();
-        toast.success(`Imported ${result.imported} games!`);
-        if (result.skipped > 0) {
-          toast.info(`${result.skipped} games were already imported`);
-        }
-        setSelectedGpxGames(new Set());
-        fetchGames();
-      } else {
-        const error = await res.json();
-        toast.error(error.detail || "Failed to import games");
-      }
-    } catch (error) {
-      console.error("Import error:", error);
-      toast.error("Failed to import games");
-    }
-    setImporting(false);
-  };
-
   const toggleVisibility = async (gameId: string, currentVisibility: boolean) => {
     try {
       const res = await fetch(
@@ -668,20 +549,11 @@ export default function AdminDashboard() {
           if (v === "users") { fetchUsers(); fetchUserStats(); }
           if (v === "gamemonetize" && gamemonetizeEnabled) fetchGmzGames(gmzCategory);
         }}>
-          <TabsList className={`grid w-full mb-6 ${
-            gamepixEnabled && gamemonetizeEnabled ? 'grid-cols-7' :
-            gamepixEnabled || gamemonetizeEnabled ? 'grid-cols-6' : 'grid-cols-5'
-          }`}>
+          <TabsList className={`grid w-full mb-6 ${gamemonetizeEnabled ? 'grid-cols-6' : 'grid-cols-5'}`}>
             <TabsTrigger value="games" className="flex items-center gap-1 text-xs sm:text-sm" data-testid="games-tab">
               <Gamepad2 className="w-4 h-4" />
               <span className="hidden sm:inline">Games</span>
             </TabsTrigger>
-            {gamepixEnabled && (
-              <TabsTrigger value="gamepix" className="flex items-center gap-1 text-xs sm:text-sm" data-testid="gamepix-tab">
-                <Globe className="w-4 h-4 text-lime" />
-                <span className="hidden sm:inline">GamePix</span>
-              </TabsTrigger>
-            )}
             {gamemonetizeEnabled && (
               <TabsTrigger value="gamemonetize" className="flex items-center gap-1 text-xs sm:text-sm" data-testid="gamemonetize-tab">
                 <Globe className="w-4 h-4 text-purple-500" />
@@ -715,35 +587,6 @@ export default function AdminDashboard() {
               onDeleteGame={deleteGame}
               onBulkDelete={bulkDeleteGames}
             />
-          </TabsContent>
-
-          <TabsContent value="gamepix">
-            {gamepixEnabled && (
-              <GamePixTab
-                gpxGames={gpxGames}
-                gpxLoading={gpxLoading}
-                gpxCategory={gpxCategory}
-                gpxCategories={gpxCategories}
-                gpxHasMore={gpxHasMore}
-                gpxPage={gpxPage}
-                gpxOrder={gpxOrder}
-                selectedGpxGames={selectedGpxGames}
-                games={games}
-                importing={importing}
-                onCategoryChange={(cat) => {
-                  setGpxCategory(cat);
-                  fetchGpxGames(cat, 1, false, gpxOrder);
-                }}
-                onOrderChange={(order) => {
-                  setGpxOrder(order);
-                  fetchGpxGames(gpxCategory, 1, false, order);
-              }}
-              onRefresh={() => fetchGpxGames(gpxCategory, 1, false, gpxOrder)}
-              onLoadMore={() => fetchGpxGames(gpxCategory, gpxPage + 1, true, gpxOrder)}
-              onToggleSelection={toggleGpxGameSelection}
-              onImportSelected={importSelectedGpxGames}
-              />
-            )}
           </TabsContent>
 
           <TabsContent value="gamemonetize">
@@ -839,7 +682,6 @@ export default function AdminDashboard() {
               initialSiteName={siteName}
               initialFaviconUrl={faviconUrl}
               initialPrimaryColor={primaryColor}
-              initialGamepixEnabled={gamepixEnabled}
               initialGamemonetizeEnabled={gamemonetizeEnabled}
               onSettingsSaved={fetchSettings}
             />

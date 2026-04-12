@@ -84,8 +84,7 @@ export default function RootLayout({
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9316102142280167"
           crossOrigin="anonymous"
         ></script>
-        <link rel="preconnect" href="https://games.gamepix.com" />
-        <link rel="dns-prefetch" href="https://games.gamepix.com" />
+        
         <link rel="preconnect" href="https://html5.gamedistribution.com" />
         <link rel="dns-prefetch" href="https://html5.gamedistribution.com" />
         <link rel="preconnect" href="https://html5.gamemonetize.co" />

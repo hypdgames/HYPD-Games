@@ -16,7 +16,6 @@ interface SettingsTabProps {
   initialSiteName: string;
   initialFaviconUrl: string;
   initialPrimaryColor: string;
-  initialGamepixEnabled?: boolean;
   initialGamemonetizeEnabled?: boolean;
   onSettingsSaved: () => void;
 }
@@ -28,7 +27,6 @@ export function SettingsTab({
   initialSiteName,
   initialFaviconUrl,
   initialPrimaryColor,
-  initialGamepixEnabled = true,
   initialGamemonetizeEnabled = true,
   onSettingsSaved,
 }: SettingsTabProps) {
@@ -44,7 +42,6 @@ export function SettingsTab({
   const [saving, setSaving] = useState(false);
   
   // Game network settings
-  const [gamepixEnabled, setGamepixEnabled] = useState(initialGamepixEnabled);
   const [gamemonetizeEnabled, setGamemonetizeEnabled] = useState(initialGamemonetizeEnabled);
 
   const logoFileRef = useRef<HTMLInputElement>(null);
@@ -52,9 +49,8 @@ export function SettingsTab({
   
   // Update state when initial values change
   useEffect(() => {
-    setGamepixEnabled(initialGamepixEnabled);
     setGamemonetizeEnabled(initialGamemonetizeEnabled);
-  }, [initialGamepixEnabled, initialGamemonetizeEnabled]);
+  }, [initialGamemonetizeEnabled]);
 
   const handleLogoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -142,7 +138,6 @@ export function SettingsTab({
           site_name: siteName,
           favicon_url: finalFaviconUrl,
           primary_color: primaryColor,
-          gamepix_enabled: String(gamepixEnabled),
           gamemonetize_enabled: String(gamemonetizeEnabled),
         }),
       });
@@ -418,24 +413,6 @@ export function SettingsTab({
         </p>
         
         <div className="space-y-4">
-          {/* GamePix Toggle */}
-          <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-background">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-lime/20 flex items-center justify-center">
-                <Globe className="w-5 h-5 text-lime" />
-              </div>
-              <div>
-                <div className="font-medium text-foreground">GamePix</div>
-                <div className="text-xs text-muted-foreground">High-quality HTML5 games</div>
-              </div>
-            </div>
-            <Switch
-              checked={gamepixEnabled}
-              onCheckedChange={setGamepixEnabled}
-              data-testid="gamepix-toggle"
-            />
-          </div>
-          
           {/* GameMonetize Toggle */}
           <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-background">
             <div className="flex items-center gap-3">
@@ -455,10 +432,10 @@ export function SettingsTab({
           </div>
         </div>
         
-        {!gamepixEnabled && !gamemonetizeEnabled && (
+        {!gamemonetizeEnabled && (
           <div className="mt-4 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
             <p className="text-sm text-yellow-500">
-              ⚠️ All game networks are disabled. You can still upload custom games.
+              ⚠️ GameMonetize is disabled. You can still upload custom games.
             </p>
           </div>
         )}

@@ -331,8 +331,6 @@ class UserResponse(BaseModel):
     last_login_date: Optional[str] = None
     # Wallet fields
     coin_balance: int = 0
-    is_ad_free: bool = False
-    ad_free_until: Optional[str] = None
     total_coins_purchased: int = 0
     total_coins_spent: int = 0
     total_coins_earned: int = 0
@@ -701,35 +699,6 @@ async def get_streak_leaderboard(
     
     return {"leaderboard": leaderboard}
 
-@api_router.post("/user/toggle-pro")
-async def toggle_pro_status(
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-):
-    """Toggle Pro/ad-free status for the current user (admin only for testing)"""
-    if not user.is_admin:
-        raise HTTPException(status_code=403, detail="Admin access required")
-    
-    # Toggle the is_ad_free status
-    new_status = not (user.is_ad_free or False)
-    
-    await db.execute(
-        update(User)
-        .where(User.id == user.id)
-        .values(is_ad_free=new_status)
-    )
-    await db.commit()
-    
-    # Return updated user data
-    result = await db.execute(select(User).where(User.id == user.id))
-    updated_user = result.scalar_one()
-    
-    return {
-        "success": True,
-        "is_ad_free": updated_user.is_ad_free,
-        "message": f"Pro status {'enabled' if new_status else 'disabled'}"
-    }
-
 @api_router.post("/auth/save-game/{game_id}")
 async def save_game(game_id: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     saved = user.saved_games or []
@@ -1001,87 +970,20 @@ async def get_game_video_preview(game_id: str, db: AsyncSession = Depends(get_db
 
 @api_router.get("/games/{game_id}/play")
 async def get_game_file(
-    game_id: str, 
-    noads: Optional[str] = None,
+    game_id: str,
     db: AsyncSession = Depends(get_db)
 ):
-    """Serve game HTML content directly (avoids CSP issues from Supabase Storage redirect)
-    
-    Query params:
-        noads: Set to "1" or "true" to disable ads (for Pro users)
-    """
-    
+    """Serve game HTML content directly (avoids CSP issues from Supabase Storage redirect)"""
+
     result = await db.execute(select(Game).where(Game.id == game_id))
     game = result.scalar_one_or_none()
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
-    
-    # Check if ad-free mode requested
-    is_ad_free = noads in ["1", "true", "yes"]
-    
+
     # Increment play count (fire and forget - don't block response)
     await db.execute(update(Game).where(Game.id == game_id).values(play_count=Game.play_count + 1))
     await db.commit()
-    
-    # Handle GamePix games - return embed wrapper with their play URL
-    if game.source == "gamepix" and game.embed_url:
-        # Add noads parameter for Pro users
-        embed_url = game.embed_url
-        if is_ad_free:
-            separator = "&" if "?" in embed_url else "?"
-            embed_url = f"{embed_url}{separator}noads=1&premium=1"
-        
-        gpx_html = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-            <title>{game.title}</title>
-            <link rel="preconnect" href="https://games.gamepix.com">
-            <link rel="dns-prefetch" href="https://games.gamepix.com">
-            <style>
-                * {{ margin: 0; padding: 0; box-sizing: border-box; }}
-                html, body {{ 
-                    width: 100%; 
-                    height: 100%; 
-                    overflow: hidden;
-                    background: #0a0a0a;
-                }}
-                iframe {{
-                    width: 100%;
-                    height: 100%;
-                    border: none;
-                }}
-                .loader {{
-                    position: fixed;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    color: #ccff00;
-                    font-family: system-ui, sans-serif;
-                    font-size: 16px;
-                }}
-            </style>
-        </head>
-        <body>
-            <div class="loader" id="loader">Loading game...</div>
-            <iframe 
-                src="{embed_url}"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen; payment"
-                allowfullscreen
-                onload="document.getElementById('loader').style.display='none'"
-            ></iframe>
-        </body>
-        </html>
-        """
-        response = HTMLResponse(content=gpx_html, media_type="text/html")
-        # Don't cache ad-free responses to ensure Pro status is always checked
-        if is_ad_free:
-            response.headers["Cache-Control"] = "private, no-cache"
-        else:
-            response.headers["Cache-Control"] = "public, max-age=3600"
-        return response
+
     
     # Handle GameDistribution games - return embed wrapper
     if game.source == "gamedistribution" and game.embed_url:
@@ -2185,22 +2087,12 @@ COIN_PACKAGES = {
     "ultimate": {"name": "Ultimate Pack", "coins": 7000, "price": 49.99, "bonus": 2000},
 }
 
-# Ad-free duration options (coins -> hours)
-AD_FREE_OPTIONS = {
-    "1hour": {"coins": 25, "hours": 1, "label": "1 Hour"},
-    "4hours": {"coins": 75, "hours": 4, "label": "4 Hours"},
-    "1day": {"coins": 150, "hours": 24, "label": "1 Day"},
-    "1week": {"coins": 800, "hours": 168, "label": "1 Week"},
-    "1month": {"coins": 2500, "hours": 720, "label": "1 Month"},
-}
-
 class WalletPurchaseRequest(BaseModel):
     package_id: str
     origin_url: str  # Frontend origin for success/cancel URLs
 
 class WalletSpendRequest(BaseModel):
-    spend_type: str  # 'ad_free' or 'premium_game'
-    option_id: Optional[str] = None  # For ad_free: duration option
+    spend_type: str  # 'premium_game'
     game_id: Optional[str] = None  # For premium_game unlock
 
 @api_router.get("/wallet")
@@ -2210,9 +2102,7 @@ async def get_wallet(user: User = Depends(get_current_user)):
         "coin_balance": user.coin_balance or 0,
         "total_coins_purchased": user.total_coins_purchased or 0,
         "total_coins_spent": user.total_coins_spent or 0,
-        "total_coins_earned": user.total_coins_earned or 0,
-        "is_ad_free": user.is_ad_free or False,
-        "ad_free_until": user.ad_free_until.isoformat() if user.ad_free_until else None
+        "total_coins_earned": user.total_coins_earned or 0
     }
 
 @api_router.get("/wallet/packages")
@@ -2233,19 +2123,6 @@ async def get_coin_packages():
         "packages": sorted(packages, key=lambda x: x["price_usd"]),
         "purchases_enabled": STRIPE_ENABLED
     }
-
-@api_router.get("/wallet/ad-free-options")
-async def get_ad_free_options():
-    """Get ad-free purchase options"""
-    options = []
-    for opt_id, opt in AD_FREE_OPTIONS.items():
-        options.append({
-            "option_id": opt_id,
-            "label": opt["label"],
-            "coins": opt["coins"],
-            "hours": opt["hours"]
-        })
-    return {"options": options}
 
 @api_router.post("/wallet/purchase")
 async def create_purchase_checkout(
@@ -2480,63 +2357,9 @@ async def spend_coins(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """Spend coins on features (ad-free, premium games)"""
+    """Spend coins on features (premium games)"""
     
-    if spend_request.spend_type == "ad_free":
-        # Remove ads temporarily
-        if not spend_request.option_id or spend_request.option_id not in AD_FREE_OPTIONS:
-            raise HTTPException(status_code=400, detail="Invalid ad-free option")
-        
-        option = AD_FREE_OPTIONS[spend_request.option_id]
-        coins_needed = option["coins"]
-        
-        if (user.coin_balance or 0) < coins_needed:
-            raise HTTPException(status_code=400, detail=f"Insufficient coins. Need {coins_needed}, have {user.coin_balance or 0}")
-        
-        # Calculate new ad-free expiration
-        now = datetime.now(timezone.utc)
-        current_expiry = user.ad_free_until if user.ad_free_until and user.ad_free_until > now else now
-        new_expiry = current_expiry + timedelta(hours=option["hours"])
-        
-        # Create transaction
-        transaction = WalletTransaction(
-            id=str(uuid.uuid4()),
-            user_id=user.id,
-            transaction_type=TransactionType.SPEND,
-            status=TransactionStatus.COMPLETED,
-            coins=-coins_needed,
-            spend_type="ad_free",
-            spend_reference=spend_request.option_id,
-            description=f"Ad-free: {option['label']}",
-            completed_at=now
-        )
-        db.add(transaction)
-        
-        # Update user
-        await db.execute(
-            update(User)
-            .where(User.id == user.id)
-            .values(
-                coin_balance=User.coin_balance - coins_needed,
-                total_coins_spent=User.total_coins_spent + coins_needed,
-                is_ad_free=True,
-                ad_free_until=new_expiry
-            )
-        )
-        
-        await db.commit()
-        
-        logger.info(f"User {user.id} purchased ad-free: {option['label']} for {coins_needed} coins")
-        
-        return {
-            "success": True,
-            "coins_spent": coins_needed,
-            "new_balance": (user.coin_balance or 0) - coins_needed,
-            "ad_free_until": new_expiry.isoformat(),
-            "message": f"Enjoy ad-free gaming for {option['label']}!"
-        }
-    
-    elif spend_request.spend_type == "premium_game":
+    if spend_request.spend_type == "premium_game":
         # Unlock premium game
         if not spend_request.game_id:
             raise HTTPException(status_code=400, detail="Game ID required")
@@ -2658,219 +2481,7 @@ async def get_unlocked_games(
         "unlocked_game_ids": [u.game_id for u in unlocked]
     }
 
-# ==================== GAMEPIX INTEGRATION ====================
-
-# GamePix Configuration
-GAMEPIX_SID = "1M9DD"  # Publisher SID for stats tracking
-GAMEPIX_FEED_BASE = "https://feeds.gamepix.com/v2/json"
-
-class GPXGameImport(BaseModel):
-    gpx_game_id: str
-    title: str
-    namespace: str
-    description: Optional[str] = None
-    category: str = "Action"
-    thumbnail_url: Optional[str] = None  # banner_image
-    icon_url: Optional[str] = None  # image
-    play_url: str  # url from feed
-    orientation: Optional[str] = None
-    quality_score: Optional[float] = None
-
-@api_router.get("/gamepix/browse")
-async def browse_gamepix_games(
-    category: Optional[str] = None,
-    page: int = 1,
-    limit: int = 12,
-    order: str = "quality"  # 'quality' or 'pubdate' (newest first)
-):
-    """Browse games from GamePix RSS feed with sorting"""
-    try:
-        # GamePix only allows specific pagination values: 12, 24, 48, 96
-        allowed_limits = [12, 24, 48, 96]
-        gpx_limit = min([l for l in allowed_limits if l >= limit], default=96)
-        
-        # Validate order parameter
-        valid_orders = ["quality", "pubdate"]
-        if order not in valid_orders:
-            order = "quality"
-        
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            params = {
-                "sid": GAMEPIX_SID,
-                "pagination": gpx_limit,
-                "page": page,
-                "order": order  # Add sorting parameter
-            }
-            
-            if category and category.lower() != "all":
-                params["category"] = category.lower()
-            
-            response = await client.get(GAMEPIX_FEED_BASE, params=params)
-            
-            if response.status_code != 200:
-                logger.warning(f"GamePix API returned {response.status_code}: {response.text[:200]}")
-                return {"games": [], "total": 0, "page": page, "limit": limit, "error": "Failed to fetch games"}
-            
-            data = response.json()
-            items = data.get("items", [])
-            
-            # Transform to our format
-            transformed_games = []
-            for game in items:
-                transformed_games.append({
-                    "gpx_game_id": game.get("id"),
-                    "title": game.get("title"),
-                    "namespace": game.get("namespace"),
-                    "description": game.get("description"),
-                    "category": game.get("category", "Action"),
-                    "thumbnail_url": game.get("banner_image"),
-                    "icon_url": game.get("image"),
-                    "play_url": game.get("url"),
-                    "orientation": game.get("orientation"),
-                    "quality_score": game.get("quality_score"),
-                    "date_published": game.get("date_published")
-                })
-            
-            return {
-                "games": transformed_games,
-                "total": len(items),  # GamePix doesn't provide total count
-                "page": page,
-                "limit": limit,
-                "next_url": data.get("next_url"),
-                "previous_url": data.get("previous_url"),
-                "has_more": data.get("next_url") is not None
-            }
-            
-    except Exception as e:
-        logger.error(f"Error browsing GamePix games: {e}")
-        return {"games": [], "total": 0, "page": page, "limit": limit, "error": str(e)}
-
-@api_router.get("/gamepix/categories")
-async def get_gamepix_categories():
-    """Get available GamePix game categories"""
-    categories = [
-        {"id": "all", "name": "All Games", "icon": "🎮"},
-        {"id": "action", "name": "Action", "icon": "⚔️"},
-        {"id": "adventure", "name": "Adventure", "icon": "🗺️"},
-        {"id": "arcade", "name": "Arcade", "icon": "🕹️"},
-        {"id": "puzzle", "name": "Puzzle", "icon": "🧩"},
-        {"id": "racing", "name": "Racing", "icon": "🏎️"},
-        {"id": "sports", "name": "Sports", "icon": "⚽"},
-        {"id": "strategy", "name": "Strategy", "icon": "♟️"},
-        {"id": "shooting", "name": "Shooting", "icon": "🎯"},
-        {"id": "board", "name": "Board", "icon": "🎲"},
-        {"id": "cards", "name": "Cards", "icon": "🃏"},
-        {"id": "casino", "name": "Casino", "icon": "🎰"},
-        {"id": "casual", "name": "Casual", "icon": "🎈"},
-        {"id": "educational", "name": "Educational", "icon": "📚"},
-        {"id": "girls", "name": "Girls", "icon": "👗"},
-        {"id": "kids", "name": "Kids", "icon": "🧸"},
-        {"id": "multiplayer", "name": "Multiplayer", "icon": "👥"},
-        {"id": "quiz", "name": "Quiz", "icon": "❓"},
-        {"id": "simulation", "name": "Simulation", "icon": "🏠"},
-        {"id": "word", "name": "Word", "icon": "📝"}
-    ]
-    return {"categories": categories}
-
-@api_router.post("/admin/gamepix/import")
-async def import_gamepix_game(
-    game_data: GPXGameImport,
-    user: User = Depends(require_admin),
-    db: AsyncSession = Depends(get_db)
-):
-    """Import a game from GamePix into our platform"""
-    try:
-        # Check if game already exists by namespace (unique identifier)
-        result = await db.execute(
-            select(Game).where(Game.gd_game_id == f"gpx-{game_data.namespace}")
-        )
-        existing = result.scalar_one_or_none()
-        
-        if existing:
-            raise HTTPException(status_code=400, detail="Game already imported")
-        
-        # Create new game with both banner (thumbnail) and icon images
-        new_game = Game(
-            id=str(uuid.uuid4()),
-            title=game_data.title,
-            description=game_data.description or "",
-            category=game_data.category.title() if game_data.category else "Action",
-            thumbnail_url=game_data.thumbnail_url,  # Banner image (landscape)
-            icon_url=game_data.icon_url,  # Square icon image
-            embed_url=game_data.play_url,  # GamePix provides direct play URL
-            gd_game_id=f"gpx-{game_data.namespace}",  # Prefix with gpx- to distinguish
-            source="gamepix",
-            has_game_file=True,  # GamePix games are always playable via URL
-            is_visible=True,
-            play_count=0
-        )
-        
-        db.add(new_game)
-        await db.commit()
-        await db.refresh(new_game)
-        
-        logger.info(f"Imported GamePix game: {new_game.title} ({game_data.namespace})")
-        return GameResponse(**new_game.to_dict())
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error importing GamePix game: {e}")
-        raise HTTPException(status_code=500, detail="Failed to import game. Please try again.")
-
-@api_router.post("/admin/gamepix/bulk-import")
-async def bulk_import_gamepix_games(
-    games: List[GPXGameImport],
-    user: User = Depends(require_admin),
-    db: AsyncSession = Depends(get_db)
-):
-    """Bulk import games from GamePix"""
-    imported = []
-    skipped = []
-    
-    for game_data in games:
-        try:
-            # Check if game already exists
-            result = await db.execute(
-                select(Game).where(Game.gd_game_id == f"gpx-{game_data.namespace}")
-            )
-            existing = result.scalar_one_or_none()
-            
-            if existing:
-                skipped.append(game_data.title)
-                continue
-            
-            # Create new game with both banner and icon images
-            new_game = Game(
-                id=str(uuid.uuid4()),
-                title=game_data.title,
-                description=game_data.description or "",
-                category=game_data.category.title() if game_data.category else "Action",
-                thumbnail_url=game_data.thumbnail_url,  # Banner image
-                icon_url=game_data.icon_url,  # Square icon
-                embed_url=game_data.play_url,
-                gd_game_id=f"gpx-{game_data.namespace}",
-                source="gamepix",
-                has_game_file=True,
-                is_visible=True,
-                play_count=0
-            )
-            
-            db.add(new_game)
-            imported.append(game_data.title)
-            
-        except Exception as e:
-            logger.error(f"Error importing {game_data.title}: {e}")
-            skipped.append(game_data.title)
-    
-    await db.commit()
-    _invalidate_games_cache()
-    return {
-        "imported": len(imported),
-        "skipped": len(skipped),
-        "imported_games": imported,
-        "skipped_games": skipped
-    }
+# ==================== GAMEMONETIZE INTEGRATION ====================
 
 # ==================== GAMEMONETIZE INTEGRATION ====================
 
