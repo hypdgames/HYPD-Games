@@ -326,7 +326,7 @@ export default function GameFeed() {
     </div>
   );
 
-  const showRecent = recentGames.length > 0 && !recentDismissed;
+  const showRecent = false && recentGames.length > 0 && !recentDismissed; // hidden for now
   // Header: ~52px logo row + 8px gap; strip: ~124px when visible
   const topPad = showRecent ? 188 : 68;
 

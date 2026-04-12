@@ -35,6 +35,7 @@ interface GameMonetizeTabProps {
   games: Game[];
   importing: boolean;
   gmzVideoAdsEnabled: boolean;
+  syncing: boolean;
   onGmzVideoAdsToggle: (enabled: boolean) => void;
   onCategoryChange: (category: string) => void;
   onSortChange: (sort: string) => void;
@@ -45,6 +46,7 @@ interface GameMonetizeTabProps {
   onImportSelected: () => void;
   onSelectAll: () => void;
   onClearSelection: () => void;
+  onSyncNew: () => void;
 }
 
 const SORT_OPTIONS = [
@@ -66,6 +68,7 @@ export function GameMonetizeTab({
   games,
   importing,
   gmzVideoAdsEnabled,
+  syncing,
   onGmzVideoAdsToggle,
   onCategoryChange,
   onSortChange,
@@ -76,6 +79,7 @@ export function GameMonetizeTab({
   onImportSelected,
   onSelectAll,
   onClearSelection,
+  onSyncNew,
 }: GameMonetizeTabProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
@@ -102,24 +106,41 @@ export function GameMonetizeTab({
   };
 
   const selectableGames = gmzGames.filter(g => !isGmzGameImported(g.gmz_game_id));
+  const newCount = selectableGames.length;
 
   return (
     <div className="space-y-4">
       {/* Info Banner */}
       <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/30 rounded-xl p-4">
-        <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center flex-shrink-0">
-            <Globe className="w-5 h-5 text-purple-500" />
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center flex-shrink-0">
+              <Globe className="w-5 h-5 text-purple-500" />
+            </div>
+            <div>
+              <h3 className="font-bold text-foreground">GameMonetize Network</h3>
+              <p className="text-sm text-muted-foreground">
+                Browse and import games from GameMonetize.
+                {gmzTotal > 0 && (
+                  <span className="font-semibold text-purple-400"> {gmzTotal.toLocaleString()} games available.</span>
+                )}
+                {newCount > 0 && (
+                  <span className="ml-1 text-green-400 font-semibold">{newCount} new on this page.</span>
+                )}
+              </p>
+            </div>
           </div>
-          <div>
-            <h3 className="font-bold text-foreground">GameMonetize Network</h3>
-            <p className="text-sm text-muted-foreground">
-              Browse and import games from GameMonetize.
-              {gmzTotal > 0 && (
-                <span className="font-semibold text-purple-400"> {gmzTotal.toLocaleString()} games available.</span>
-              )}
-            </p>
-          </div>
+          <Button
+            onClick={onSyncNew}
+            disabled={syncing || gmzLoading}
+            size="sm"
+            className="bg-purple-500 text-white hover:bg-purple-600 flex-shrink-0 whitespace-nowrap"
+            data-testid="sync-new-games-btn"
+            title="Import all games from the full GameMonetize catalog that are not yet in your database"
+          >
+            {syncing ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : <Plus className="w-4 h-4 mr-1.5" />}
+            {syncing ? "Syncing..." : "Sync New Games"}
+          </Button>
         </div>
       </div>
 
@@ -219,7 +240,7 @@ export function GameMonetizeTab({
         </Button>
       </div>
 
-      {/* Selection Actions Bar */}
+      {/* Selection Actions Bar — only for unimported selectable games */}
       {selectableGames.length > 0 && (
         <div className="flex items-center justify-between bg-card border border-border rounded-lg p-3">
           <div className="flex items-center gap-3">
@@ -299,28 +320,25 @@ export function GameMonetizeTab({
             Refresh catalogue
           </button>
         </div>
-      ) : selectableGames.length === 0 ? (
-        <div className="text-center py-12 bg-card rounded-xl border border-border">
-          <Check className="w-12 h-12 text-purple-500 mx-auto mb-4" />
-          <p className="font-semibold text-foreground">All games on this page are already added</p>
-          <p className="text-sm text-muted-foreground mt-1">Load more to find new games to import</p>
-        </div>
       ) : (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {selectableGames.map((game) => {
+            {gmzGames.map((game) => {
+              const imported = isGmzGameImported(game.gmz_game_id);
               const selected = selectedGmzGames.has(game.gmz_game_id);
               return (
                 <motion.div
                   key={game.gmz_game_id}
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className={`relative bg-card border rounded-xl overflow-hidden cursor-pointer transition-all ${
-                    selected
-                      ? "border-purple-500 ring-2 ring-purple-500/30"
-                      : "border-border hover:border-purple-500/50"
+                  className={`relative bg-card border rounded-xl overflow-hidden transition-all ${
+                    imported
+                      ? "border-border opacity-60 cursor-default"
+                      : selected
+                      ? "border-purple-500 ring-2 ring-purple-500/30 cursor-pointer"
+                      : "border-border hover:border-purple-500/50 cursor-pointer"
                   }`}
-                  onClick={() => onToggleSelection(game.gmz_game_id)}
+                  onClick={() => !imported && onToggleSelection(game.gmz_game_id)}
                   data-testid={`gmz-game-${game.gmz_game_id}`}
                 >
                   <div className="aspect-video relative">
@@ -333,14 +351,22 @@ export function GameMonetizeTab({
                         (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1637734373619-af1e76434bec?w=200&q=80";
                       }}
                     />
-                    {selected && (
+                    {imported ? (
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                        <div className="bg-green-500/90 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                          <Check className="w-3 h-3" /> Added
+                        </div>
+                      </div>
+                    ) : selected && (
                       <div className="absolute top-2 right-2 w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
                         <Check className="w-4 h-4 text-white" />
                       </div>
                     )}
-                    <div className="absolute bottom-2 left-2 bg-purple-500/90 text-white px-2 py-0.5 rounded text-xs font-medium">
-                      GMZ
-                    </div>
+                    {!imported && (
+                      <div className="absolute bottom-2 left-2 bg-purple-500/90 text-white px-2 py-0.5 rounded text-xs font-medium">
+                        GMZ
+                      </div>
+                    )}
                     <div className="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-0.5 rounded text-xs">
                       {game.category}
                     </div>
@@ -360,7 +386,7 @@ export function GameMonetizeTab({
             })}
           </div>
 
-          {gmzHasMore && (
+          {(gmzHasMore || gmzLoading) && (
             <div className="flex justify-center pt-4">
               <Button
                 variant="outline"

@@ -61,6 +61,7 @@ export default function AdminDashboard() {
   const [selectedGmzGames, setSelectedGmzGames] = useState<Set<string>>(new Set());
   const [gmzCategories, setGmzCategories] = useState<{id: string; name: string; icon: string}[]>([]);
   const [gmzImporting, setGmzImporting] = useState(false);
+  const [gmzSyncing, setGmzSyncing] = useState(false);
 
   // Analytics state
   const [analyticsOverview, setAnalyticsOverview] = useState<AnalyticsOverview | null>(null);
@@ -346,6 +347,30 @@ export default function AdminDashboard() {
     setGmzLoading(false);
   };
 
+  const syncNewGmzGames = async () => {
+    if (!token) return;
+    setGmzSyncing(true);
+    try {
+      const res = await fetch(`${API_URL}/api/admin/gamemonetize/sync-new`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(data.message || `Imported ${data.imported} new games`);
+        if (data.imported > 0) {
+          fetchGames();
+          fetchGmzGames(gmzCategory, 1, false, gmzSearch, gmzSort);
+        }
+      } else {
+        toast.error(data.detail || "Sync failed");
+      }
+    } catch {
+      toast.error("Failed to sync games");
+    }
+    setGmzSyncing(false);
+  };
+
   const fetchGmzCategories = async () => {
     try {
       const res = await fetch(`${API_URL}/api/gamemonetize/categories`);
@@ -619,6 +644,7 @@ export default function AdminDashboard() {
                 games={games}
                 importing={gmzImporting}
                 gmzVideoAdsEnabled={gmzVideoAdsEnabled}
+                syncing={gmzSyncing}
                 onGmzVideoAdsToggle={async (enabled: boolean) => {
                   try {
                     const res = await fetch(`${API_URL}/api/admin/settings`, {
@@ -646,6 +672,7 @@ export default function AdminDashboard() {
                 onImportSelected={importSelectedGmzGames}
                 onSelectAll={selectAllGmzGames}
                 onClearSelection={clearGmzSelection}
+                onSyncNew={syncNewGmzGames}
               />
             )}
           </TabsContent>
