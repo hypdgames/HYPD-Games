@@ -130,7 +130,15 @@ Then wait ~2 min for the build to complete before testing. The testing agent con
   - FastAPI backend unaffected (superuser bypasses RLS)
   - Per-user policies activate once Supabase JWT secret = `hypd-games-prod-secret-key-xK9mP2nQ7vL4wR8t` in Dashboard → Project Settings → API → JWT Settings
   - Scripts: `/app/backend/scripts/enable_rls.py`, `/app/backend/scripts/apply_rls_policies.py`
-- **Dead Code Removal & Optimization** — Apr 2026:
+- **Recently Played Strip** — Apr 2026:
+  - New endpoint `GET /api/games/recently-played` (auth required) — returns last 5 unique games played, ordered by most recent `played_at` via `GROUP BY game_id + MAX(played_at)`
+  - Endpoint placed BEFORE `/games/{game_id}` wildcard in server.py (critical route ordering)
+  - `RecentlyPlayedStrip` component on home feed: frosted-glass pill card below nav, shows game thumbnails + titles, click → `/play/[gameId]`, X dismiss button, AnimatePresence slide-out animation
+  - Strip only shown for logged-in users with ≥1 play session; hidden for guests; hidden after dismiss (session-scoped via state)
+  - topPad: 188px when strip visible → 68px when dismissed (FeedCard adjusts via inline style)
+  - Tested: 11/11 backend + all frontend scenarios passed
+
+
   - Removed entire GameDistribution integration (~290 lines): 5 endpoints, `GDGameImport` model, `GD_API_BASE` constant, mock data helper
   - Removed duplicate `POST /analytics/event` endpoint (kept richer `POST /analytics/track`)
   - Updated `valid_sources` in delete-by-source endpoint: now only accepts `custom` | `gamemonetize`

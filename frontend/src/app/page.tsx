@@ -132,15 +132,15 @@ const RecentlyPlayedStrip = memo(function RecentlyPlayedStrip({
   games, onPlay, onDismiss,
 }: { games: RecentGame[]; onPlay: (id: string) => void; onDismiss: () => void; }) {
   return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0, y: -8 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -8 }}
-        transition={{ duration: 0.25 }}
-        className="w-full px-4 pb-2"
-        data-testid="recently-played-strip"
-      >
+    <motion.div
+      key="recently-played-strip"
+      initial={{ opacity: 0, y: -8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -8 }}
+      transition={{ duration: 0.2 }}
+      className="w-full px-4 pb-2"
+      data-testid="recently-played-strip"
+    >
         <div className="frosted-nav rounded-2xl px-3 py-2.5">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-1.5">
@@ -176,7 +176,6 @@ const RecentlyPlayedStrip = memo(function RecentlyPlayedStrip({
           </div>
         </div>
       </motion.div>
-    </AnimatePresence>
   );
 });
 RecentlyPlayedStrip.displayName = "RecentlyPlayedStrip";
@@ -345,13 +344,15 @@ export default function GameFeed() {
             </div>
             <ThemeToggle />
           </div>
-          {showRecent && (
-            <RecentlyPlayedStrip
-              games={recentGames}
-              onPlay={(id) => playGame(id)}
-              onDismiss={() => setRecentDismissed(true)}
-            />
-          )}
+          <AnimatePresence>
+            {showRecent && (
+              <RecentlyPlayedStrip
+                games={recentGames}
+                onPlay={(id) => playGame(id)}
+                onDismiss={() => setRecentDismissed(true)}
+              />
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
