@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, MessageCircle, Send, Loader2, Trash2, Heart } from "lucide-react";
 import { useAuthStore } from "@/store";
@@ -45,7 +46,6 @@ export function CommentSheet({ gameId, gameTitle, isOpen, onClose, onCommentPost
   const [text, setText] = useState("");
   const [sort, setSort] = useState<"newest" | "top">("newest");
   const inputRef = useRef<HTMLInputElement>(null);
-  const listRef = useRef<HTMLDivElement>(null);
 
   const sortedComments = sort === "top"
     ? [...comments].sort((a, b) =>
@@ -198,7 +198,7 @@ export function CommentSheet({ gameId, gameTitle, isOpen, onClose, onCommentPost
             </div>
 
             {/* Comments list */}
-            <div ref={listRef} className="flex-1 overflow-y-auto px-5 py-4 space-y-5 min-h-0">
+            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5 min-h-0">
               {loading ? (
                 <div className="flex justify-center py-10">
                   <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -218,9 +218,9 @@ export function CommentSheet({ gameId, gameTitle, isOpen, onClose, onCommentPost
                     className="flex gap-3 group"
                     data-testid={`comment-${c.id}`}
                   >
-                    <div className="w-8 h-8 rounded-full bg-violet/20 flex items-center justify-center flex-shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-violet/20 flex items-center justify-center flex-shrink-0 relative overflow-hidden">
                       {c.avatar_url ? (
-                        <img src={c.avatar_url} alt={c.username} className="w-full h-full rounded-full object-cover" />
+                        <Image src={c.avatar_url} alt={c.username} fill className="object-cover" sizes="32px" />
                       ) : (
                         <span className="text-xs font-bold text-violet uppercase">{c.username[0]}</span>
                       )}

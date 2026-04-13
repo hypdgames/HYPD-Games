@@ -128,12 +128,31 @@ def _invalidate_all_game_caches() -> None:
     _invalidate_games_cache()
     _invalidate_video_batch_cache()
 
+
+def _parse_id_list(raw_ids: Optional[str], max_ids: int) -> list[str]:
+    """Parse a comma-separated list of ids into a bounded, de-duplicated list."""
+    if not raw_ids:
+        return []
+
+    ids: list[str] = []
+    seen: set[str] = set()
+    for value in raw_ids.split(","):
+        item = value.strip()
+        if not item or item in seen:
+            continue
+        seen.add(item)
+        ids.append(item)
+        if len(ids) >= max_ids:
+            break
+    return ids
+
 # Batch-level cache for video previews (avoids re-fetching on every cold start)
 _gmz_batch_cache: dict = {}
 GMZ_BATCH_CACHE_TTL = 900  # 15 minutes
 GMZ_BATCH_DEFAULT_LIMIT = 120
 GMZ_BATCH_MAX_LIMIT = 200
 GMZ_BATCH_CONCURRENCY = 12
+COMMENT_COUNTS_MAX_IDS = 300
 
 # Supabase Storage bucket names
 GAMES_BUCKET = "games"
@@ -791,6 +810,7 @@ async def get_games(
 
 @api_router.get("/games/video-previews-batch")
 async def get_video_previews_batch(
+    ids: Optional[str] = None,
     limit: int = GMZ_BATCH_DEFAULT_LIMIT,
     db: AsyncSession = Depends(get_db),
 ):
@@ -798,8 +818,12 @@ async def get_video_previews_batch(
     The batch is bounded and cached briefly to avoid cold-start fan-out on Railway."""
     import asyncio
 
+    requested_ids = _parse_id_list(ids, GMZ_BATCH_MAX_LIMIT)
     limit = max(1, min(limit, GMZ_BATCH_MAX_LIMIT))
-    cache_key = f"limit:{limit}"
+    if requested_ids:
+        limit = min(limit, len(requested_ids))
+    id_key = ",".join(sorted(requested_ids)) if requested_ids else "all"
+    cache_key = f"ids:{id_key}:limit:{limit}"
     now = time.time()
     cached_batch = _gmz_batch_cache.get(cache_key)
     if cached_batch and (now - cached_batch["ts"]) < GMZ_BATCH_CACHE_TTL:
@@ -807,16 +831,16 @@ async def get_video_previews_batch(
         response.headers["Cache-Control"] = "public, max-age=1800, stale-while-revalidate=3600"
         return response
 
-    result = await db.execute(
-        select(Game).where(
-            Game.source == "gamemonetize",
-            Game.is_visible.is_(True),
-            Game.show_in_feed.is_not(False),
-            Game.embed_url.is_not(None),
-        )
-        .order_by(Game.created_at.desc())
-        .limit(limit)
+    query = select(Game).where(
+        Game.source == "gamemonetize",
+        Game.is_visible.is_(True),
+        Game.show_in_feed.is_not(False),
+        Game.embed_url.is_not(None),
     )
+    if requested_ids:
+        query = query.where(Game.id.in_(requested_ids))
+
+    result = await db.execute(query.order_by(Game.created_at.desc()).limit(limit))
     games = result.scalars().all()
     semaphore = asyncio.Semaphore(GMZ_BATCH_CONCURRENCY)
 
@@ -846,18 +870,26 @@ async def get_video_previews_batch(
 
 
 @api_router.get("/games/comment-counts")
-async def get_comment_counts(response: Response, db: AsyncSession = Depends(get_db)):
-    """Batch comment counts for all games — used for badge display on feed. Cached 5 min."""
-    cached = _cache_get("comment_counts", ttl=300)
+async def get_comment_counts(
+    response: Response,
+    ids: Optional[str] = None,
+    db: AsyncSession = Depends(get_db),
+):
+    """Batch comment counts for games currently shown in the UI. Cached 5 min."""
+    requested_ids = _parse_id_list(ids, COMMENT_COUNTS_MAX_IDS)
+    cache_key = f"comment_counts:{','.join(sorted(requested_ids)) if requested_ids else 'all'}"
+    cached = _cache_get(cache_key, ttl=300)
     if cached is not None:
         response.headers["Cache-Control"] = "public, max-age=300, stale-while-revalidate=600"
         return cached
-    result = await db.execute(
-        select(GameComment.game_id, func.count(GameComment.id).label("count"))
-        .group_by(GameComment.game_id)
-    )
+
+    query = select(GameComment.game_id, func.count(GameComment.id).label("count")).group_by(GameComment.game_id)
+    if requested_ids:
+        query = query.where(GameComment.game_id.in_(requested_ids))
+
+    result = await db.execute(query)
     counts = {row[0]: row[1] for row in result.all()}
-    _cache_set("comment_counts", counts)
+    _cache_set(cache_key, counts)
     response.headers["Cache-Control"] = "public, max-age=300, stale-while-revalidate=600"
     return counts
 

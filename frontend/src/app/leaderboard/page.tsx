@@ -33,8 +33,13 @@ export default function LeaderboardPage() {
 
   useEffect(() => {
     fetchGlobalLeaderboard();
-    fetchGames();
   }, []);
+
+  useEffect(() => {
+    if (activeFilter === "games" && games.length === 0) {
+      fetchGames();
+    }
+  }, [activeFilter, games.length]);
 
   const fetchGlobalLeaderboard = async () => {
     try {
@@ -49,7 +54,7 @@ export default function LeaderboardPage() {
 
   const fetchGames = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/games?limit=200`);
+      const res = await fetch(`${API_URL}/api/games?limit=24`);
       if (res.ok) setGames(await res.json());
     } catch (e) { console.error(e); }
   };

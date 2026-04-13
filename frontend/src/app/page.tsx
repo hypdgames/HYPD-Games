@@ -15,6 +15,8 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 const AD_FREQUENCY = 6;
 const VIDEO_CACHE_KEY = "hypd:video_cache_v2";
 const VIDEO_CACHE_TTL = 3600 * 1000;
+const FEED_LIMIT = 180;
+const FEED_PREVIEW_LIMIT = 90;
 const CommentSheet = dynamic(
   () => import("@/components/comment-sheet").then((mod) => mod.CommentSheet),
   { ssr: false }
@@ -169,7 +171,7 @@ export default function GameFeed() {
     try {
       const headers: Record<string, string> = {};
       if (token) headers["Authorization"] = `Bearer ${token}`;
-      const res = await fetch(`${API_URL}/api/games/feed?seed=${feedSeed.current}&limit=300`, { headers });
+      const res = await fetch(`${API_URL}/api/games/feed?seed=${feedSeed.current}&limit=${FEED_LIMIT}`, { headers });
       if (!res.ok) return;
       const data: Game[] = await res.json();
       setGames(data);
@@ -181,10 +183,18 @@ export default function GameFeed() {
       setFeedItems(items);
 
       const fp = gameFingerprint(data);
+      const feedIds = data.map((game) => game.id);
+      const previewIds = feedIds.slice(0, FEED_PREVIEW_LIMIT);
+
+      fetch(`${API_URL}/api/games/comment-counts?ids=${feedIds.join(",")}`)
+        .then(r => r.ok ? r.json() : {})
+        .then(setCommentCounts)
+        .catch(() => {});
+
       const cachedVideo = sessionGet<VideoCache>(VIDEO_CACHE_KEY, VIDEO_CACHE_TTL);
       if (cachedVideo && cachedVideo.fp === fp) { setVideoUrls(cachedVideo.urls); }
       else {
-        fetch(`${API_URL}/api/games/video-previews-batch?limit=120`)
+        fetch(`${API_URL}/api/games/video-previews-batch?limit=${FEED_PREVIEW_LIMIT}&ids=${previewIds.join(",")}`)
           .then(r => r.json())
           .then((urls: Record<string, string>) => { setVideoUrls(urls); sessionSet(VIDEO_CACHE_KEY, { urls, fp } as VideoCache); })
           .catch(() => {});
@@ -194,10 +204,6 @@ export default function GameFeed() {
 
   useEffect(() => { fetchGames().then(() => setLoading(false)); }, [fetchGames]);
   useEffect(() => { if (user?.saved_games) setSavedGames(new Set(user.saved_games)); }, [user]);
-  useEffect(() => {
-    fetch(`${API_URL}/api/games/comment-counts`)
-      .then(r => r.json()).then(setCommentCounts).catch(() => {});
-  }, []);
   const handleScroll = useCallback(() => {
     if (!containerRef.current) return;
     if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
