@@ -237,7 +237,7 @@ export default function GameFeed() {
       const cachedVideo = sessionGet<VideoCache>(VIDEO_CACHE_KEY, VIDEO_CACHE_TTL);
       if (cachedVideo && cachedVideo.fp === fp) { setVideoUrls(cachedVideo.urls); }
       else {
-        fetch(`${API_URL}/api/games/video-previews-batch`)
+        fetch(`${API_URL}/api/games/video-previews-batch?limit=120`)
           .then(r => r.json())
           .then((urls: Record<string, string>) => { setVideoUrls(urls); sessionSet(VIDEO_CACHE_KEY, { urls, fp } as VideoCache); })
           .catch(() => {});

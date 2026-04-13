@@ -31,7 +31,7 @@ from collections import defaultdict
 import time
 
 # Local imports
-from database import get_db, engine, Base, AsyncSessionLocal
+from database import get_db, engine, Base
 from models import (
     User, Game, PlaySession, AppSettings,
     Friendship, FriendshipStatus, Challenge, ChallengeParticipant,
@@ -87,6 +87,17 @@ game_files_cache: dict = {}
 
 # ── Simple in-memory API cache — reduces Supabase round-trips significantly ───
 _api_cache: dict = {}  # {key: {"data": Any, "ts": float}}
+API_CACHE_MAX_ENTRIES = 32
+
+
+def _prune_api_cache(max_entries: int = API_CACHE_MAX_ENTRIES) -> None:
+    """Keep the in-memory API cache bounded on small Railway instances."""
+    if len(_api_cache) <= max_entries:
+        return
+    # Drop the oldest cache entries first.
+    oldest_keys = sorted(_api_cache, key=lambda k: _api_cache[k]["ts"])[: len(_api_cache) - max_entries]
+    for key in oldest_keys:
+        _api_cache.pop(key, None)
 
 def _cache_get(key: str, ttl: int = 30):
     """Return cached data if fresh, else None."""
@@ -97,6 +108,7 @@ def _cache_get(key: str, ttl: int = 30):
 
 def _cache_set(key: str, data) -> None:
     _api_cache[key] = {"data": data, "ts": time.time()}
+    _prune_api_cache()
 
 def _invalidate_games_cache() -> None:
     """Bust games/categories caches. Call after any admin game mutation."""
@@ -106,9 +118,7 @@ def _invalidate_games_cache() -> None:
 
 def _invalidate_video_batch_cache() -> None:
     """Clear the batch-level video URL cache so next request re-fetches fresh URLs."""
-    global _gmz_batch_result, _gmz_batch_ts
-    _gmz_batch_result = {}
-    _gmz_batch_ts = 0.0
+    _gmz_batch_cache.clear()
 
 def _invalidate_all_game_caches() -> None:
     """Bust both the games list cache AND the video batch cache."""
@@ -116,9 +126,11 @@ def _invalidate_all_game_caches() -> None:
     _invalidate_video_batch_cache()
 
 # Batch-level cache for video previews (avoids re-fetching on every cold start)
-_gmz_batch_result: dict = {}
-_gmz_batch_ts: float = 0.0
-GMZ_BATCH_CACHE_TTL = 1800  # 30 minutes
+_gmz_batch_cache: dict = {}
+GMZ_BATCH_CACHE_TTL = 900  # 15 minutes
+GMZ_BATCH_DEFAULT_LIMIT = 120
+GMZ_BATCH_MAX_LIMIT = 200
+GMZ_BATCH_CONCURRENCY = 12
 
 # Supabase Storage bucket names
 GAMES_BUCKET = "games"
@@ -772,15 +784,20 @@ async def get_games(
 
 
 @api_router.get("/games/video-previews-batch")
-async def get_video_previews_batch(db: AsyncSession = Depends(get_db)):
-    """Fetch all GMZ video preview URLs in one parallel call — used at feed load time.
-    Batch result is cached for 30 minutes to avoid re-fetching on every cold start."""
-    global _gmz_batch_result, _gmz_batch_ts
+async def get_video_previews_batch(
+    limit: int = GMZ_BATCH_DEFAULT_LIMIT,
+    db: AsyncSession = Depends(get_db),
+):
+    """Fetch recent GMZ video preview URLs used by the feed.
+    The batch is bounded and cached briefly to avoid cold-start fan-out on Railway."""
     import asyncio
 
+    limit = max(1, min(limit, GMZ_BATCH_MAX_LIMIT))
+    cache_key = f"limit:{limit}"
     now = time.time()
-    if _gmz_batch_result and (now - _gmz_batch_ts) < GMZ_BATCH_CACHE_TTL:
-        response = JSONResponse(content=_gmz_batch_result)
+    cached_batch = _gmz_batch_cache.get(cache_key)
+    if cached_batch and (now - cached_batch["ts"]) < GMZ_BATCH_CACHE_TTL:
+        response = JSONResponse(content=cached_batch["data"])
         response.headers["Cache-Control"] = "public, max-age=1800, stale-while-revalidate=3600"
         return response
 
@@ -791,16 +808,20 @@ async def get_video_previews_batch(db: AsyncSession = Depends(get_db)):
             Game.show_in_feed.is_not(False),
             Game.embed_url.is_not(None),
         )
+        .order_by(Game.created_at.desc())
+        .limit(limit)
     )
     games = result.scalars().all()
+    semaphore = asyncio.Semaphore(GMZ_BATCH_CONCURRENCY)
 
     async def fetch_for_game(game):
-        parts = (game.embed_url or "").rstrip("/").split("/")
-        game_hash = parts[-1] if parts else None
-        if not game_hash or len(game_hash) < 10:
-            return game.id, None
-        url = await _fetch_gmz_video_url(game_hash, game.title)
-        return game.id, url
+        async with semaphore:
+            parts = (game.embed_url or "").rstrip("/").split("/")
+            game_hash = parts[-1] if parts else None
+            if not game_hash or len(game_hash) < 10:
+                return game.id, None
+            url = await _fetch_gmz_video_url(game_hash, game.title)
+            return game.id, url
 
     results = await asyncio.gather(*[fetch_for_game(g) for g in games], return_exceptions=True)
     batch = {
@@ -808,10 +829,10 @@ async def get_video_previews_batch(db: AsyncSession = Depends(get_db)):
         for item in results
         if not isinstance(item, Exception)
         for gid, url in [item]
+        if url
     }
 
-    _gmz_batch_result = batch
-    _gmz_batch_ts = now
+    _gmz_batch_cache[cache_key] = {"data": batch, "ts": now}
 
     response = JSONResponse(content=batch)
     response.headers["Cache-Control"] = "public, max-age=1800, stale-while-revalidate=3600"
@@ -954,6 +975,19 @@ async def get_game_meta(game_id: str, db: AsyncSession = Depends(get_db)):
 # In-memory cache for GMZ video preview URLs {hash: {url, fetched_at}}
 _gmz_video_cache: dict = {}
 GMZ_VIDEO_CACHE_TTL = 3600  # 1 hour
+GMZ_VIDEO_CACHE_MAX_ITEMS = 300
+
+
+def _prune_gmz_video_cache() -> None:
+    """Bound the preview-URL cache so it doesn't grow with the whole catalog."""
+    if len(_gmz_video_cache) <= GMZ_VIDEO_CACHE_MAX_ITEMS:
+        return
+    oldest_keys = sorted(
+        _gmz_video_cache,
+        key=lambda key: _gmz_video_cache[key]["fetched_at"],
+    )[: len(_gmz_video_cache) - GMZ_VIDEO_CACHE_MAX_ITEMS]
+    for key in oldest_keys:
+        _gmz_video_cache.pop(key, None)
 
 async def _fetch_gmz_video_url(game_hash: str, game_title: str) -> Optional[str]:
     """Fetch direct MP4 URL for a GMZ game. Returns None on failure."""
@@ -973,6 +1007,7 @@ async def _fetch_gmz_video_url(game_hash: str, game_title: str) -> Optional[str]
             if data.get("isSuccess") and data.get("data", {}).get("detail"):
                 video_url = data["data"]["detail"][0].get("mediaURL")
                 _gmz_video_cache[game_hash] = {"url": video_url, "fetched_at": time.time()}
+                _prune_gmz_video_cache()
                 return video_url
     except Exception:
         pass
@@ -4012,71 +4047,7 @@ async def startup():
         await conn.run_sync(Base.metadata.create_all)
     # Initialize storage buckets
     init_storage_buckets()
-    # Pre-warm caches in background, then keep them warm periodically
-    import asyncio
-    asyncio.create_task(_prewarm_caches())
-    asyncio.create_task(_periodic_rewarm())
-
-async def _prewarm_caches():
-    """Background task: warms games + categories caches on startup so first user gets fast response."""
-    import asyncio
-    await asyncio.sleep(4)  # Small delay so DB pool is ready
-    try:
-        async with AsyncSessionLocal() as db:
-            # Warm games feed cache
-            result = await db.execute(
-                select(Game)
-                .where(Game.is_visible.is_(True))
-                .where(Game.show_in_feed.is_not(False))
-                .order_by(Game.created_at.desc())
-            )
-            feed_games = result.scalars().all()
-            feed_responses = [GameFeedResponse(**g.to_dict()).model_dump() for g in feed_games]
-            _cache_set("games:feed=True:cat=None", feed_responses)
-
-            # Warm explore (all games) cache
-            result2 = await db.execute(
-                select(Game).where(Game.is_visible.is_(True)).order_by(Game.created_at.desc())
-            )
-            all_games = result2.scalars().all()
-            all_responses = [GameFeedResponse(**g.to_dict()).model_dump() for g in all_games]
-            _cache_set("games:feed=False:cat=None", all_responses)
-
-            # Warm categories cache
-            result3 = await db.execute(
-                select(Game.category).where(Game.is_visible.is_(True)).distinct()
-            )
-            categories = [row[0] for row in result3.all()]
-            _cache_set("categories", {"categories": categories})
-
-            logger.info(f"Cache pre-warmed: {len(feed_responses)} feed games, {len(all_responses)} total games, {len(categories)} categories")
-    except Exception as e:
-        logger.warning(f"Cache pre-warm failed (non-critical): {e}")
-
-    # Warm the GMZ feed in the background — doesn't block DB warming
-    asyncio.create_task(_prewarm_gmz_feed())
-
-
-async def _prewarm_gmz_feed():
-    """Pre-warm the GameMonetize full-catalog cache in the background.
-    Delayed by 30 s to avoid triggering rate limits during rapid restarts."""
-    import asyncio
-    await asyncio.sleep(30)  # Brief wait so any previous rate-limit window clears
-    try:
-        games = await _fetch_full_gmz_feed()
-        if games:
-            logger.info(f"GMZ feed pre-warmed: {len(games)} games cached (TTL 30 min)")
-        else:
-            logger.warning("GMZ feed pre-warm returned no games (rate-limited; will retry on first user request)")
-    except Exception as e:
-        logger.warning(f"GMZ feed pre-warm failed (non-critical): {e}")
-
-async def _periodic_rewarm():
-    """Re-warm caches every 4 minutes so they never expire in low-traffic scenarios."""
-    import asyncio
-    while True:
-        await asyncio.sleep(240)  # Every 4 min (well within 5-min TTL)
-        await _prewarm_caches()
+    logger.info("Skipping background cache pre-warm to keep Railway memory stable")
 
 # Root redirect
 @app.get("/")
