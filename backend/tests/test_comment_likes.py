@@ -10,7 +10,7 @@ import os
 
 BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/")
 if not BASE_URL:
-    BASE_URL = "https://hypd-games-fast.preview.emergentagent.com"
+    BASE_URL = os.environ.get("NEXT_PUBLIC_API_URL", "http://localhost:8001")
 
 ADMIN_EMAIL = "admin@hypd.games"
 ADMIN_PASSWORD = "admin123"

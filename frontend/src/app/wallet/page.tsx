@@ -16,7 +16,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store";
 import { ThemeToggle } from "@/components/theme-toggle";
-import BottomNav from "@/components/bottom-nav";
 import { toast } from "sonner";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
@@ -216,8 +215,6 @@ export default function WalletPage() {
             Login to Continue
           </Button>
         </div>
-
-        <BottomNav />
       </div>
     );
   }
@@ -474,8 +471,6 @@ export default function WalletPage() {
           </>
         )}
       </div>
-
-      <BottomNav />
     </div>
   );
 }

@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Flame, Heart, Coins, Users } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuthStore } from "@/store";
-import BottomNav from "@/components/bottom-nav";
 import { toast } from "sonner";
 import type { Game } from "@/types";
 
@@ -65,13 +64,15 @@ export default function ProfilePage() {
 
   const fetchSavedGames = async () => {
     try {
-      if (!user?.saved_games?.length) return;
-      const gamesRes = await fetch(`${API_URL}/api/games`);
+      if (!token || !user?.saved_games?.length) {
+        setSavedGames([]);
+        return;
+      }
+      const gamesRes = await fetch(`${API_URL}/api/auth/saved-games`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (gamesRes.ok) {
-        const allGames = await gamesRes.json();
-        const saved = allGames.filter((g: Game) =>
-          user.saved_games.includes(g.id)
-        );
+        const saved = await gamesRes.json();
         setSavedGames(saved);
       }
     } catch (e) {
@@ -285,7 +286,6 @@ export default function ProfilePage() {
   if (!user) {
     return (
       <AuthView
-        settings={settings}
         onLogin={(form) => login(form)}
         onRegister={(form) => register(form)}
       />
@@ -393,7 +393,6 @@ export default function ProfilePage() {
           </button>
         </div>
       </div>
-      <BottomNav />
     </div>
   );
 }

@@ -3,12 +3,9 @@
 import { useState } from "react";
 import { User, Mail, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
-import BottomNav from "@/components/bottom-nav";
 import { toast } from "sonner";
-import type { AppSettings } from "@/types";
 
 interface AuthViewProps {
-  settings?: AppSettings | null;
   onLogin: (form: { email: string; password: string }) => Promise<unknown>;
   onRegister: (form: { username: string; email: string; password: string }) => Promise<unknown>;
 }
@@ -144,7 +141,6 @@ export function AuthView({ onLogin, onRegister }: AuthViewProps) {
           </form>
         )}
       </div>
-      <BottomNav />
     </div>
   );
 }

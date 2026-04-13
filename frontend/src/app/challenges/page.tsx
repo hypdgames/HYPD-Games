@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useAuthStore } from "@/store";
 import { ThemeToggle } from "@/components/theme-toggle";
-import BottomNav from "@/components/bottom-nav";
 import { toast } from "sonner";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
@@ -339,8 +338,6 @@ export default function ChallengesPage() {
           </>
         )}
       </div>
-
-      <BottomNav />
     </div>
   );
 }

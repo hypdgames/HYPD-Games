@@ -22,15 +22,7 @@ const slideVariants = {
 const slideTransition = { duration: 0.5, ease: [0.32, 0, 0.67, 0] as const };
 
 /* ── Slideshow ───────────────────────────────── */
-function Slideshow({ images }: { images: string[] }) {
-  const [index, setIndex] = useState(0);
-
-  useEffect(() => {
-    if (images.length < 2) return;
-    const id = setInterval(() => setIndex(i => (i + 1) % images.length), SLIDE_INTERVAL);
-    return () => clearInterval(id);
-  }, [images.length]);
-
+function Slideshow({ images, index }: { images: string[]; index: number }) {
   if (images.length === 0) {
     return <div className="absolute inset-0 bg-gradient-to-br from-violet-400 to-fuchsia-500" />;
   }
@@ -278,7 +270,7 @@ export default function WelcomePage() {
         >
           {/* Slideshow card */}
           <div className="absolute inset-0 rounded-[28px] overflow-hidden shadow-2xl">
-            <Slideshow images={images} />
+            <Slideshow images={images} index={slideIndex} />
             <div className="absolute inset-0 bg-gradient-to-t from-black/25 to-transparent pointer-events-none" />
           </div>
 

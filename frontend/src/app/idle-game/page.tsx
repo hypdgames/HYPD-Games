@@ -3,7 +3,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { GameSave, LOBBY_UPGRADES } from './game/engine';
 import GameCanvas from './components/GameCanvas';
 import Lobby from './components/Lobby';
-import BottomNav from '@/components/bottom-nav';
 import { useAuthStore } from '@/store';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
@@ -83,9 +82,6 @@ export default function BaseDefencePage() {
   }
 
   return (
-    <>
-      <Lobby save={save} onPlay={() => setScreen('playing')} onUpgrade={handleUpgrade} />
-      <BottomNav />
-    </>
+    <Lobby save={save} onPlay={() => setScreen('playing')} onUpgrade={handleUpgrade} />
   );
 }

@@ -7,7 +7,6 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import { useAuthStore } from "@/store";
 import { ThemeToggle } from "@/components/theme-toggle";
-import BottomNav from "@/components/bottom-nav";
 import type { Game } from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
@@ -101,8 +100,6 @@ export default function LikedPage() {
           </div>
         )}
       </div>
-
-      <BottomNav />
     </div>
   );
 }
