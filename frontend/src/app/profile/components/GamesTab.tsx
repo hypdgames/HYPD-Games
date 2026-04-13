@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Heart, ChevronRight } from "lucide-react";
@@ -30,15 +31,17 @@ export function GamesTab({ user, savedGames }: GamesTabProps) {
               className="flex items-center gap-4 bg-card border border-border rounded-xl p-3 cursor-pointer hover:border-lime/30 transition-colors"
               data-testid={`saved-game-${game.id}`}
             >
-              <img
-                src={
-                  game.icon_url ||
-                  game.thumbnail_url ||
-                  "https://images.unsplash.com/photo-1637734373619-af1e76434bec?w=100&q=80"
-                }
-                alt={game.title}
-                className="w-14 h-14 rounded-lg object-cover"
-              />
+              <div className="relative w-14 h-14 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                {game.icon_url || game.thumbnail_url ? (
+                  <Image
+                    src={game.icon_url || game.thumbnail_url || ""}
+                    alt={game.title}
+                    fill
+                    className="object-cover"
+                    sizes="56px"
+                  />
+                ) : null}
+              </div>
               <div className="flex-1 min-w-0">
                 <h4 className="font-bold text-foreground truncate text-sm">
                   {game.title}

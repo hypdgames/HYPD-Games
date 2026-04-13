@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
@@ -193,7 +194,7 @@ export default function WalletPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               {settings?.logo_url ? (
-                <img src={settings.logo_url} alt="Logo" className="h-8" />
+                <Image src={settings.logo_url} alt="Logo" width={120} height={32} className="h-8 w-auto object-contain" />
               ) : (
                 <h1 className="font-heading text-xl text-lime tracking-tight">HYPD</h1>
               )}
@@ -229,7 +230,7 @@ export default function WalletPage() {
               <ArrowLeft className="w-5 h-5" />
             </button>
             {settings?.logo_url ? (
-              <img src={settings.logo_url} alt="Logo" className="h-8" />
+              <Image src={settings.logo_url} alt="Logo" width={120} height={32} className="h-8 w-auto object-contain" />
             ) : (
               <h1 className="font-heading text-xl text-lime tracking-tight">HYPD</h1>
             )}

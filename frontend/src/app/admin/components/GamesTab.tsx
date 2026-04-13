@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Gamepad2, Eye, EyeOff, Trash2, Loader2, CheckSquare, Square, XSquare, Tv, TvMinimalPlay } from "lucide-react";
@@ -110,12 +111,20 @@ export function GamesTab({ games, loading, onToggleVisibility, onToggleFeedVisib
               }
             </button>
 
-            <img
-              src={game.icon_url || game.thumbnail_url || "https://images.unsplash.com/photo-1637734373619-af1e76434bec?w=100&q=80"}
-              alt={game.title}
-              className="w-16 h-16 rounded-lg object-cover cursor-pointer"
+            <div
+              className="relative w-16 h-16 rounded-lg overflow-hidden bg-muted cursor-pointer flex-shrink-0"
               onClick={() => toggleSelection(game.id)}
-            />
+            >
+              {game.icon_url || game.thumbnail_url ? (
+                <Image
+                  src={game.icon_url || game.thumbnail_url || ""}
+                  alt={game.title}
+                  fill
+                  className="object-cover"
+                  sizes="64px"
+                />
+              ) : null}
+            </div>
 
             <div className="flex-1 min-w-0 cursor-pointer" onClick={() => toggleSelection(game.id)}>
               <div className="flex items-center gap-2 flex-wrap">

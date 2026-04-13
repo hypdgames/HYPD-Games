@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { 
   Target, Trophy, Calendar, Clock, Users, 
@@ -122,7 +123,7 @@ export default function ChallengesPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             {settings?.logo_url ? (
-              <img src={settings.logo_url} alt="Logo" className="h-8" />
+              <Image src={settings.logo_url} alt="Logo" width={120} height={32} className="h-8 w-auto object-contain" />
             ) : (
               <h1 className="font-heading text-xl text-lime tracking-tight">
                 HYPD

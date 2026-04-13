@@ -1,12 +1,9 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
 # IDE and editors
 .idea/
 .vscode/
 
 # Dependencies
 node_modules/
-/node_modules
 /.pnp
 .pnp.js
 .yarn/install-state.gz
@@ -16,26 +13,38 @@ node_modules/
 !.yarn/releases
 !.yarn/versions
 
-# Testing
-/coverage
-
-# Next.js
+# Next.js / frontend build artifacts
 /.next/
 /out/
 next-env.d.ts
 *.tsbuildinfo
 
-# Production builds
+# Generic build output and caches
 /build
 dist/
-dist
+.cache/
+coverage/
 
-# Environment files (comprehensive coverage)
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
 
+# Environment and credentials
+.env
+.env.*
+*.env
+*.env.*
+!*.env.example
 *token.json*
 *credentials.json*
+credentials.json
+.credentials
+*.pem
+*.key
 
-# Logs and debug files
+# Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -44,13 +53,9 @@ dump.rdb
 
 # System files
 .DS_Store
-*.pem
 
-# Python
-__pycache__/
-*pyc*
-venv/
-.venv/
+# Deployment
+.vercel
 
 # Development tools
 chainlit.md
@@ -58,13 +63,11 @@ chainlit.md
 .ipynb_checkpoints/
 .ac
 
-# Deployment
-.vercel
-
-# Data and databases
+# Project data
 agenthub/agents/youtube/db
+memory/test_credentials.md
 
-# Archive files and large assets
+# Archives and binaries
 **/*.zip
 **/*.tar.gz
 **/*.tar
@@ -73,139 +76,5 @@ agenthub/agents/youtube/db
 *.deb
 *.dylib
 
-# Build caches
-.cache/
-
 # Mobile development
-android-sdk/ frontend/node_modules/.cache/default-development/0.pack
-frontend/node_modules/.cache/default-development/0.pack
-frontend/node_modules/.cache/default-development/1.pack
-frontend/node_modules/.cache/default-development/2.pack
-frontend/node_modules/.cache/default-development/3.pack
-frontend/node_modules/.cache/default-development/4.pack
-frontend/node_modules/.cache/default-development/6.pack
-frontend/node_modules/.cache/default-development/7.pack
-frontend/node_modules/.cache/default-development/8.pack
-frontend/node_modules/.cache/default-development/10.pack
-frontend/node_modules/.cache/default-development/5.pack
-frontend/node_modules/.cache/default-development/9.pack
-frontend/node_modules/.cache/default-development/11.pack
-frontend/node_modules/.cache/default-development/12.pack
-frontend-new/node_modules/@next/swc-linux-arm64-gnu/next-swc.linux-arm64-gnu.node
-frontend-new/node_modules/@next/swc-linux-arm64-musl/next-swc.linux-arm64-musl.node
-frontend-old/node_modules/.cache/default-development/12.pack
-frontend-old/node_modules/.cache/default-development/1.pack
-frontend/node_modules/@next/swc-linux-arm64-musl/next-swc.linux-arm64-musl.node
-frontend/node_modules/@next/swc-linux-arm64-gnu/next-swc.linux-arm64-gnu.node
-
-# Environment files
-*.env
-*.env.*
-!*.env.example
-
-# Test credentials (contains admin passwords — never commit)
-memory/test_credentials.md
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
-credentials.json
-*.pem
-*.key
-.credentials
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
-credentials.json
-*.pem
-*.key
-.credentials
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
-credentials.json
-*.pem
-*.key
-.credentials
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
-credentials.json
-*.pem
-*.key
-.credentials
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
-credentials.json
-*.pem
-*.key
-.credentials
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
-credentials.json
-*.pem
-*.key
-.credentials
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
-credentials.json
-*.pem
-*.key
-.credentials
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
-credentials.json
-*.pem
-*.key
-.credentials
+android-sdk/
