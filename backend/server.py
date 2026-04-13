@@ -1277,6 +1277,95 @@ async def get_categories(db: AsyncSession = Depends(get_db)):
     _cache_set("categories", data)
     return data
 
+
+@api_router.get("/categories/details")
+async def get_category_details(db: AsyncSession = Depends(get_db)):
+    """Get category summaries plus preview games for Explore."""
+    cache_key = "categories:details"
+    cached = _cache_get(cache_key, ttl=300)
+    if cached is not None:
+        response = JSONResponse(content=cached)
+        response.headers["Cache-Control"] = "public, max-age=60, stale-while-revalidate=300"
+        return response
+
+    result = await db.execute(
+        select(
+            Game.id,
+            Game.title,
+            Game.description,
+            Game.category,
+            Game.thumbnail_url,
+            Game.icon_url,
+            Game.play_count,
+            Game.created_at,
+        )
+        .where(Game.is_visible.is_(True))
+        .order_by(Game.created_at.desc())
+    )
+    rows = result.all()
+
+    categories: dict[str, dict] = {}
+    for row in rows:
+        category_name = (row.category or "").strip()
+        if not category_name:
+            continue
+
+        entry = categories.setdefault(
+            category_name,
+            {
+                "name": category_name,
+                "game_count": 0,
+                "preview_img": None,
+                "first_game_id": None,
+                "top_play_count": -1,
+                "games": [],
+            },
+        )
+
+        entry["game_count"] += 1
+        if not entry["preview_img"]:
+            entry["preview_img"] = row.thumbnail_url or row.icon_url
+
+        play_count = row.play_count or 0
+        if play_count > entry["top_play_count"]:
+            entry["top_play_count"] = play_count
+            entry["first_game_id"] = row.id
+
+        if len(entry["games"]) < 8:
+            entry["games"].append(
+                {
+                    "id": row.id,
+                    "title": row.title,
+                    "description": row.description,
+                    "category": category_name,
+                    "thumbnail_url": row.thumbnail_url,
+                    "icon_url": row.icon_url,
+                    "play_count": play_count,
+                    "created_at": row.created_at.isoformat() if row.created_at else None,
+                }
+            )
+
+    data = {
+        "categories": sorted(
+            [
+                {
+                    "name": entry["name"],
+                    "game_count": entry["game_count"],
+                    "preview_img": entry["preview_img"],
+                    "first_game_id": entry["first_game_id"],
+                    "games": entry["games"],
+                }
+                for entry in categories.values()
+            ],
+            key=lambda item: (-item["game_count"], item["name"].lower()),
+        )
+    }
+    _cache_set(cache_key, data)
+
+    response = JSONResponse(content=data)
+    response.headers["Cache-Control"] = "public, max-age=60, stale-while-revalidate=300"
+    return response
+
 # ==================== COMMENTS ENDPOINTS ====================
 
 class CommentCreate(BaseModel):

@@ -12,7 +12,20 @@ import type { Game } from "@/types";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 const EXPLORE_CACHE_KEY = "hypd:explore_data";
 const EXPLORE_CACHE_TTL = 300 * 1000;
-const EXPLORE_LIMIT = 300;
+const EXPLORE_LIMIT = 500;
+
+interface ExploreCategorySummary {
+  name: string;
+  game_count: number;
+  preview_img?: string;
+  first_game_id?: string;
+  games: Game[];
+}
+
+interface ExploreCachePayload {
+  games: Game[];
+  categories: ExploreCategorySummary[];
+}
 
 function sessionGet<T>(key: string, ttl: number): T | null {
   try {
@@ -38,29 +51,6 @@ const CATEGORY_GRADIENTS: Record<string, string> = {
 
 function getCatGrad(cat: string) {
   return CATEGORY_GRADIENTS[cat] || CATEGORY_GRADIENTS.Default;
-}
-
-function fmtCount(n: number) {
-  return n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n);
-}
-
-function TrendingCard({ game, onClick }: { game: Game; onClick: () => void }) {
-  const imgSrc = game.thumbnail_url || game.icon_url || "";
-  return (
-    <motion.div whileTap={{ scale: 0.97 }} onClick={onClick} className="flex-shrink-0 w-[60%] max-w-[280px] squircle relative cursor-pointer" style={{ aspectRatio: "4/5" }} data-testid={`trending-card-${game.id}`}>
-      {imgSrc ? <Image src={imgSrc} alt={game.title} fill className="object-cover" sizes="(max-width: 540px) 60vw, 280px" /> : <div className="absolute inset-0 bg-muted" />}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
-      <div className="absolute bottom-0 left-0 right-0 p-4">
-        <p className="text-white font-bold text-base leading-tight line-clamp-2">{game.title}</p>
-        <p className="text-white/50 text-xs mt-1">{game.category}</p>
-      </div>
-      {(game.play_count ?? 0) > 0 && (
-        <div className="absolute bottom-4 right-4 play-badge flex items-center gap-1">
-          <Play className="w-3 h-3 fill-white text-white" /><span>{fmtCount(game.play_count ?? 0)}</span>
-        </div>
-      )}
-    </motion.div>
-  );
 }
 
 function GameTile({ game, onClick }: { game: Game; onClick: () => void }) {
@@ -162,25 +152,54 @@ function Section({ title, onViewAll, children }: { title: string; onViewAll?: ()
   );
 }
 
-function CategoryPage({ name, games, onBack, onClick }: { name: string; games: Game[]; onBack: () => void; onClick: (id: string) => void }) {
+function CategoryPage({ name, onBack, onClick }: { name: string; onBack: () => void; onClick: (id: string) => void }) {
+  const [games, setGames] = useState<Game[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    fetch(`${API_URL}/api/games?feed_only=false&category=${encodeURIComponent(name)}&limit=1000`)
+      .then(res => res.ok ? res.json() : [])
+      .then((data: Game[]) => {
+        if (!cancelled) {
+          setGames(data);
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [name]);
+
   return (
     <div className="min-h-screen hook-gradient-bg pb-28">
       <div className="sticky top-0 z-30 bg-background/90 backdrop-blur-xl px-5 py-3.5 flex items-center gap-3">
         <button onClick={onBack} className="w-10 h-10 rounded-full bg-muted flex items-center justify-center" data-testid="back-btn"><ArrowLeft className="w-5 h-5" /></button>
         <h1 className="font-bold text-lg">{name}</h1><span className="text-muted-foreground text-sm">({games.length})</span>
       </div>
-      <div className="grid grid-cols-3 gap-3 p-5">
-        {games.map(game => {
-          const imgSrc = game.icon_url || game.thumbnail_url || "";
-          return (
-            <motion.div key={game.id} whileTap={{ scale: 0.96 }} onClick={() => onClick(game.id)} className="squircle-sm relative cursor-pointer" style={{ aspectRatio: "1" }}>
-              {imgSrc ? <Image src={imgSrc} alt={game.title} fill className="object-cover" sizes="(max-width: 540px) 33vw, 160px" /> : <div className="w-full h-full bg-muted" />}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 p-1.5"><p className="text-white font-bold text-[10px] leading-tight line-clamp-2">{game.title}</p></div>
-            </motion.div>
-          );
-        })}
-      </div>
+      {loading ? (
+        <div className="flex justify-center py-16">
+          <Loader2 className="w-8 h-8 text-violet animate-spin" />
+        </div>
+      ) : (
+        <div className="grid grid-cols-3 gap-3 p-5">
+          {games.map(game => {
+            const imgSrc = game.icon_url || game.thumbnail_url || "";
+            return (
+              <motion.div key={game.id} whileTap={{ scale: 0.96 }} onClick={() => onClick(game.id)} className="squircle-sm relative cursor-pointer" style={{ aspectRatio: "1" }}>
+                {imgSrc ? <Image src={imgSrc} alt={game.title} fill className="object-cover" sizes="(max-width: 540px) 33vw, 160px" /> : <div className="w-full h-full bg-muted" />}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-1.5"><p className="text-white font-bold text-[10px] leading-tight line-clamp-2">{game.title}</p></div>
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -190,6 +209,7 @@ export default function ExplorePage() {
   const { user } = useAuthStore();
 
   const [games, setGames] = useState<Game[]>([]);
+  const [categoriesWithGames, setCategoriesWithGames] = useState<ExploreCategorySummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchActive, setSearchActive] = useState(false);
@@ -197,11 +217,28 @@ export default function ExplorePage() {
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const cached = sessionGet<Game[]>(EXPLORE_CACHE_KEY, EXPLORE_CACHE_TTL);
-    if (cached) { setGames(cached); setLoading(false); return; }
-    fetch(`${API_URL}/api/games?feed_only=false&limit=${EXPLORE_LIMIT}`)
-      .then(res => res.ok ? res.json() : [])
-      .then(gData => { setGames(gData); sessionSet(EXPLORE_CACHE_KEY, gData); setLoading(false); })
+    const cached = sessionGet<ExploreCachePayload>(EXPLORE_CACHE_KEY, EXPLORE_CACHE_TTL);
+    if (cached && !Array.isArray(cached) && Array.isArray(cached.games) && Array.isArray(cached.categories)) {
+      setGames(cached.games);
+      setCategoriesWithGames(cached.categories);
+      setLoading(false);
+      return;
+    }
+
+    Promise.all([
+      fetch(`${API_URL}/api/games?feed_only=false&limit=${EXPLORE_LIMIT}`).then(res => res.ok ? res.json() : []),
+      fetch(`${API_URL}/api/categories/details`).then(res => res.ok ? res.json() : { categories: [] }),
+    ])
+      .then(([gData, categoryData]) => {
+        const payload = {
+          games: gData as Game[],
+          categories: (categoryData.categories || []) as ExploreCategorySummary[],
+        };
+        setGames(payload.games);
+        setCategoriesWithGames(payload.categories);
+        sessionSet(EXPLORE_CACHE_KEY, payload);
+        setLoading(false);
+      })
       .catch(() => setLoading(false));
   }, []);
 
@@ -209,27 +246,8 @@ export default function ExplorePage() {
 
   const playGame = (id: string) => router.push(`/play/${id}`);
 
-  const trending = useMemo(
-    () => [...games].sort((a, b) => (b.play_count || 0) - (a.play_count || 0)),
-    [games]
-  );
   const newGames = useMemo(
     () => [...games].sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()).slice(0, 10),
-    [games]
-  );
-
-  // Derive every category directly from the games list — always in sync, no separate API call
-  const categoriesWithGames = useMemo(
-    () =>
-      Array.from(new Set(games.map(g => g.category).filter((c): c is string => !!c)))
-        .map(cat => {
-          const catGames = games.filter(g => g.category === cat);
-          const previewImg = catGames.find(g => g.thumbnail_url)?.thumbnail_url || catGames.find(g => g.icon_url)?.icon_url;
-          const firstGameId = [...catGames].sort((a, b) => (b.play_count || 0) - (a.play_count || 0))[0]?.id;
-          return { name: cat, games: catGames, previewImg, firstGameId };
-        })
-        .filter(c => c.games.length >= 1)
-        .sort((a, b) => b.games.length - a.games.length),
     [games]
   );
 
@@ -243,7 +261,7 @@ export default function ExplorePage() {
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-10 h-10 text-violet animate-spin" /></div>;
 
-  if (selectedCategory) return <CategoryPage name={selectedCategory} games={games.filter(g => g.category === selectedCategory)} onBack={() => setSelectedCategory(null)} onClick={playGame} />;
+  if (selectedCategory) return <CategoryPage name={selectedCategory} onBack={() => setSelectedCategory(null)} onClick={playGame} />;
 
   return (
     <div className="min-h-screen hook-gradient-bg pb-28" data-testid="explore-page">
@@ -299,9 +317,8 @@ export default function ExplorePage() {
 
       <div className="space-y-7">
         {newGames.length > 0 && <Section title="New Games">{newGames.map(g => <GameTile key={g.id} game={g} onClick={() => playGame(g.id)} />)}</Section>}
-        {categoriesWithGames.length > 0 && <Section title="Categories">{categoriesWithGames.map(({ name, games: g, previewImg, firstGameId }) => <CategoryTile key={name} name={name} gameCount={g.length} previewImg={previewImg} firstGameId={firstGameId} onSelect={() => setSelectedCategory(name)} onQuickPlay={() => playGame(firstGameId!)} />)}</Section>}
-        {trending.length > 0 && <Section title="Trending">{trending.slice(0, 8).map(g => <TrendingCard key={g.id} game={g} onClick={() => playGame(g.id)} />)}</Section>}
-        {categoriesWithGames.slice(0, 5).map(({ name, games: catGames }) => (
+        {categoriesWithGames.length > 0 && <Section title="Categories">{categoriesWithGames.map(({ name, game_count, preview_img, first_game_id }) => <CategoryTile key={name} name={name} gameCount={game_count} previewImg={preview_img} firstGameId={first_game_id} onSelect={() => setSelectedCategory(name)} onQuickPlay={() => playGame(first_game_id!)} />)}</Section>}
+        {categoriesWithGames.map(({ name, games: catGames }) => (
           <Section key={name} title={name} onViewAll={() => setSelectedCategory(name)}>{catGames.slice(0, 8).map(g => <GameTile key={g.id} game={g} onClick={() => playGame(g.id)} />)}</Section>
         ))}
       </div>
