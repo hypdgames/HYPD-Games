@@ -129,6 +129,11 @@ def _invalidate_all_game_caches() -> None:
     _invalidate_video_batch_cache()
 
 
+def _invalidate_settings_cache() -> None:
+    """Bust cached settings after admin updates."""
+    _api_cache.pop("settings", None)
+
+
 def _parse_id_list(raw_ids: Optional[str], max_ids: int) -> list[str]:
     """Parse a comma-separated list of ids into a bounded, de-duplicated list."""
     if not raw_ids:
@@ -1800,11 +1805,19 @@ async def record_play_session(
 # ==================== SETTINGS ENDPOINTS ====================
 
 @api_router.get("/settings")
-async def get_settings(db: AsyncSession = Depends(get_db)):
+async def get_settings(response: Response, db: AsyncSession = Depends(get_db)):
     """Get app settings"""
+    cached = _cache_get("settings", ttl=300)
+    if cached is not None:
+        response.headers["Cache-Control"] = "public, max-age=300, stale-while-revalidate=600"
+        return cached
+
     result = await db.execute(select(AppSettings))
     settings = result.scalars().all()
-    return {s.key: s.value for s in settings}
+    payload = {s.key: s.value for s in settings}
+    _cache_set("settings", payload)
+    response.headers["Cache-Control"] = "public, max-age=300, stale-while-revalidate=600"
+    return payload
 
 @api_router.post("/admin/settings")
 async def update_settings(
@@ -1827,6 +1840,7 @@ async def update_settings(
             db.add(AppSettings(id=str(uuid.uuid4()), key=key, value=value))
     
     await db.commit()
+    _invalidate_settings_cache()
     return {"success": True}
 
 @api_router.post("/admin/upload-logo")
@@ -2954,7 +2968,7 @@ async def get_global_leaderboard(
     db: AsyncSession = Depends(get_db)
 ):
     """Get global leaderboard (top players by total play time and games)"""
-    cache_key = "leaderboard:global"
+    cache_key = f"leaderboard:global:{limit}"
     cached = _cache_get(cache_key, ttl=120)
     if cached is not None:
         response = JSONResponse(content={"leaderboard": cached, "cached": True})
@@ -2990,7 +3004,7 @@ async def get_game_leaderboard(
     db: AsyncSession = Depends(get_db)
 ):
     """Get leaderboard for a specific game"""
-    cache_key = f"leaderboard:game:{game_id}"
+    cache_key = f"leaderboard:game:{game_id}:{limit}"
     cached = _cache_get(cache_key, ttl=120)
     if cached is not None:
         response = JSONResponse(content={"leaderboard": cached, "cached": True})

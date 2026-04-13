@@ -73,6 +73,7 @@ export interface AppSettings {
   logo_height?: number;
   site_name?: string;
   favicon_url?: string;
+  gmz_video_ads_enabled?: string;
   primary_color?: string;
   accent_color?: string;
   background_color?: string;

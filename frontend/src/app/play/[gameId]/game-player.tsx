@@ -85,7 +85,7 @@ export default function GamePlayer() {
   const params = useParams();
   const router = useRouter();
   const gameId = params.gameId as string;
-  const { user, token } = useAuthStore();
+  const { user, token, settings, fetchSettings } = useAuthStore();
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const startTimeRef = useRef<number | null>(null);
@@ -107,12 +107,21 @@ export default function GamePlayer() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameId]);
 
+  useEffect(() => {
+    if (settings.gmz_video_ads_enabled === undefined) {
+      fetchSettings();
+    }
+  }, [fetchSettings, settings.gmz_video_ads_enabled]);
+
+  useEffect(() => {
+    if (settings.gmz_video_ads_enabled !== undefined) {
+      setGmzAdsEnabled(settings.gmz_video_ads_enabled !== "false");
+    }
+  }, [settings.gmz_video_ads_enabled]);
+
   const fetchGameDetails = async () => {
     try {
-      const [gameRes, settingsRes] = await Promise.all([
-        fetch(`${API_URL}/api/games/${gameId}`),
-        fetch(`${API_URL}/api/settings`),
-      ]);
+      const gameRes = await fetch(`${API_URL}/api/games/${gameId}`);
       if (gameRes.ok) {
         const game = await gameRes.json();
         if (game.source === "gamemonetize" && game.embed_url) {
@@ -120,10 +129,6 @@ export default function GamePlayer() {
           const hash = game.embed_url.replace(/\/$/, "").split("/").pop();
           if (hash) setGmzHash(hash);
         }
-      }
-      if (settingsRes.ok) {
-        const settings = await settingsRes.json();
-        setGmzAdsEnabled(settings.gmz_video_ads_enabled !== "false");
       }
     } catch {
       // non-fatal — walkthrough button just won't show

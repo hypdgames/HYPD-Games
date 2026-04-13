@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
+import { useAuthStore } from "@/store";
 import { AppSettings } from "@/types";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 // Convert hex to HSL string for CSS variables
 function hexToHSL(hex: string): string {
@@ -43,7 +42,7 @@ function hexToHSL(hex: string): string {
 }
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
-  const [mounted, setMounted] = useState(false);
+  const settings = useAuthStore((state) => state.settings);
   const faviconLinkRef = useRef<HTMLLinkElement | null>(null);
   const appleLinkRef = useRef<HTMLLinkElement | null>(null);
 
@@ -98,33 +97,12 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (!mounted) return;
-
-    const fetchSettings = async () => {
-      try {
-        const res = await fetch(`${API_URL}/api/settings`);
-        if (res.ok) {
-          const data = await res.json();
-          applyColorSettings(data);
-          if (data.favicon_url) {
-            updateFavicon(data.favicon_url);
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching settings:", error);
-      }
-    };
-
-    fetchSettings();
-    
-    // Re-fetch settings every 60 seconds to pick up changes
-    const interval = setInterval(fetchSettings, 60000);
-    return () => clearInterval(interval);
-  }, [mounted]);
+    if (!settings || Object.keys(settings).length === 0) return;
+    applyColorSettings(settings);
+    if (settings.favicon_url) {
+      updateFavicon(settings.favicon_url);
+    }
+  }, [settings]);
 
   return <>{children}</>;
 }

@@ -122,6 +122,10 @@ export const useAuthStore = create<AuthStore>()(
 
       fetchSettings: async () => {
         try {
+          const currentSettings = get().settings;
+          if (Object.keys(currentSettings).length > 0) {
+            return;
+          }
           const res = await fetch(`${API_URL}/api/settings`);
           if (res.ok) {
             const data = await res.json();
