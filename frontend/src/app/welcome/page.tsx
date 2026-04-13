@@ -191,7 +191,7 @@ export default function WelcomePage() {
 
   // Fetch game images for slideshow
   useEffect(() => {
-    fetch(`${API_URL}/api/games`)
+    fetch(`${API_URL}/api/games?limit=24`)
       .then(r => r.json())
       .then((data: Array<{ thumbnail_url?: string; icon_url?: string }>) => {
         const imgs = data.map(g => g.thumbnail_url || g.icon_url || "").filter(Boolean);

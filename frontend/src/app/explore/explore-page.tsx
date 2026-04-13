@@ -198,7 +198,7 @@ export default function ExplorePage() {
   useEffect(() => {
     const cached = sessionGet<Game[]>(EXPLORE_CACHE_KEY, EXPLORE_CACHE_TTL);
     if (cached) { setGames(cached); setLoading(false); return; }
-    fetch(`${API_URL}/api/games?feed_only=false`)
+    fetch(`${API_URL}/api/games?feed_only=false&limit=500`)
       .then(res => res.ok ? res.json() : [])
       .then(gData => { setGames(gData); sessionSet(EXPLORE_CACHE_KEY, gData); setLoading(false); })
       .catch(() => setLoading(false));

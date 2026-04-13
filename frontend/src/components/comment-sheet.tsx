@@ -65,7 +65,7 @@ export function CommentSheet({ gameId, gameTitle, isOpen, onClose, onCommentPost
       .then(d => setComments(d.comments || []))
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [isOpen, gameId]);
+  }, [isOpen, gameId, token]);
 
   useEffect(() => {
     if (isOpen) setTimeout(() => inputRef.current?.focus(), 400);

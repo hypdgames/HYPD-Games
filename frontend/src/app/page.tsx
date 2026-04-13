@@ -222,7 +222,7 @@ export default function GameFeed() {
     try {
       const headers: Record<string, string> = {};
       if (token) headers["Authorization"] = `Bearer ${token}`;
-      const res = await fetch(`${API_URL}/api/games/feed?seed=${feedSeed.current}`, { headers });
+      const res = await fetch(`${API_URL}/api/games/feed?seed=${feedSeed.current}&limit=300`, { headers });
       if (!res.ok) return;
       const data: Game[] = await res.json();
       setGames(data);

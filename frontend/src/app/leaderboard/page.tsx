@@ -49,7 +49,7 @@ export default function LeaderboardPage() {
 
   const fetchGames = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/games`);
+      const res = await fetch(`${API_URL}/api/games?limit=200`);
       if (res.ok) setGames(await res.json());
     } catch (e) { console.error(e); }
   };

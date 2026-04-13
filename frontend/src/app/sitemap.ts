@@ -1,7 +1,7 @@
 import { MetadataRoute } from "next";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://hypd-games-production.up.railway.app";
-const SITE_URL = "https://hypd.games";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://hypd.games";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Static pages
@@ -49,8 +49,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.8,
       }));
     }
-  } catch (error) {
-    console.error("Error fetching games for sitemap:", error);
+  } catch {
+    // Fall back to the static routes if the backend is unavailable during build.
   }
 
   return [...staticPages, ...gamePages];

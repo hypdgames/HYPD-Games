@@ -14,7 +14,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 export default function LikedPage() {
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { user, token } = useAuthStore();
 
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,15 +24,16 @@ export default function LikedPage() {
       setLoading(false);
       return;
     }
-    fetch(`${API_URL}/api/games?feed_only=false`)
+    fetch(`${API_URL}/api/auth/saved-games`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
       .then(res => res.ok ? res.json() : [])
-      .then((allGames: Game[]) => {
-        const savedSet = new Set(user.saved_games);
-        setGames(allGames.filter(g => savedSet.has(g.id)));
+      .then((savedGames: Game[]) => {
+        setGames(savedGames);
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [user]);
+  }, [user, token]);
 
   const playGame = (id: string) => router.push(`/play/${id}`);
 

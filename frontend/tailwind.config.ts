@@ -15,8 +15,8 @@ const config: Config = {
     },
     extend: {
       fontFamily: {
-        sans: ["'DM Sans'", "sans-serif"],
-        heading: ["'DM Sans'", "sans-serif"],
+        sans: ["system-ui", "-apple-system", "BlinkMacSystemFont", "\"Segoe UI\"", "sans-serif"],
+        heading: ["system-ui", "-apple-system", "BlinkMacSystemFont", "\"Segoe UI\"", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",

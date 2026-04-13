@@ -88,6 +88,9 @@ game_files_cache: dict = {}
 # ── Simple in-memory API cache — reduces Supabase round-trips significantly ───
 _api_cache: dict = {}  # {key: {"data": Any, "ts": float}}
 API_CACHE_MAX_ENTRIES = 32
+PUBLIC_FEED_LIMIT = 300
+PUBLIC_GAMES_LIMIT = 500
+PUBLIC_GAMES_MAX_LIMIT = 1000
 
 
 def _prune_api_cache(max_entries: int = API_CACHE_MAX_ENTRIES) -> None:
@@ -753,10 +756,13 @@ async def get_games(
     category: Optional[str] = None,
     visible_only: bool = True,
     feed_only: bool = True,
+    limit: Optional[int] = None,
     db: AsyncSession = Depends(get_db)
 ):
     """Get games for the feed/explore. Results cached in memory for 5 minutes to avoid DB round-trips."""
-    cache_key = f"games:feed={feed_only}:cat={category}"
+    effective_limit = limit if limit is not None else (PUBLIC_FEED_LIMIT if feed_only else PUBLIC_GAMES_LIMIT)
+    effective_limit = max(1, min(effective_limit, PUBLIC_GAMES_MAX_LIMIT))
+    cache_key = f"games:feed={feed_only}:cat={category}:limit={effective_limit}"
     cached = _cache_get(cache_key, ttl=300)  # 5 min TTL — long enough to avoid frequent DB hits
     if cached is not None:
         response = JSONResponse(content=cached)
@@ -771,7 +777,7 @@ async def get_games(
     if feed_only:
         query = query.where(Game.show_in_feed.is_not(False))
 
-    query = query.order_by(Game.created_at.desc())
+    query = query.order_by(Game.created_at.desc()).limit(effective_limit)
     result = await db.execute(query)
     games = result.scalars().all()
 
@@ -859,6 +865,7 @@ async def get_comment_counts(response: Response, db: AsyncSession = Depends(get_
 @api_router.get("/games/feed")
 async def get_personalized_feed(
     seed: str = "",
+    limit: int = PUBLIC_FEED_LIMIT,
     user: Optional[User] = Depends(get_optional_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -873,11 +880,15 @@ async def get_personalized_feed(
     - Guests receive a pure seeded-random shuffle with no category bias.
     """
     # 1. Base game list (re-use backend in-memory cache populated by /games)
-    cache_key = "games:feed=True:cat=None"
+    limit = max(1, min(limit, PUBLIC_GAMES_MAX_LIMIT))
+    cache_key = f"games:feed=True:cat=None:limit={limit}"
     games_data = _cache_get(cache_key, ttl=300)
     if games_data is None:
         result = await db.execute(
-            select(Game).where(Game.is_visible.is_(True), Game.show_in_feed.is_not(False))
+            select(Game)
+            .where(Game.is_visible.is_(True), Game.show_in_feed.is_not(False))
+            .order_by(Game.created_at.desc())
+            .limit(limit)
         )
         games_data = [GameFeedResponse(**g.to_dict()).model_dump() for g in result.scalars().all()]
         _cache_set(cache_key, games_data)
@@ -904,6 +915,25 @@ async def get_personalized_feed(
         return rand + boost
 
     return sorted(games_data, key=_score, reverse=True)
+
+
+@api_router.get("/auth/saved-games")
+async def get_saved_games(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return only the authenticated user's saved games to avoid downloading the full catalog."""
+    saved_ids = user.saved_games or []
+    if not saved_ids:
+        return []
+
+    result = await db.execute(
+        select(Game)
+        .where(Game.id.in_(saved_ids), Game.is_visible.is_(True))
+        .order_by(Game.created_at.desc())
+    )
+    games = {game.id: GameFeedResponse(**game.to_dict()).model_dump() for game in result.scalars().all()}
+    return [games[game_id] for game_id in saved_ids if game_id in games]
 
 
 @api_router.get("/games/recently-played")

@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { DM_Sans } from "next/font/google";
 import "./globals.css";
 import BottomNav from "@/components/bottom-nav";
 import { Providers } from "@/components/providers";
@@ -7,17 +6,13 @@ import { ToastProvider } from "@/components/toast-provider";
 import { ServiceWorkerRegistration } from "@/components/service-worker";
 import { SettingsProvider } from "@/components/settings-provider";
 
-const dmSans = DM_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-dm-sans",
-});
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://hypd.games";
 
 export const metadata: Metadata = {
   title: "HYPD Games - Play Instant Games",
   description: "TikTok-style instant gaming platform. Swipe through endless games and play instantly - no downloads required!",
   manifest: "/manifest.json",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_API_URL || "https://hypd.games"),
+  metadataBase: new URL(SITE_URL),
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -30,7 +25,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: process.env.NEXT_PUBLIC_API_URL || "https://hypd.games",
+    url: SITE_URL,
     siteName: "HYPD Games",
     title: "HYPD Games - Play Instant Games",
     description: "TikTok-style instant gaming platform. Swipe through endless games and play instantly!",
@@ -90,7 +85,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://img.gamemonetize.com" />
         <link rel="dns-prefetch" href="https://img.gamemonetize.com" />
       </head>
-      <body className={`${dmSans.variable} font-sans antialiased`}>
+      <body className="font-sans antialiased">
         <Providers>
           <SettingsProvider>
             <ServiceWorkerRegistration />
