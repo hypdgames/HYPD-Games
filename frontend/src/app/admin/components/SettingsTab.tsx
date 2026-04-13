@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRef, useState, useEffect } from "react";
 import { Upload, Image as ImageIcon, Trash2, Globe, Check, Loader2, Gamepad2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -254,12 +255,16 @@ export function SettingsTab({
           <label className="text-sm text-muted-foreground mb-2 block">Preview</label>
           <div className="bg-background border border-border rounded-lg p-4 flex items-center justify-center min-h-[100px]">
             {logoPreview ? (
-              <img 
-                src={logoPreview} 
-                alt="Logo preview" 
-                style={{ height: `${logoHeight}px` }}
-                className="object-contain max-w-full"
-              />
+              <div className="relative max-w-full" style={{ height: `${logoHeight}px`, width: "min(280px, 100%)" }}>
+                <Image
+                  src={logoPreview}
+                  alt="Logo preview"
+                  fill
+                  className="object-contain"
+                  sizes="280px"
+                  unoptimized
+                />
+              </div>
             ) : (
               <div className="text-muted-foreground text-sm">
                 No logo set - showing default &quot;{siteName}&quot; text
@@ -338,10 +343,13 @@ export function SettingsTab({
           <div className="bg-background border border-border rounded-lg p-4 flex items-center gap-4">
             <div className="w-8 h-8 rounded border border-border flex items-center justify-center overflow-hidden">
               {faviconPreview ? (
-                <img 
-                  src={faviconPreview} 
-                  alt="Favicon preview" 
+                <Image
+                  src={faviconPreview}
+                  alt="Favicon preview"
+                  width={32}
+                  height={32}
                   className="w-full h-full object-contain"
+                  unoptimized
                 />
               ) : (
                 <span className="text-xs text-muted-foreground">16x</span>
@@ -349,10 +357,13 @@ export function SettingsTab({
             </div>
             <div className="w-12 h-12 rounded border border-border flex items-center justify-center overflow-hidden">
               {faviconPreview ? (
-                <img 
-                  src={faviconPreview} 
-                  alt="Favicon preview" 
+                <Image
+                  src={faviconPreview}
+                  alt="Favicon preview"
+                  width={48}
+                  height={48}
                   className="w-full h-full object-contain"
+                  unoptimized
                 />
               ) : (
                 <span className="text-xs text-muted-foreground">32x</span>

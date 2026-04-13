@@ -134,6 +134,17 @@ def _invalidate_settings_cache() -> None:
     _api_cache.pop("settings", None)
 
 
+def _public_user_summary(row) -> dict:
+    """Serialize the lightweight user shape used by social surfaces."""
+    return {
+        "id": row.id,
+        "username": row.username,
+        "avatar_url": row.avatar_url,
+        "total_games_played": row.total_games_played or 0,
+        "total_play_time": row.total_play_time or 0,
+    }
+
+
 def _parse_id_list(raw_ids: Optional[str], max_ids: int) -> list[str]:
     """Parse a comma-separated list of ids into a bounded, de-duplicated list."""
     if not raw_ids:
@@ -2741,45 +2752,57 @@ async def search_users(
     """Search for users by username"""
     if len(q) < 2:
         return {"users": []}
-    
+
+    limit = max(1, min(limit, 50))
     result = await db.execute(
-        select(User)
+        select(
+            User.id,
+            User.username,
+            User.avatar_url,
+            User.total_games_played,
+            User.total_play_time,
+        )
         .where(User.username.ilike(f"%{q}%"))
-        .where(User.id != user.id)  # Exclude current user
+        .where(User.id != user.id)
         .limit(limit)
     )
-    users = result.scalars().all()
-    
-    # Get friendship status for each user
-    users_with_status = []
-    for u in users:
-        # Check if there's an existing friendship
-        friendship = await db.execute(
-            select(Friendship).where(
-                or_(
-                    and_(Friendship.requester_id == user.id, Friendship.addressee_id == u.id),
-                    and_(Friendship.requester_id == u.id, Friendship.addressee_id == user.id)
-                )
+    user_rows = result.all()
+    if not user_rows:
+        return {"users": []}
+
+    user_ids = [row.id for row in user_rows]
+    friendship_result = await db.execute(
+        select(
+            Friendship.requester_id,
+            Friendship.addressee_id,
+            Friendship.status,
+        ).where(
+            or_(
+                and_(Friendship.requester_id == user.id, Friendship.addressee_id.in_(user_ids)),
+                and_(Friendship.addressee_id == user.id, Friendship.requester_id.in_(user_ids)),
             )
         )
-        f = friendship.scalar_one_or_none()
-        
+    )
+
+    friendship_status_by_user: dict[str, str] = {}
+    for requester_id, addressee_id, friendship_status in friendship_result.all():
+        other_user_id = addressee_id if requester_id == user.id else requester_id
         status = "none"
-        if f:
-            if f.status == FriendshipStatus.ACCEPTED:
-                status = "friends"
-            elif f.status == FriendshipStatus.PENDING:
-                if f.requester_id == user.id:
-                    status = "pending_sent"
-                else:
-                    status = "pending_received"
-        
-        users_with_status.append({
-            **u.to_dict(),
-            "friendship_status": status
-        })
-    
-    return {"users": users_with_status}
+        if friendship_status == FriendshipStatus.ACCEPTED:
+            status = "friends"
+        elif friendship_status == FriendshipStatus.PENDING:
+            status = "pending_sent" if requester_id == user.id else "pending_received"
+        friendship_status_by_user[other_user_id] = status
+
+    return {
+        "users": [
+            {
+                **_public_user_summary(row),
+                "friendship_status": friendship_status_by_user.get(row.id, "none"),
+            }
+            for row in user_rows
+        ]
+    }
 
 # ---- Friends ----
 
@@ -2802,16 +2825,26 @@ async def get_friends(
         )
     )
     friendships = result.scalars().all()
-    
-    friends = []
-    for f in friendships:
-        friend_id = f.addressee_id if f.requester_id == user.id else f.requester_id
-        friend_result = await db.execute(select(User).where(User.id == friend_id))
-        friend = friend_result.scalar_one_or_none()
-        if friend:
-            friends.append(friend.to_dict())
-    
-    return {"friends": friends}
+
+    friend_ids = [
+        f.addressee_id if f.requester_id == user.id else f.requester_id
+        for f in friendships
+    ]
+    if not friend_ids:
+        return {"friends": []}
+
+    friend_rows = await db.execute(
+        select(
+            User.id,
+            User.username,
+            User.avatar_url,
+            User.total_games_played,
+            User.total_play_time,
+        ).where(User.id.in_(friend_ids))
+    )
+    friends_by_id = {row.id: _public_user_summary(row) for row in friend_rows.all()}
+
+    return {"friends": [friends_by_id[friend_id] for friend_id in friend_ids if friend_id in friends_by_id]}
 
 @api_router.get("/friends/requests")
 async def get_friend_requests(
@@ -2828,18 +2861,32 @@ async def get_friend_requests(
         )
     )
     requests = result.scalars().all()
-    
-    pending = []
-    for r in requests:
-        requester_result = await db.execute(select(User).where(User.id == r.requester_id))
-        requester = requester_result.scalar_one_or_none()
-        if requester:
-            pending.append({
-                "request_id": r.id,
-                "user": requester.to_dict(),
-                "created_at": r.created_at.isoformat()
-            })
-    
+
+    requester_ids = [r.requester_id for r in requests]
+    if not requester_ids:
+        return {"requests": []}
+
+    requester_rows = await db.execute(
+        select(
+            User.id,
+            User.username,
+            User.avatar_url,
+            User.total_games_played,
+            User.total_play_time,
+        ).where(User.id.in_(requester_ids))
+    )
+    requester_by_id = {row.id: _public_user_summary(row) for row in requester_rows.all()}
+
+    pending = [
+        {
+            "request_id": r.id,
+            "user": requester_by_id[r.requester_id],
+            "created_at": r.created_at.isoformat()
+        }
+        for r in requests
+        if r.requester_id in requester_by_id
+    ]
+
     return {"requests": pending}
 
 @api_router.post("/friends/request")
