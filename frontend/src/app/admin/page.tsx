@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Gamepad2, Globe, Upload, Users, BarChart3, Settings, Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -90,22 +90,12 @@ export default function AdminDashboard() {
   const [primaryColor, setPrimaryColor] = useState<string>("#CCFF00");
   const [gamemonetizeEnabled, setGamemonetizeEnabled] = useState<boolean>(true);
   const [gmzVideoAdsEnabled, setGmzVideoAdsEnabled] = useState<boolean>(true);
+  const importedGmzIds = useMemo(
+    () => new Set(games.map((game) => game.gd_game_id).filter((id): id is string => !!id)),
+    [games]
+  );
 
-  // Check admin status
-  useEffect(() => {
-    // Wait for auth to hydrate before checking admin status
-    if (authLoading) return;
-    
-    if (!user?.is_admin) {
-      router.push("/profile");
-      return;
-    }
-    fetchGames();
-    fetchSettings();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, authLoading]);
-
-  const fetchGames = async () => {
+  const fetchGames = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/api/admin/games`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -118,9 +108,9 @@ export default function AdminDashboard() {
       console.error("Error fetching games:", error);
     }
     setLoading(false);
-  };
+  }, [token]);
 
-  const fetchSettings = async () => {
+  const fetchSettings = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/api/settings`);
       if (res.ok) {
@@ -137,7 +127,22 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error("Error fetching settings:", error);
     }
-  };
+  }, []);
+
+  // Check admin status
+  useEffect(() => {
+    if (authLoading) return;
+
+    if (!user?.is_admin) {
+      router.push("/profile");
+      return;
+    }
+
+    if (!token) return;
+
+    fetchGames();
+    fetchSettings();
+  }, [user, authLoading, token, router, fetchGames, fetchSettings]);
 
   // Fetch users for management
   const fetchUsers = async (page: number = 1, search?: string, filter?: string) => {
@@ -397,7 +402,7 @@ export default function AdminDashboard() {
 
   const selectAllGmzGames = () => {
     const selectableIds = gmzGames
-      .filter(g => !games.some(existing => existing.gd_game_id === `gmz-${g.gmz_game_id}`))
+      .filter(g => !importedGmzIds.has(`gmz-${g.gmz_game_id}`))
       .map(g => g.gmz_game_id);
     setSelectedGmzGames(new Set(selectableIds));
   };
