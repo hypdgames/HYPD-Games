@@ -2968,6 +2968,7 @@ async def get_global_leaderboard(
     db: AsyncSession = Depends(get_db)
 ):
     """Get global leaderboard (top players by total play time and games)"""
+    limit = max(1, min(limit, 100))
     cache_key = f"leaderboard:global:{limit}"
     cached = _cache_get(cache_key, ttl=120)
     if cached is not None:
@@ -2976,19 +2977,25 @@ async def get_global_leaderboard(
         return response
     
     result = await db.execute(
-        select(User)
+        select(
+            User.id,
+            User.username,
+            User.avatar_url,
+            User.total_games_played,
+            User.total_play_time,
+        )
         .order_by(desc(User.total_games_played), desc(User.total_play_time))
         .limit(limit)
     )
-    users = result.scalars().all()
+    users = result.all()
     
     leaderboard = []
-    for i, u in enumerate(users, 1):
+    for i, user_row in enumerate(users, 1):
         leaderboard.append({
             "rank": i,
-            "user": {"id": u.id, "username": u.username, "avatar_url": getattr(u, 'avatar_url', None)},
-            "total_games": u.total_games_played or 0,
-            "total_time": u.total_play_time or 0
+            "user": {"id": user_row.id, "username": user_row.username, "avatar_url": user_row.avatar_url},
+            "total_games": user_row.total_games_played or 0,
+            "total_time": user_row.total_play_time or 0
         })
     
     _cache_set(cache_key, leaderboard)
@@ -3004,6 +3011,7 @@ async def get_game_leaderboard(
     db: AsyncSession = Depends(get_db)
 ):
     """Get leaderboard for a specific game"""
+    limit = max(1, min(limit, 100))
     cache_key = f"leaderboard:game:{game_id}:{limit}"
     cached = _cache_get(cache_key, ttl=120)
     if cached is not None:
@@ -3013,16 +3021,16 @@ async def get_game_leaderboard(
     
     # Only fetch users who have high_scores (filter in DB where possible)
     result = await db.execute(
-        select(User).where(User.high_scores.is_not(None))
+        select(User.id, User.username, User.avatar_url, User.high_scores).where(User.high_scores.is_not(None))
     )
-    users = result.scalars().all()
+    users = result.all()
     
     scores = []
-    for u in users:
-        if u.high_scores and game_id in u.high_scores:
+    for user_row in users:
+        if user_row.high_scores and game_id in user_row.high_scores:
             scores.append({
-                "user": {"id": u.id, "username": u.username, "avatar_url": getattr(u, 'avatar_url', None)},
-                "score": u.high_scores[game_id]
+                "user": {"id": user_row.id, "username": user_row.username, "avatar_url": user_row.avatar_url},
+                "score": user_row.high_scores[game_id]
             })
     
     scores.sort(key=lambda x: x["score"], reverse=True)

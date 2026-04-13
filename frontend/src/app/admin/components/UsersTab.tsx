@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import { Users, Activity, TrendingUp, Target, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -162,9 +163,9 @@ export function UsersTab({
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center relative overflow-hidden">
                       {u.avatar_url ? (
-                        <img src={u.avatar_url} alt="" className="w-full h-full rounded-full object-cover" />
+                        <Image src={u.avatar_url} alt="" fill className="object-cover" sizes="40px" />
                       ) : (
                         <Users className="w-5 h-5 text-muted-foreground" />
                       )}
@@ -226,9 +227,9 @@ export function UsersTab({
           <div className="bg-card border border-border rounded-xl max-w-md w-full max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()} data-testid="user-modal">
             <div className="p-6">
               <div className="flex items-center gap-4 mb-6">
-                <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
+                <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center relative overflow-hidden">
                   {selectedUser.avatar_url ? (
-                    <img src={selectedUser.avatar_url} alt="" className="w-full h-full rounded-full object-cover" />
+                    <Image src={selectedUser.avatar_url} alt="" fill className="object-cover" sizes="64px" />
                   ) : (
                     <Users className="w-8 h-8 text-muted-foreground" />
                   )}

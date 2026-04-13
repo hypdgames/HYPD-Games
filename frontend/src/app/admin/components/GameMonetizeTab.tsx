@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { Globe, Loader2, Plus, Check, Search, X, Video, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -342,15 +343,17 @@ export function GameMonetizeTab({
                   data-testid={`gmz-game-${game.gmz_game_id}`}
                 >
                   <div className="aspect-video relative">
-                    <img
-                      src={game.thumbnail_url || "https://via.placeholder.com/512x384?text=Game"}
-                      alt={game.title}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1637734373619-af1e76434bec?w=200&q=80";
-                      }}
-                    />
+                    {game.thumbnail_url ? (
+                      <Image
+                        src={game.thumbnail_url}
+                        alt={game.title}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 50vw, 25vw"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-muted" />
+                    )}
                     {imported ? (
                       <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
                         <div className="bg-green-500/90 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
