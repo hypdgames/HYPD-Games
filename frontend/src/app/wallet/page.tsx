@@ -15,11 +15,10 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { API_URL } from "@/lib/api";
 import { useAuthStore } from "@/store";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { toast } from "sonner";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 interface CoinPackage {
   package_id: string;

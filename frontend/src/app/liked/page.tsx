@@ -5,11 +5,10 @@ import { useRouter } from "next/navigation";
 import { Heart, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import Image from "next/image";
+import { API_URL } from "@/lib/api";
 import { useAuthStore } from "@/store";
 import { ThemeToggle } from "@/components/theme-toggle";
 import type { Game } from "@/types";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 export default function LikedPage() {
   const router = useRouter();

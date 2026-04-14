@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+import { API_URL } from "@/lib/api";
 
 type Props = {
   params: { gameId: string };

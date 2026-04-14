@@ -4,10 +4,9 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, MessageCircle, Send, Loader2, Trash2, Heart } from "lucide-react";
+import { API_URL } from "@/lib/api";
 import { useAuthStore } from "@/store";
 import { toast } from "sonner";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 interface Comment {
   id: string;

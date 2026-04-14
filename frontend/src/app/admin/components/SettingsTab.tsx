@@ -6,9 +6,8 @@ import { Upload, Image as ImageIcon, Trash2, Globe, Check, Loader2, Gamepad2 } f
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { API_URL } from "@/lib/api";
 import { toast } from "sonner";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 interface SettingsTabProps {
   token: string | null;

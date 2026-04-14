@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Flame, Heart, Coins, Users } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { API_URL } from "@/lib/api";
 import { useAuthStore } from "@/store";
 import { toast } from "sonner";
 import type { Game } from "@/types";
@@ -25,8 +26,6 @@ import { GamesTab } from "./components/GamesTab";
 import { FriendsTab } from "./components/FriendsTab";
 import { WalletTab } from "./components/WalletTab";
 import { AdminSection } from "./components/AdminSection";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 export default function ProfilePage() {
   const router = useRouter();

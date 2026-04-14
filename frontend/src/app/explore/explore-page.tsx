@@ -5,11 +5,10 @@ import { useRouter } from "next/navigation";
 import { Search, ChevronRight, Play, Flame, ArrowLeft, Loader2, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
+import { API_URL } from "@/lib/api";
 import { useAuthStore } from "@/store";
 import { ThemeToggle } from "@/components/theme-toggle";
 import type { Game } from "@/types";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 const EXPLORE_CACHE_KEY = "hypd:explore_data";
 const EXPLORE_CACHE_TTL = 300 * 1000;
 const EXPLORE_LIMIT = 500;

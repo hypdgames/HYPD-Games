@@ -4,9 +4,8 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Trophy, Crown, Medal, Gamepad2, Clock, User, Loader2 } from "lucide-react";
 import Image from "next/image";
+import { API_URL } from "@/lib/api";
 import type { Game } from "@/types";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 interface LeaderboardEntry {
   rank: number;

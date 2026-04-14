@@ -2,9 +2,8 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { API_URL } from "@/lib/api";
 import type { User, AppSettings, LoginCredentials, RegisterCredentials, AuthResponse } from "@/types";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 interface AuthStore {
   user: User | null;

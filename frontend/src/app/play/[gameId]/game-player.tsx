@@ -3,9 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { LogOut, Volume2, VolumeX, Loader2, X, UserCheck, UserX, PlayCircle, ChevronDown } from "lucide-react";
+import { API_URL } from "@/lib/api";
 import { useAuthStore } from "@/store";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 // ─── GMZ Walkthrough Video Player ──────────────────────────────────────────
 // video.js uses jQuery ($(...).append) which is not available in Next.js.

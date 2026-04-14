@@ -8,10 +8,9 @@ import { Play, Heart, MessageCircle, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { useAuthStore } from "@/store";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { API_URL } from "@/lib/api";
 import { toast } from "sonner";
 import type { Game, FeedItem } from "@/types";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 const AD_FREQUENCY = 6;
 const VIDEO_CACHE_KEY = "hypd:video_cache_v2";
 const VIDEO_CACHE_TTL = 3600 * 1000;

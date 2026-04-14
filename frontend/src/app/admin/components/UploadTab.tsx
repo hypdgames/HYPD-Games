@@ -6,10 +6,9 @@ import { Upload, Image as ImageIcon, Video, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { API_URL } from "@/lib/api";
 import { toast } from "sonner";
 import { CATEGORIES } from "./types";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 interface UploadTabProps {
   token: string | null;

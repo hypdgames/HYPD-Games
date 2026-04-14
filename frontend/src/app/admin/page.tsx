@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Gamepad2, Globe, Upload, Users, BarChart3, Settings, Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { API_URL } from "@/lib/api";
 import { useAuthStore } from "@/store";
 import { toast } from "sonner";
 import type { Game } from "@/types";
@@ -40,8 +41,6 @@ const UsersTab = dynamic(
   () => import("./components/UsersTab").then((m) => ({ default: m.UsersTab })),
   { loading: TabLoader, ssr: false }
 );
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 export default function AdminDashboard() {
   const router = useRouter();

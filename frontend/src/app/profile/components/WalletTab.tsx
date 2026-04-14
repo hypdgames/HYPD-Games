@@ -11,11 +11,10 @@ import {
   Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { API_URL } from "@/lib/api";
 import { toast } from "sonner";
 import type { User } from "@/types";
 import type { CoinPackage, Transaction } from "../types";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 interface WalletTabProps {
   user: User;
