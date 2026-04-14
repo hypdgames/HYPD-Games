@@ -45,9 +45,14 @@ const UsersTab = dynamic(
 export default function AdminDashboard() {
   const router = useRouter();
   const { user, token, loading: authLoading } = useAuthStore();
+  const GAMES_PAGE_SIZE = 100;
   
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
+  const [gamesLoadingMore, setGamesLoadingMore] = useState(false);
+  const [gamesPage, setGamesPage] = useState(1);
+  const [gamesHasMore, setGamesHasMore] = useState(false);
+  const [gamesTotal, setGamesTotal] = useState(0);
   
   // GameMonetize state
   const [gmzGames, setGmzGames] = useState<GMZGame[]>([]);
@@ -94,19 +99,39 @@ export default function AdminDashboard() {
     [games]
   );
 
-  const fetchGames = useCallback(async () => {
+  const fetchGames = useCallback(async (page: number = 1, append: boolean = false) => {
+    if (!token) return;
+    if (append) {
+      setGamesLoadingMore(true);
+    } else {
+      setLoading(true);
+    }
     try {
-      const res = await fetch(`${API_URL}/api/admin/games`, {
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(GAMES_PAGE_SIZE),
+      });
+      const res = await fetch(`${API_URL}/api/admin/games?${params}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
         const data = await res.json();
-        setGames(data);
+        const nextGames: Game[] = Array.isArray(data) ? data : (data.games || []);
+        setGames((prev) => (append ? [...prev, ...nextGames] : nextGames));
+        setGamesPage(Array.isArray(data) ? 1 : (data.page || page));
+        setGamesHasMore(Array.isArray(data) ? false : Boolean(data.has_more));
+        setGamesTotal(Array.isArray(data) ? nextGames.length : (data.total || nextGames.length));
       }
     } catch (error) {
       console.error("Error fetching games:", error);
+      toast.error("Failed to load admin games");
+    } finally {
+      if (append) {
+        setGamesLoadingMore(false);
+      } else {
+        setLoading(false);
+      }
     }
-    setLoading(false);
   }, [token]);
 
   const fetchSettings = useCallback(async () => {
@@ -331,6 +356,7 @@ export default function AdminDashboard() {
       if (sort) params.append("sort", sort);
       params.append("page", String(page));
       params.append("num", "100");
+      params.append("exclude_imported", "true");
       
       const res = await fetch(`${API_URL}/api/gamemonetize/browse?${params}`);
       if (res.ok) {
@@ -362,10 +388,8 @@ export default function AdminDashboard() {
       const data = await res.json();
       if (res.ok) {
         toast.success(data.message || `Imported ${data.imported} new games`);
-        if (data.imported > 0) {
-          fetchGames();
-          fetchGmzGames(gmzCategory, 1, false, gmzSearch, gmzSort);
-        }
+        fetchGames();
+        fetchGmzGames(gmzCategory, 1, false, gmzSearch, gmzSort);
       } else {
         toast.error(data.detail || "Sync failed");
       }
@@ -400,9 +424,7 @@ export default function AdminDashboard() {
   };
 
   const selectAllGmzGames = () => {
-    const selectableIds = gmzGames
-      .filter(g => !importedGmzIds.has(`gmz-${g.gmz_game_id}`))
-      .map(g => g.gmz_game_id);
+    const selectableIds = gmzGames.map(g => g.gmz_game_id);
     setSelectedGmzGames(new Set(selectableIds));
   };
 
@@ -462,6 +484,7 @@ export default function AdminDashboard() {
         }
         setSelectedGmzGames(new Set());
         fetchGames();
+        fetchGmzGames(gmzCategory, 1, false, gmzSearch, gmzSort);
       } else {
         const error = await res.json();
         toast.error(error.detail || "Failed to import games");
@@ -626,10 +649,14 @@ export default function AdminDashboard() {
             <GamesTab
               games={games}
               loading={loading}
+              loadingMore={gamesLoadingMore}
+              totalGames={gamesTotal}
+              hasMore={gamesHasMore}
               onToggleVisibility={toggleVisibility}
               onToggleFeedVisibility={toggleFeedVisibility}
               onDeleteGame={deleteGame}
               onBulkDelete={bulkDeleteGames}
+              onLoadMore={() => fetchGames(gamesPage + 1, true)}
             />
           </TabsContent>
 

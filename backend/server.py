@@ -1507,11 +1507,36 @@ async def unlike_comment(
 # ==================== ADMIN ENDPOINTS ====================
 
 @api_router.get("/admin/games")
-async def admin_get_games(user: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
-    """Get all games for admin (including hidden)"""
-    result = await db.execute(select(Game).order_by(Game.created_at.desc()))
+async def admin_get_games(
+    user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+    page: Optional[int] = None,
+    limit: Optional[int] = None,
+):
+    """Get admin games, with optional pagination for dashboard stability."""
+    base_query = select(Game).order_by(Game.created_at.desc())
+
+    if page is None and limit is None:
+        result = await db.execute(base_query)
+        games = result.scalars().all()
+        return [GameResponse(**g.to_dict()) for g in games]
+
+    safe_page = max(page or 1, 1)
+    safe_limit = min(max(limit or 100, 1), 200)
+    total = await db.scalar(select(func.count()).select_from(Game)) or 0
+
+    result = await db.execute(
+        base_query.offset((safe_page - 1) * safe_limit).limit(safe_limit)
+    )
     games = result.scalars().all()
-    return [GameResponse(**g.to_dict()) for g in games]
+
+    return {
+        "games": [GameResponse(**g.to_dict()) for g in games],
+        "total": total,
+        "page": safe_page,
+        "limit": safe_limit,
+        "has_more": safe_page * safe_limit < total,
+    }
 
 @api_router.post("/admin/games/create-with-files")
 async def admin_create_game_with_files(
@@ -2568,11 +2593,26 @@ async def browse_gamemonetize_games(
     search: Optional[str] = None,
     sort: Optional[str] = "newest",
     page: int = 1,
-    num: int = 50
+    num: int = 50,
+    exclude_imported: bool = False,
+    db: AsyncSession = Depends(get_db),
 ):
     """Browse all games from GameMonetize feed (cached, locally paginated)"""
     try:
         all_games = await _fetch_full_gmz_feed()
+
+        if exclude_imported:
+            result = await db.execute(
+                select(Game.gd_game_id).where(
+                    Game.source == "gamemonetize",
+                    Game.gd_game_id.is_not(None),
+                )
+            )
+            existing_ids = {gd_game_id for gd_game_id in result.scalars().all() if gd_game_id}
+            all_games = [
+                g for g in all_games
+                if f"gmz-{g.get('id', '')}" not in existing_ids
+            ]
 
         # Apply category filter
         if category and category.lower() != "all":

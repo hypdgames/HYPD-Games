@@ -10,13 +10,28 @@ import type { Game } from "./types";
 interface GamesTabProps {
   games: Game[];
   loading: boolean;
+  loadingMore?: boolean;
+  totalGames?: number;
+  hasMore?: boolean;
   onToggleVisibility: (gameId: string, currentVisibility: boolean) => void;
   onToggleFeedVisibility: (gameId: string, currentShowInFeed: boolean) => void;
   onDeleteGame: (gameId: string) => void;
   onBulkDelete?: (gameIds: string[]) => Promise<void>;
+  onLoadMore?: () => void;
 }
 
-export function GamesTab({ games, loading, onToggleVisibility, onToggleFeedVisibility, onDeleteGame, onBulkDelete }: GamesTabProps) {
+export function GamesTab({
+  games,
+  loading,
+  loadingMore = false,
+  totalGames,
+  hasMore = false,
+  onToggleVisibility,
+  onToggleFeedVisibility,
+  onDeleteGame,
+  onBulkDelete,
+  onLoadMore,
+}: GamesTabProps) {
   const [selectedGames, setSelectedGames] = useState<Set<string>>(new Set());
   const [bulkDeleting, setBulkDeleting] = useState(false);
 
@@ -70,7 +85,7 @@ export function GamesTab({ games, loading, onToggleVisibility, onToggleFeedVisib
         <div className="flex items-center gap-3">
           <Button variant="outline" size="sm" onClick={selectAll} className="text-xs" data-testid="select-all-btn">
             <CheckSquare className="w-4 h-4 mr-1" />
-            Select All ({games.length})
+            Select Visible ({games.length})
           </Button>
           {selectedGames.size > 0 && (
             <Button variant="outline" size="sm" onClick={clearSelection} className="text-xs" data-testid="clear-selection-btn">
@@ -80,6 +95,11 @@ export function GamesTab({ games, loading, onToggleVisibility, onToggleFeedVisib
           )}
           {selectedGames.size > 0 && (
             <span className="text-sm text-muted-foreground">{selectedGames.size} selected</span>
+          )}
+          {typeof totalGames === "number" && (
+            <span className="text-sm text-muted-foreground">
+              Showing {games.length} of {totalGames.toLocaleString()} games
+            </span>
           )}
         </div>
         {selectedGames.size > 0 && (
@@ -190,6 +210,15 @@ export function GamesTab({ games, loading, onToggleVisibility, onToggleFeedVisib
           </motion.div>
         );
       })}
+
+      {hasMore && onLoadMore && (
+        <div className="flex justify-center pt-2">
+          <Button variant="outline" onClick={onLoadMore} disabled={loadingMore}>
+            {loadingMore ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+            Load More Games
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

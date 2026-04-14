@@ -104,8 +104,8 @@ export function GameMonetizeTab({
   };
 
   const visibleGmzGames = gmzGames.filter(g => !isGmzGameImported(g.gmz_game_id));
-  const selectableGames = visibleGmzGames;
-  const newCount = visibleGmzGames.length;
+  const selectableGames = gmzGames;
+  const newCount = gmzGames.length;
 
   return (
     <div className="space-y-4">
