@@ -2789,64 +2789,11 @@ async def sync_new_gamemonetize_games(
     user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db)
 ):
-    """Fetch the latest GMZ feed and import only games not already in the DB. Returns a summary."""
-    all_gmz = await _fetch_full_gmz_feed()
-    if not all_gmz:
-        return {"imported": 0, "message": "GameMonetize feed unavailable — try again shortly."}
-
-    # Get all existing gd_game_ids in one query
-    result = await db.execute(select(Game.gd_game_id).where(Game.source == "gamemonetize"))
-    existing_ids: set = {row[0] for row in result.all() if row[0]}
-
-    new_games = [g for g in all_gmz if f"gmz-{g.get('id', '')}" not in existing_ids]
-
-    imported, skipped = [], []
-    for g in new_games:
-        try:
-            gmz_id = str(g.get("id", ""))
-            if not gmz_id:
-                continue
-            thumb_url = g.get("thumb", "")
-            base_url = thumb_url.rsplit("/", 1)[0] if thumb_url and "/" in thumb_url else ""
-            thumbnail = f"{base_url}/512x384.jpg" if base_url else thumb_url
-            icon = f"{base_url}/512x512.jpg" if base_url else thumb_url
-
-            extra_imgs = _derive_gmz_image_urls(thumbnail)
-            new_game = Game(
-                id=str(uuid.uuid4()),
-                title=g.get("title", "Unknown"),
-                description=g.get("description", ""),
-                category=(g.get("category") or "Action").title(),
-                thumbnail_url=thumbnail,
-                icon_url=icon,
-                thumbnail_wide_url=extra_imgs["thumbnail_wide_url"],
-                logo_url=extra_imgs["logo_url"],
-                banner_url=extra_imgs["banner_url"],
-                embed_url=g.get("url", ""),
-                source="gamemonetize",
-                gd_game_id=f"gmz-{gmz_id}",
-                is_visible=True,
-                has_game_file=True,
-                instructions=g.get("instructions", ""),
-                play_count=0,
-            )
-            db.add(new_game)
-            imported.append(g.get("title", "Unknown"))
-        except Exception as e:
-            logger.warning(f"sync-new: skipped game {g.get('title')}: {e}")
-            skipped.append(g.get("title", ""))
-
-    if imported:
-        await db.commit()
-        _invalidate_all_game_caches()
-        logger.info(f"GMZ sync-new: imported {len(imported)} games, skipped {len(skipped)}")
-
-    return {
-        "imported": len(imported),
-        "skipped": len(skipped),
-        "total_in_feed": len(all_gmz),
-        "message": f"Imported {len(imported)} new games." if imported else "Already up to date — no new games found.",
-    }
+    """Disabled to keep GameMonetize additions manual-only from the admin catalog."""
+    raise HTTPException(
+        status_code=410,
+        detail="Bulk sync is disabled. Browse the GameMonetize catalog and import only the games you choose."
+    )
 
 # ==================== SOCIAL FEATURES ====================
 
