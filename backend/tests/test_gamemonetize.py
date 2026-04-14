@@ -6,17 +6,7 @@ Tests for GameMonetize browse, categories, import, and bulk-import endpoints
 import pytest
 import requests
 import os
-
-BASE_URL = os.environ.get(
-    "NEXT_PUBLIC_API_URL",
-    os.environ.get("REACT_APP_BACKEND_URL", "http://localhost:8001"),
-)
-if BASE_URL:
-    BASE_URL = BASE_URL.rstrip('/')
-
-# Admin credentials
-ADMIN_EMAIL = "admin@hypd.games"
-ADMIN_PASSWORD = "admin123"
+from backend.tests.helpers import ADMIN_EMAIL, ADMIN_PASSWORD, BASE_URL
 
 
 class TestGameMonetizeBrowse:

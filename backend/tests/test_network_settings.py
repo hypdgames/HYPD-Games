@@ -5,15 +5,7 @@ Tests for enabling/disabling GamePix and GameMonetize networks
 import pytest
 import requests
 import os
-
-BASE_URL = os.environ.get(
-    "NEXT_PUBLIC_API_URL",
-    os.environ.get("REACT_APP_BACKEND_URL", "http://localhost:8001"),
-)
-
-# Test credentials
-ADMIN_EMAIL = "admin@hypd.games"
-ADMIN_PASSWORD = "admin123"
+from backend.tests.helpers import ADMIN_EMAIL, ADMIN_PASSWORD, BASE_URL
 
 
 @pytest.fixture(scope="module")

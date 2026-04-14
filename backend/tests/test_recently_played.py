@@ -5,20 +5,7 @@ Tests: auth enforcement, response structure, seeded admin data
 import pytest
 import requests
 import os
-
-BASE_URL = os.environ.get("NEXT_PUBLIC_API_URL", "").rstrip("/")
-if not BASE_URL:
-    # Fallback: read from frontend .env
-    import subprocess
-    result = subprocess.run(
-        ["grep", "NEXT_PUBLIC_API_URL", "/app/frontend/.env"],
-        capture_output=True, text=True
-    )
-    if result.stdout:
-        BASE_URL = result.stdout.strip().split("=", 1)[1].strip()
-
-ADMIN_EMAIL = "admin@hypd.games"
-ADMIN_PASSWORD = "admin123"
+from backend.tests.helpers import ADMIN_EMAIL, ADMIN_PASSWORD, BASE_URL
 
 
 # ---- Fixtures ----

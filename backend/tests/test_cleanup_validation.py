@@ -5,8 +5,7 @@ Tests: removed endpoints return 404, kept endpoints work, admin validations.
 import pytest
 import requests
 import os
-
-BASE_URL = os.environ.get("NEXT_PUBLIC_API_URL", "").rstrip("/")
+from backend.tests.helpers import ADMIN_EMAIL, ADMIN_PASSWORD, BASE_URL
 
 
 @pytest.fixture(scope="module")
@@ -22,7 +21,7 @@ def admin_token(api_client):
     """Get admin token for authenticated tests."""
     response = api_client.post(
         f"{BASE_URL}/api/auth/login",
-        json={"email": "admin@hypd.games", "password": "admin123"},
+        json={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD},
     )
     if response.status_code == 200:
         return response.json().get("access_token")
@@ -140,7 +139,7 @@ class TestKeptEndpoints:
         """POST /api/auth/login with admin credentials returns access_token."""
         res = api_client.post(
             f"{BASE_URL}/api/auth/login",
-            json={"email": "admin@hypd.games", "password": "admin123"},
+            json={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD},
         )
         assert res.status_code == 200, f"Expected 200, got {res.status_code}: {res.text[:200]}"
         data = res.json()

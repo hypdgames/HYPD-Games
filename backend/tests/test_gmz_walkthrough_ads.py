@@ -9,10 +9,7 @@ Backend tests for GMZ Walkthrough Video Ads feature:
 import pytest
 import requests
 import os
-
-BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/")
-if not BASE_URL:
-    BASE_URL = os.environ.get("NEXT_PUBLIC_API_URL", "http://localhost:8001")
+from backend.tests.helpers import ADMIN_EMAIL, ADMIN_PASSWORD, BASE_URL
 
 
 @pytest.fixture(scope="module")
@@ -20,7 +17,7 @@ def admin_token():
     """Get admin auth token"""
     res = requests.post(
         f"{BASE_URL}/api/auth/login",
-        json={"email": "admin@hypd.games", "password": "admin123"},
+        json={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD},
     )
     if res.status_code == 200:
         data = res.json()
@@ -34,7 +31,7 @@ def gmz_game_id():
     """Get a GMZ game id for testing using admin endpoint"""
     admin_res = requests.post(
         f"{BASE_URL}/api/auth/login",
-        json={"email": "admin@hypd.games", "password": "admin123"},
+        json={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD},
     )
     if admin_res.status_code != 200:
         pytest.skip("Admin login failed")
@@ -59,7 +56,7 @@ class TestAdminLogin:
         """Admin login with correct credentials returns 200 and token"""
         res = requests.post(
             f"{BASE_URL}/api/auth/login",
-            json={"email": "admin@hypd.games", "password": "admin123"},
+            json={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD},
         )
         assert res.status_code == 200, f"Expected 200, got {res.status_code}: {res.text}"
         data = res.json()
@@ -72,7 +69,7 @@ class TestAdminLogin:
         """Login with wrong password returns 401"""
         res = requests.post(
             f"{BASE_URL}/api/auth/login",
-            json={"email": "admin@hypd.games", "password": "wrongpassword"},
+            json={"email": ADMIN_EMAIL, "password": "wrongpassword"},
         )
         assert res.status_code == 401, f"Expected 401, got {res.status_code}"
         print("PASS: Invalid credentials correctly returns 401")
@@ -99,7 +96,7 @@ class TestSettingsEndpoints:
         # First set it so the key exists
         admin_res = requests.post(
             f"{BASE_URL}/api/auth/login",
-            json={"email": "admin@hypd.games", "password": "admin123"},
+            json={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD},
         )
         if admin_res.status_code != 200:
             pytest.skip("Admin login failed")

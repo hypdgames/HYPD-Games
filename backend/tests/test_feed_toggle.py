@@ -8,8 +8,7 @@ Test suite for feed toggle feature:
 import pytest
 import requests
 import os
-
-BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/")
+from backend.tests.helpers import ADMIN_EMAIL, ADMIN_PASSWORD, BASE_URL
 
 
 @pytest.fixture(scope="module")
@@ -17,7 +16,7 @@ def admin_token():
     """Get admin JWT token"""
     res = requests.post(
         f"{BASE_URL}/api/auth/login",
-        json={"email": "admin@hypd.games", "password": "admin123"},
+        json={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD},
     )
     assert res.status_code == 200, f"Admin login failed: {res.text}"
     return res.json()["access_token"]
@@ -30,17 +29,16 @@ def auth_headers(admin_token):
 
 @pytest.fixture(scope="module")
 def cat_evolution_id():
-    """Get Cat Evolution game ID from feed"""
+    """Get a currently visible feed game ID from feed/admin."""
     res = requests.get(f"{BASE_URL}/api/games")
     assert res.status_code == 200
     games = res.json()
-    # Find Cat Evolution
-    cat = next((g for g in games if "cat evolution" in g["title"].lower()), None)
+    cat = next(iter(games), None)
     if cat is None:
         # Try admin games list
         r = requests.post(
             f"{BASE_URL}/api/auth/login",
-            json={"email": "admin@hypd.games", "password": "admin123"},
+            json={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD},
         )
         token = r.json()["access_token"]
         admin_res = requests.get(
@@ -48,8 +46,8 @@ def cat_evolution_id():
             headers={"Authorization": f"Bearer {token}"},
         )
         games = admin_res.json()
-        cat = next((g for g in games if "cat evolution" in g["title"].lower()), None)
-    assert cat is not None, "Cat Evolution game not found in DB"
+        cat = next((g for g in games if g.get("show_in_feed") is not False and g.get("is_visible") is not False), None)
+    assert cat is not None, "No visible feed game found in DB"
     return cat["id"]
 
 
@@ -69,13 +67,13 @@ class TestFeedToggleAPI:
         print(f"PASS: GET /api/games returned {len(games)} feed games, all show_in_feed=True")
 
     def test_cat_evolution_initially_in_feed(self, cat_evolution_id):
-        """Cat Evolution should initially be in feed"""
+        """Selected game should initially be in feed"""
         res = requests.get(f"{BASE_URL}/api/games")
         assert res.status_code == 200
         games = res.json()
         ids = [g["id"] for g in games]
-        assert cat_evolution_id in ids, "Cat Evolution should be in the feed initially"
-        print("PASS: Cat Evolution is in feed initially")
+        assert cat_evolution_id in ids, "Selected game should be in the feed initially"
+        print("PASS: Selected game is in feed initially")
 
     def test_remove_cat_evolution_from_feed(self, cat_evolution_id, auth_headers):
         """PATCH feed-visibility with show_in_feed=false should remove from feed"""
@@ -91,7 +89,7 @@ class TestFeedToggleAPI:
         print("PASS: PATCH feed-visibility set show_in_feed=False")
 
     def test_get_games_returns_empty_after_remove_from_feed(self, cat_evolution_id, auth_headers):
-        """After removing Cat Evolution from feed, GET /api/games should return 0 games"""
+        """After removing the selected game from feed, GET /api/games should no longer include it"""
         # Ensure removed from feed first
         requests.patch(
             f"{BASE_URL}/api/admin/games/{cat_evolution_id}/feed-visibility",
@@ -101,10 +99,9 @@ class TestFeedToggleAPI:
         res = requests.get(f"{BASE_URL}/api/games")
         assert res.status_code == 200
         games = res.json()
-        assert len(games) == 0, (
-            f"Expected 0 feed games after removing Cat Evolution, got {len(games)}"
-        )
-        print("PASS: GET /api/games returns 0 games after Cat Evolution removed from feed")
+        ids = [g["id"] for g in games]
+        assert cat_evolution_id not in ids, "Removed feed game should not appear in GET /api/games"
+        print("PASS: GET /api/games no longer includes the removed feed game")
 
     def test_add_cat_evolution_back_to_feed(self, cat_evolution_id, auth_headers):
         """PATCH feed-visibility with show_in_feed=true should add back to feed"""
@@ -120,7 +117,7 @@ class TestFeedToggleAPI:
         print("PASS: PATCH feed-visibility set show_in_feed=True (restored)")
 
     def test_get_games_returns_game_after_restore(self, cat_evolution_id, auth_headers):
-        """After re-adding Cat Evolution to feed, GET /api/games returns it again"""
+        """After re-adding the selected game to feed, GET /api/games returns it again"""
         # Ensure in feed
         requests.patch(
             f"{BASE_URL}/api/admin/games/{cat_evolution_id}/feed-visibility",
@@ -131,8 +128,8 @@ class TestFeedToggleAPI:
         assert res.status_code == 200
         games = res.json()
         ids = [g["id"] for g in games]
-        assert cat_evolution_id in ids, "Cat Evolution should be back in feed"
-        print("PASS: Cat Evolution is back in feed after restore")
+        assert cat_evolution_id in ids, "Selected game should be back in feed"
+        print("PASS: Selected game is back in feed after restore")
 
     def test_feed_toggle_requires_admin_auth(self, cat_evolution_id):
         """Feed toggle should return 401/403 without auth"""

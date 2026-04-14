@@ -9,12 +9,7 @@ Tests:
 import pytest
 import requests
 import os
-
-BASE_URL = os.environ.get("NEXT_PUBLIC_API_URL", "http://localhost:8001")
-
-# Test credentials
-ADMIN_EMAIL = "admin@hypd.games"
-ADMIN_PASSWORD = "admin123"
+from backend.tests.helpers import ADMIN_EMAIL, ADMIN_PASSWORD, BASE_URL
 
 # Test user for registration
 TEST_USER_EMAIL = f"TEST_streak_user_{os.urandom(4).hex()}@test.com"

@@ -7,12 +7,11 @@ Tests new game mechanics: battle arena, target HP, auto-attack, player level, an
 import pytest
 import requests
 import os
-
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
+from backend.tests.helpers import ADMIN_EMAIL, ADMIN_PASSWORD, BASE_URL
 
 # Test credentials
-TEST_EMAIL = "admin@hypd.games"
-TEST_PASSWORD = "admin123"
+TEST_EMAIL = ADMIN_EMAIL
+TEST_PASSWORD = ADMIN_PASSWORD
 
 class TestIdleGameAPIV2:
     """Test suite for Pet Idle Game v2 API endpoints"""

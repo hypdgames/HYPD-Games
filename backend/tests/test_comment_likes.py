@@ -7,13 +7,7 @@ Tests: POST/DELETE /api/games/{game_id}/comments/{comment_id}/like
 import pytest
 import requests
 import os
-
-BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/")
-if not BASE_URL:
-    BASE_URL = os.environ.get("NEXT_PUBLIC_API_URL", "http://localhost:8001")
-
-ADMIN_EMAIL = "admin@hypd.games"
-ADMIN_PASSWORD = "admin123"
+from backend.tests.helpers import ADMIN_EMAIL, ADMIN_PASSWORD, BASE_URL
 
 
 # ─── Fixtures ───────────────────────────────────────────────────────────────

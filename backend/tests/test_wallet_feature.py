@@ -7,13 +7,9 @@ import pytest
 import requests
 import os
 import time
+from backend.tests.helpers import ADMIN_EMAIL, ADMIN_PASSWORD, BASE_URL
 
-BASE_URL = os.environ.get("NEXT_PUBLIC_API_URL", "http://localhost:8001")
 SITE_URL = os.environ.get("SITE_URL", "https://hypd.games")
-
-# Test credentials
-ADMIN_EMAIL = "admin@hypd.games"
-ADMIN_PASSWORD = "admin123"
 
 # Global session to avoid rate limiting
 _session = None

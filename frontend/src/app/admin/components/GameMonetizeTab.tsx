@@ -6,7 +6,6 @@ import { motion } from "framer-motion";
 import { Globe, Loader2, Plus, Check, Search, X, Video, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import type { Game } from "./types";
 
 export interface GMZGame {
   gmz_game_id: string;
@@ -33,7 +32,7 @@ interface GameMonetizeTabProps {
   gmzTotal: number;
   gmzPage: number;
   selectedGmzGames: Set<string>;
-  games: Game[];
+  importedGmzIds: Set<string>;
   importing: boolean;
   gmzVideoAdsEnabled: boolean;
   syncing: boolean;
@@ -66,7 +65,7 @@ export function GameMonetizeTab({
   gmzHasMore,
   gmzTotal,
   selectedGmzGames,
-  games,
+  importedGmzIds,
   importing,
   gmzVideoAdsEnabled,
   syncing,
@@ -85,9 +84,7 @@ export function GameMonetizeTab({
   const [searchQuery, setSearchQuery] = useState("");
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   
-  const isGmzGameImported = (id: string) => {
-    return games.some(g => g.gd_game_id === `gmz-${id}`);
-  };
+  const isGmzGameImported = (id: string) => importedGmzIds.has(`gmz-${id}`);
 
   // Debounced search — fires 500ms after the user stops typing
   useEffect(() => {

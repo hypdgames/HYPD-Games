@@ -645,7 +645,7 @@ export default function AdminDashboard() {
                 gmzTotal={gmzTotal}
                 gmzPage={gmzPage}
                 selectedGmzGames={selectedGmzGames}
-                games={games}
+                importedGmzIds={importedGmzIds}
                 importing={gmzImporting}
                 gmzVideoAdsEnabled={gmzVideoAdsEnabled}
                 syncing={gmzSyncing}
