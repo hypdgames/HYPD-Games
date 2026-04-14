@@ -32,10 +32,8 @@ interface GameMonetizeTabProps {
   gmzTotal: number;
   gmzPage: number;
   selectedGmzGames: Set<string>;
-  importedGmzIds: Set<string>;
   importing: boolean;
   gmzVideoAdsEnabled: boolean;
-  syncing: boolean;
   onGmzVideoAdsToggle: (enabled: boolean) => void;
   onCategoryChange: (category: string) => void;
   onSortChange: (sort: string) => void;
@@ -46,7 +44,6 @@ interface GameMonetizeTabProps {
   onImportSelected: () => void;
   onSelectAll: () => void;
   onClearSelection: () => void;
-  onSyncNew: () => void;
 }
 
 const SORT_OPTIONS = [
@@ -65,10 +62,8 @@ export function GameMonetizeTab({
   gmzHasMore,
   gmzTotal,
   selectedGmzGames,
-  importedGmzIds,
   importing,
   gmzVideoAdsEnabled,
-  syncing,
   onGmzVideoAdsToggle,
   onCategoryChange,
   onSortChange,
@@ -79,12 +74,9 @@ export function GameMonetizeTab({
   onImportSelected,
   onSelectAll,
   onClearSelection,
-  onSyncNew,
 }: GameMonetizeTabProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
-  
-  const isGmzGameImported = (id: string) => importedGmzIds.has(`gmz-${id}`);
 
   // Debounced search — fires 500ms after the user stops typing
   useEffect(() => {
@@ -103,7 +95,6 @@ export function GameMonetizeTab({
     onSearch("");
   };
 
-  const visibleGmzGames = gmzGames.filter(g => !isGmzGameImported(g.gmz_game_id));
   const selectableGames = gmzGames;
   const newCount = gmzGames.length;
 
@@ -119,9 +110,9 @@ export function GameMonetizeTab({
             <div>
               <h3 className="font-bold text-foreground">GameMonetize Network</h3>
               <p className="text-sm text-muted-foreground">
-                Browse and import games from GameMonetize.
+                Browse unimported games from GameMonetize and manually choose what to add.
                 {gmzTotal > 0 && (
-                  <span className="font-semibold text-purple-400"> {gmzTotal.toLocaleString()} games available.</span>
+                  <span className="font-semibold text-purple-400"> {gmzTotal.toLocaleString()} games available to import.</span>
                 )}
                 {newCount > 0 && (
                   <span className="ml-1 text-green-400 font-semibold">{newCount} new on this page.</span>
@@ -129,17 +120,6 @@ export function GameMonetizeTab({
               </p>
             </div>
           </div>
-          <Button
-            onClick={onSyncNew}
-            disabled={syncing || gmzLoading}
-            size="sm"
-            className="bg-purple-500 text-white hover:bg-purple-600 flex-shrink-0 whitespace-nowrap"
-            data-testid="sync-new-games-btn"
-            title="Import all games from the full GameMonetize catalog that are not yet in your database"
-          >
-            {syncing ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : <Plus className="w-4 h-4 mr-1.5" />}
-            {syncing ? "Syncing..." : "Sync New Games"}
-          </Button>
         </div>
       </div>
 
@@ -235,7 +215,7 @@ export function GameMonetizeTab({
           onClick={onRefresh}
           disabled={gmzLoading}
         >
-          {gmzLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Refresh"}
+          {gmzLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Refresh Results"}
         </Button>
       </div>
 
@@ -300,25 +280,25 @@ export function GameMonetizeTab({
         </div>
       )}
 
-      {gmzLoading && visibleGmzGames.length === 0 ? (
+      {gmzLoading && gmzGames.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 gap-3">
           <Loader2 className="w-8 h-8 text-purple-500 animate-spin" />
           <p className="text-sm text-muted-foreground">Loading games from GameMonetize catalog...</p>
         </div>
-      ) : visibleGmzGames.length === 0 ? (
+      ) : gmzGames.length === 0 ? (
         <div className="text-center py-12 bg-card rounded-xl border border-border">
           <Globe className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
           <p className="font-semibold text-foreground">No games to import</p>
           <p className="text-sm text-muted-foreground/70 mt-1">
             {searchQuery
-              ? `No unimported games match "${searchQuery}" — try a different search term`
-              : "Everything in this current result set is already on your site, or the catalogue is still loading."}
+              ? `No games match "${searchQuery}" — try a different search term`
+              : "There are no importable games in this result set right now. Refresh or load more to continue browsing."}
           </p>
           <button
             onClick={() => onRefresh()}
             className="mt-4 px-5 py-2 rounded-full bg-foreground text-background text-sm font-semibold hover:opacity-80 transition-opacity"
           >
-            Refresh catalogue
+            Refresh results
           </button>
           {gmzHasMore && (
             <button
@@ -332,7 +312,7 @@ export function GameMonetizeTab({
       ) : (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {visibleGmzGames.map((game) => {
+            {gmzGames.map((game) => {
               const selected = selectedGmzGames.has(game.gmz_game_id);
               return (
                 <motion.div

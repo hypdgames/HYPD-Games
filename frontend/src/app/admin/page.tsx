@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Gamepad2, Globe, Upload, Users, BarChart3, Settings, Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -65,7 +65,6 @@ export default function AdminDashboard() {
   const [selectedGmzGames, setSelectedGmzGames] = useState<Set<string>>(new Set());
   const [gmzCategories, setGmzCategories] = useState<{id: string; name: string; icon: string}[]>([]);
   const [gmzImporting, setGmzImporting] = useState(false);
-  const [gmzSyncing, setGmzSyncing] = useState(false);
 
   // Analytics state
   const [analyticsOverview, setAnalyticsOverview] = useState<AnalyticsOverview | null>(null);
@@ -94,11 +93,6 @@ export default function AdminDashboard() {
   const [primaryColor, setPrimaryColor] = useState<string>("#CCFF00");
   const [gamemonetizeEnabled, setGamemonetizeEnabled] = useState<boolean>(true);
   const [gmzVideoAdsEnabled, setGmzVideoAdsEnabled] = useState<boolean>(true);
-  const importedGmzIds = useMemo(
-    () => new Set(games.map((game) => game.gd_game_id).filter((id): id is string => !!id)),
-    [games]
-  );
-
   const fetchGames = useCallback(async (page: number = 1, append: boolean = false) => {
     if (!token) return;
     if (append) {
@@ -347,8 +341,17 @@ export default function AdminDashboard() {
   const [gmzSearch, setGmzSearch] = useState("");
 
   // GameMonetize functions
-  const fetchGmzGames = async (category?: string, page: number = 1, append: boolean = false, search?: string, sort?: string) => {
+  const fetchGmzGames = async (
+    category?: string,
+    page: number = 1,
+    append: boolean = false,
+    search?: string,
+    sort?: string
+  ) => {
     setGmzLoading(true);
+    if (!append) {
+      setSelectedGmzGames(new Set());
+    }
     try {
       const params = new URLSearchParams();
       if (category && category.toLowerCase() !== "all") params.append("category", category);
@@ -361,10 +364,15 @@ export default function AdminDashboard() {
       const res = await fetch(`${API_URL}/api/gamemonetize/browse?${params}`);
       if (res.ok) {
         const data = await res.json();
+        const nextGames: GMZGame[] = data.games || [];
         if (append) {
-          setGmzGames(prev => [...prev, ...(data.games || [])]);
+          setGmzGames(prev => {
+            const seen = new Set(prev.map((game) => game.gmz_game_id));
+            const deduped = nextGames.filter((game) => !seen.has(game.gmz_game_id));
+            return [...prev, ...deduped];
+          });
         } else {
-          setGmzGames(data.games || []);
+          setGmzGames(nextGames);
         }
         setGmzHasMore(data.has_more || false);
         setGmzTotal(data.total || 0);
@@ -375,28 +383,6 @@ export default function AdminDashboard() {
       toast.error("Failed to load games from GameMonetize");
     }
     setGmzLoading(false);
-  };
-
-  const syncNewGmzGames = async () => {
-    if (!token) return;
-    setGmzSyncing(true);
-    try {
-      const res = await fetch(`${API_URL}/api/admin/gamemonetize/sync-new`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (res.ok) {
-        toast.success(data.message || `Imported ${data.imported} new games`);
-        fetchGames();
-        fetchGmzGames(gmzCategory, 1, false, gmzSearch, gmzSort);
-      } else {
-        toast.error(data.detail || "Sync failed");
-      }
-    } catch {
-      toast.error("Failed to sync games");
-    }
-    setGmzSyncing(false);
   };
 
   const fetchGmzCategories = async () => {
@@ -672,10 +658,8 @@ export default function AdminDashboard() {
                 gmzTotal={gmzTotal}
                 gmzPage={gmzPage}
                 selectedGmzGames={selectedGmzGames}
-                importedGmzIds={importedGmzIds}
                 importing={gmzImporting}
                 gmzVideoAdsEnabled={gmzVideoAdsEnabled}
-                syncing={gmzSyncing}
                 onGmzVideoAdsToggle={async (enabled: boolean) => {
                   try {
                     const res = await fetch(`${API_URL}/api/admin/settings`, {
@@ -703,7 +687,6 @@ export default function AdminDashboard() {
                 onImportSelected={importSelectedGmzGames}
                 onSelectAll={selectAllGmzGames}
                 onClearSelection={clearGmzSelection}
-                onSyncNew={syncNewGmzGames}
               />
             )}
           </TabsContent>
