@@ -36,12 +36,6 @@ export interface User {
   saved_games: string[];
   high_scores: Record<string, number>;
   created_at: string;
-  // Login streak fields
-  login_streak?: number;
-  best_login_streak?: number;
-  total_login_days?: number;
-  streak_points?: number;
-  last_login_date?: string;
   // Wallet fields
   coin_balance?: number;
   total_coins_purchased?: number;

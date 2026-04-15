@@ -2,11 +2,10 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Search, ChevronRight, Play, Flame, ArrowLeft, Loader2, X } from "lucide-react";
+import { Search, ChevronRight, Play, ArrowLeft, Loader2, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { API_URL } from "@/lib/api";
-import { useAuthStore } from "@/store";
 import { ThemeToggle } from "@/components/theme-toggle";
 import type { Game } from "@/types";
 const EXPLORE_CACHE_KEY = "hypd:explore_data";
@@ -205,7 +204,6 @@ function CategoryPage({ name, onBack, onClick }: { name: string; onBack: () => v
 
 export default function ExplorePage() {
   const router = useRouter();
-  const { user } = useAuthStore();
 
   const [games, setGames] = useState<Game[]>([]);
   const [categoriesWithGames, setCategoriesWithGames] = useState<ExploreCategorySummary[]>([]);
@@ -266,12 +264,7 @@ export default function ExplorePage() {
     <div className="min-h-screen hook-gradient-bg pb-28" data-testid="explore-page">
       <div className="px-5 pt-5 pb-3 flex items-center justify-between">
         <h1 className="text-2xl font-extrabold text-foreground">Discover</h1>
-        <div className="flex items-center gap-2.5">
-          <div className="flex items-center gap-1 bg-muted rounded-pill px-2.5 py-1.5">
-            <Flame className="w-3.5 h-3.5 text-orange-400" /><span className="text-xs font-bold">{user?.login_streak || 0}</span>
-          </div>
-          <ThemeToggle />
-        </div>
+        <ThemeToggle />
       </div>
 
       <div className="px-5 mb-5 relative">

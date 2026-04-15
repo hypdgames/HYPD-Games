@@ -56,12 +56,12 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), default=utc_now)
     last_active_at = Column(DateTime(timezone=True), default=utc_now)
     
-    # Login streak tracking
-    login_streak = Column(Integer, default=0)  # Current consecutive days
-    best_login_streak = Column(Integer, default=0)  # Highest streak achieved
-    last_login_date = Column(Date, nullable=True)  # Last date user logged in (date only, not time)
-    total_login_days = Column(Integer, default=0)  # Total unique days logged in
-    streak_points = Column(Integer, default=0)  # Points earned from streaks
+    # Legacy streak columns remain in the database for compatibility, but the feature is retired
+    login_streak = Column(Integer, default=0)
+    best_login_streak = Column(Integer, default=0)
+    last_login_date = Column(Date, nullable=True)
+    total_login_days = Column(Integer, default=0)
+    streak_points = Column(Integer, default=0)
     
     # Wallet/Coins system
     coin_balance = Column(Integer, default=0)  # Current coin balance
@@ -91,12 +91,6 @@ class User(Base):
             "bio": self.bio,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "last_active_at": self.last_active_at.isoformat() if self.last_active_at else None,
-            # Login streak info (always include for gamification)
-            "login_streak": self.login_streak or 0,
-            "best_login_streak": self.best_login_streak or 0,
-            "total_login_days": self.total_login_days or 0,
-            "streak_points": self.streak_points or 0,
-            "last_login_date": self.last_login_date.isoformat() if self.last_login_date else None,
             # Wallet info (always include)
             "coin_balance": self.coin_balance or 0,
             "is_ad_free": self.is_ad_free or False,

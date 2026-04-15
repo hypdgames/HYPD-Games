@@ -19,26 +19,6 @@ export interface SearchUser {
   friendship_status: "none" | "friends" | "pending_sent" | "pending_received";
 }
 
-export interface StreakData {
-  current_streak: number;
-  best_streak: number;
-  total_login_days: number;
-  streak_points: number;
-  last_login_date: string | null;
-  streak_active: boolean;
-  next_milestone: number | null;
-  days_to_milestone: number | null;
-  current_multiplier: number;
-}
-
-export interface LeaderboardEntry {
-  rank: number;
-  username: string;
-  login_streak: number;
-  best_streak: number;
-  streak_points: number;
-}
-
 export interface CoinPackage {
   package_id: string;
   name: string;

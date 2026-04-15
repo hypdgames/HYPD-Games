@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Flame, Heart, Coins, Users } from "lucide-react";
+import { Heart, Coins, Users } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { API_URL } from "@/lib/api";
 import { useAuthStore } from "@/store";
@@ -13,15 +13,12 @@ import type {
   Friend,
   FriendRequest,
   SearchUser,
-  StreakData,
-  LeaderboardEntry,
   CoinPackage,
   Transaction,
 } from "./types";
 
 import { AuthView } from "./components/AuthView";
 import { ProfileHeader } from "./components/ProfileHeader";
-import { StreakTab } from "./components/StreakTab";
 import { GamesTab } from "./components/GamesTab";
 import { FriendsTab } from "./components/FriendsTab";
 import { WalletTab } from "./components/WalletTab";
@@ -34,7 +31,7 @@ export default function ProfilePage() {
   const { user, token, login, register, logout, settings } =
     useAuthStore();
 
-  const defaultTab = tabParam === "wallet" ? "wallet" : "streak";
+  const defaultTab = tabParam === "wallet" ? "wallet" : "games";
 
   const [savedGames, setSavedGames] = useState<Game[]>([]);
 
@@ -45,13 +42,6 @@ export default function ProfilePage() {
   const [searchResults, setSearchResults] = useState<SearchUser[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [friendsLoading, setFriendsLoading] = useState(false);
-
-  // Streak state
-  const [streakData, setStreakData] = useState<StreakData | null>(null);
-  const [streakLeaderboard, setStreakLeaderboard] = useState<
-    LeaderboardEntry[]
-  >([]);
-  const [streakLoading, setStreakLoading] = useState(false);
 
   // Wallet state
   const [walletPackages, setWalletPackages] = useState<CoinPackage[]>([]);
@@ -103,27 +93,6 @@ export default function ProfilePage() {
       console.error("Error fetching friends:", e);
     }
     setFriendsLoading(false);
-  };
-
-  const fetchStreakData = async () => {
-    if (!token) return;
-    setStreakLoading(true);
-    try {
-      const [streakRes, leaderboardRes] = await Promise.all([
-        fetch(`${API_URL}/api/user/streak`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch(`${API_URL}/api/user/streak/leaderboard`),
-      ]);
-      if (streakRes.ok) setStreakData(await streakRes.json());
-      if (leaderboardRes.ok) {
-        const data = await leaderboardRes.json();
-        setStreakLeaderboard(data.leaderboard || []);
-      }
-    } catch (e) {
-      console.error("Error fetching streak data:", e);
-    }
-    setStreakLoading(false);
   };
 
   const fetchWalletData = async () => {
@@ -259,7 +228,6 @@ export default function ProfilePage() {
     if (user && token) {
       fetchSavedGames();
       fetchFriends();
-      fetchStreakData();
       fetchWalletData();
       fetchTransactions();
     }
@@ -306,15 +274,7 @@ export default function ProfilePage() {
 
       <div className="px-5">
         <Tabs defaultValue={defaultTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-5">
-            <TabsTrigger
-              value="streak"
-              className="flex items-center gap-1"
-              data-testid="streak-tab"
-            >
-              <Flame className="w-4 h-4" />
-              <span className="hidden sm:inline">Streak</span>
-            </TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 mb-5">
             <TabsTrigger value="games" className="flex items-center gap-1">
               <Heart className="w-4 h-4" />
               <span className="hidden sm:inline">Games</span>
@@ -336,15 +296,6 @@ export default function ProfilePage() {
               )}
             </TabsTrigger>
           </TabsList>
-
-          <TabsContent value="streak" data-testid="streak-tab-content">
-            <StreakTab
-              user={user}
-              streakData={streakData}
-              streakLeaderboard={streakLeaderboard}
-              streakLoading={streakLoading}
-            />
-          </TabsContent>
 
           <TabsContent value="games">
             <GamesTab user={user} savedGames={savedGames} />

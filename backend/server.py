@@ -373,12 +373,6 @@ class UserResponse(BaseModel):
     saved_games: List[str] = []
     high_scores: dict = {}
     created_at: Optional[str] = None
-    # Login streak fields
-    login_streak: int = 0
-    best_login_streak: int = 0
-    total_login_days: int = 0
-    streak_points: int = 0
-    last_login_date: Optional[str] = None
     # Wallet fields
     coin_balance: int = 0
     total_coins_purchased: int = 0
@@ -571,98 +565,13 @@ async def login(credentials: UserLogin, request: Request, db: AsyncSession = Dep
         security_logger.warning(f"Banned user login attempt: {user.id} from IP: {client_ip}")
         raise HTTPException(status_code=403, detail="Account is banned")
     
-    # ==================== LOGIN STREAK LOGIC ====================
-    today = datetime.now(timezone.utc).date()
-    last_login = user.last_login_date
-    
-    streak_updated = False
-    points_earned = 0
-    
-    if last_login is None:
-        # First login ever - start streak at 1
-        user.login_streak = 1
-        user.best_login_streak = 1
-        user.total_login_days = 1
-        user.streak_points = 10  # Base points for first login
-        points_earned = 10
-        streak_updated = True
-    elif last_login == today:
-        # Already logged in today - don't update streak
-        pass
-    elif last_login == today - timedelta(days=1):
-        # Consecutive day - increment streak
-        user.login_streak = (user.login_streak or 0) + 1
-        user.total_login_days = (user.total_login_days or 0) + 1
-        
-        # Bonus points based on streak length
-        if user.login_streak <= 7:
-            points_earned = 10 * user.login_streak  # Day 1: 10, Day 7: 70
-        elif user.login_streak <= 30:
-            points_earned = 100 + (user.login_streak - 7) * 15  # Up to 445 at day 30
-        else:
-            points_earned = 500 + (user.login_streak - 30) * 20  # 500+ after day 30
-        
-        user.streak_points = (user.streak_points or 0) + points_earned
-        
-        # Award bonus coins for streak milestones
-        coins_earned = 0
-        if user.login_streak == 7:
-            coins_earned = 50  # 7-day milestone
-        elif user.login_streak == 14:
-            coins_earned = 100  # 14-day milestone
-        elif user.login_streak == 30:
-            coins_earned = 250  # 30-day milestone
-        elif user.login_streak == 60:
-            coins_earned = 500  # 60-day milestone
-        elif user.login_streak == 90:
-            coins_earned = 750  # 90-day milestone
-        elif user.login_streak == 180:
-            coins_earned = 1500  # 180-day milestone
-        elif user.login_streak == 365:
-            coins_earned = 5000  # 365-day milestone
-        elif user.login_streak % 30 == 0 and user.login_streak > 90:
-            coins_earned = 300  # Every 30 days after 90 days
-        
-        if coins_earned > 0:
-            user.coin_balance = (user.coin_balance or 0) + coins_earned
-            user.total_coins_earned = (user.total_coins_earned or 0) + coins_earned
-        
-        # Update best streak if current is higher
-        if user.login_streak > (user.best_login_streak or 0):
-            user.best_login_streak = user.login_streak
-        
-        streak_updated = True
-    else:
-        # Streak broken (more than 1 day gap) - reset to 1
-        user.login_streak = 1
-        user.total_login_days = (user.total_login_days or 0) + 1
-        points_earned = 10  # Base points for new streak
-        user.streak_points = (user.streak_points or 0) + points_earned
-        coins_earned = 0
-        streak_updated = True
-    
-    # Update last login date
-    if last_login != today:
-        user.last_login_date = today
-        await db.execute(
-            update(User)
-            .where(User.id == user.id)
-            .values(
-                login_streak=user.login_streak,
-                best_login_streak=user.best_login_streak,
-                last_login_date=user.last_login_date,
-                total_login_days=user.total_login_days,
-                streak_points=user.streak_points,
-                coin_balance=user.coin_balance,
-                total_coins_earned=user.total_coins_earned,
-                last_active_at=datetime.now(timezone.utc)
-            )
-        )
-        await db.commit()
-        await db.refresh(user)
-        
-        if streak_updated:
-            logger.info(f"Login streak updated for user {user.id}: streak={user.login_streak}, points={points_earned}, coins={coins_earned}")
+    await db.execute(
+        update(User)
+        .where(User.id == user.id)
+        .values(last_active_at=datetime.now(timezone.utc))
+    )
+    await db.commit()
+    await db.refresh(user)
     
     security_logger.info(f"Successful login for user: {user.id} from IP: {client_ip}")
     
@@ -672,78 +581,6 @@ async def login(credentials: UserLogin, request: Request, db: AsyncSession = Dep
 @api_router.get("/auth/me", response_model=UserResponse)
 async def get_me(user: User = Depends(get_current_user)):
     return UserResponse(**user.to_dict(include_private=True))
-
-# ==================== USER STREAK ENDPOINTS ====================
-
-@api_router.get("/user/streak")
-async def get_user_streak(user: User = Depends(get_current_user)):
-    """Get current user's login streak information"""
-    today = datetime.now(timezone.utc).date()
-    last_login = user.last_login_date
-    
-    # Calculate if streak is still active (hasn't been broken)
-    streak_active = False
-    if last_login:
-        days_since_login = (today - last_login).days
-        streak_active = days_since_login <= 1  # Active if logged in today or yesterday
-    
-    # Calculate days until next milestone
-    current_streak = user.login_streak or 0
-    milestones = [7, 14, 30, 60, 90, 180, 365]
-    next_milestone = None
-    days_to_milestone = None
-    
-    for m in milestones:
-        if current_streak < m:
-            next_milestone = m
-            days_to_milestone = m - current_streak
-            break
-    
-    # Calculate bonus multiplier
-    if current_streak <= 7:
-        multiplier = current_streak
-    elif current_streak <= 30:
-        multiplier = 7 + ((current_streak - 7) * 1.5)
-    else:
-        multiplier = 7 + 34.5 + ((current_streak - 30) * 2)
-    
-    return {
-        "current_streak": current_streak,
-        "best_streak": user.best_login_streak or 0,
-        "total_login_days": user.total_login_days or 0,
-        "streak_points": user.streak_points or 0,
-        "last_login_date": user.last_login_date.isoformat() if user.last_login_date else None,
-        "streak_active": streak_active,
-        "next_milestone": next_milestone,
-        "days_to_milestone": days_to_milestone,
-        "current_multiplier": round(multiplier, 1)
-    }
-
-@api_router.get("/user/streak/leaderboard")
-async def get_streak_leaderboard(
-    limit: int = 10,
-    db: AsyncSession = Depends(get_db)
-):
-    """Get top users by login streak"""
-    result = await db.execute(
-        select(User)
-        .where(User.is_banned == False)
-        .order_by(desc(User.login_streak))
-        .limit(limit)
-    )
-    users = result.scalars().all()
-    
-    leaderboard = []
-    for i, u in enumerate(users, 1):
-        leaderboard.append({
-            "rank": i,
-            "username": u.username,
-            "login_streak": u.login_streak or 0,
-            "best_streak": u.best_login_streak or 0,
-            "streak_points": u.streak_points or 0
-        })
-    
-    return {"leaderboard": leaderboard}
 
 @api_router.post("/auth/save-game/{game_id}")
 async def save_game(game_id: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):

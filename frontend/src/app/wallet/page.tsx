@@ -312,7 +312,7 @@ export default function WalletPage() {
                       <div>
                         <h4 className="font-bold text-foreground">Coming Soon!</h4>
                         <p className="text-sm text-muted-foreground">
-                          Coin purchases will be available soon. Earn free coins through login streaks!
+                          Coin purchases will be available soon.
                         </p>
                       </div>
                     </div>
@@ -377,21 +377,14 @@ export default function WalletPage() {
                   </motion.div>
                 ))}
 
-                {/* Earn Free Coins */}
                 <div className="mt-6 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/30 rounded-xl p-4">
                   <h4 className="font-bold text-foreground flex items-center gap-2 mb-2">
                     <Gift className="w-5 h-5 text-purple-500" />
-                    Earn Free Coins!
+                    More Ways To Earn Coins
                   </h4>
                   <p className="text-sm text-muted-foreground mb-3">
-                    Maintain your daily login streak to earn bonus coins at milestones:
+                    Extra coin rewards are being redesigned and will return in a future update.
                   </p>
-                  <div className="flex flex-wrap gap-2 text-xs">
-                    <span className="bg-muted px-2 py-1 rounded">7 days: 50</span>
-                    <span className="bg-muted px-2 py-1 rounded">14 days: 100</span>
-                    <span className="bg-muted px-2 py-1 rounded">30 days: 250</span>
-                    <span className="bg-muted px-2 py-1 rounded">60 days: 500</span>
-                  </div>
                 </div>
               </div>
             )}
