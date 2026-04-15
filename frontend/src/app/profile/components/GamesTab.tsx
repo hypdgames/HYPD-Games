@@ -4,14 +4,13 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Heart, ChevronRight } from "lucide-react";
-import type { User, Game } from "@/types";
+import type { Game } from "@/types";
 
 interface GamesTabProps {
-  user: User;
   savedGames: Game[];
 }
 
-export function GamesTab({ user, savedGames }: GamesTabProps) {
+export function GamesTab({ savedGames }: GamesTabProps) {
   const router = useRouter();
 
   return (
@@ -59,36 +58,6 @@ export function GamesTab({ user, savedGames }: GamesTabProps) {
           <p className="text-xs text-muted-foreground/70">
             Tap the heart on any game to save it
           </p>
-        </div>
-      )}
-
-      {/* High Scores */}
-      {Object.keys(user.high_scores || {}).length > 0 && (
-        <div>
-          <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-3">
-            High Scores
-          </h3>
-          <div className="bg-card border border-border rounded-xl overflow-hidden">
-            {Object.entries(user.high_scores).map(
-              ([gameId, score], index) => (
-                <div
-                  key={gameId}
-                  className={`flex items-center justify-between p-3 ${
-                    index !== Object.entries(user.high_scores).length - 1
-                      ? "border-b border-border"
-                      : ""
-                  }`}
-                >
-                  <span className="text-sm text-foreground">
-                    Game #{gameId.slice(0, 8)}
-                  </span>
-                  <span className="font-heading text-lime">
-                    {score.toLocaleString()}
-                  </span>
-                </div>
-              )
-            )}
-          </div>
         </div>
       )}
     </>

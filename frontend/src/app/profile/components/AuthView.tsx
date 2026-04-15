@@ -58,7 +58,7 @@ export function AuthView({ onLogin, onRegister }: AuthViewProps) {
             <User className="w-12 h-12 text-muted-foreground" />
           </div>
           <h2 className="font-extrabold text-2xl mb-2">Join HYPD</h2>
-          <p className="text-muted-foreground text-[15px]">Save progress, track scores & more</p>
+          <p className="text-muted-foreground text-[15px]">Save games and keep your account synced</p>
         </div>
 
         {/* Filter pills for Login/Register (Hook-style) */}

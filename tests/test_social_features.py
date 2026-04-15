@@ -1,5 +1,5 @@
 """
-Test Social Features - Friends, Leaderboards, Challenges, Analytics
+Test Social Features - Friends, Challenges, Analytics
 Tests for Hypd Games social features implementation
 """
 
@@ -26,36 +26,6 @@ TEST_USER_2 = {
     "email": f"testuser2_{uuid.uuid4().hex[:6]}@test.com",
     "password": "testpass123"
 }
-
-
-class TestLeaderboardAPI:
-    """Test Leaderboard endpoints"""
-    
-    def test_global_leaderboard(self):
-        """Test global leaderboard endpoint"""
-        response = requests.get(f"{BASE_URL}/api/leaderboard/global")
-        assert response.status_code == 200
-        data = response.json()
-        assert "leaderboard" in data
-        assert isinstance(data["leaderboard"], list)
-        print(f"Global leaderboard returned {len(data['leaderboard'])} entries")
-    
-    def test_game_leaderboard(self):
-        """Test game-specific leaderboard endpoint"""
-        # First get a game ID
-        games_response = requests.get(f"{BASE_URL}/api/games")
-        assert games_response.status_code == 200
-        games = games_response.json()
-        
-        if len(games) > 0:
-            game_id = games[0]["id"]
-            response = requests.get(f"{BASE_URL}/api/leaderboard/game/{game_id}")
-            assert response.status_code == 200
-            data = response.json()
-            assert "leaderboard" in data
-            print(f"Game leaderboard for {game_id} returned {len(data['leaderboard'])} entries")
-        else:
-            pytest.skip("No games available to test game leaderboard")
 
 
 class TestFriendsAPI:
@@ -298,45 +268,6 @@ class TestAdminAnalyticsAPI:
         # Try with non-admin user (if we have one)
         # For now, just verify auth is required
         print("Analytics endpoints correctly require authentication")
-
-
-class TestScoreSubmission:
-    """Test score submission and leaderboard updates"""
-    
-    @pytest.fixture(scope="class")
-    def user_token(self):
-        """Get a user token"""
-        response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": ADMIN_EMAIL,
-            "password": ADMIN_PASSWORD
-        })
-        if response.status_code == 200:
-            return response.json()["access_token"]
-        pytest.skip("Could not login for score submission test")
-    
-    def test_submit_score(self, user_token):
-        """Test submitting a score"""
-        # Get a game ID first
-        games_response = requests.get(f"{BASE_URL}/api/games")
-        if games_response.status_code != 200 or len(games_response.json()) == 0:
-            pytest.skip("No games available for score submission test")
-        
-        game_id = games_response.json()[0]["id"]
-        
-        response = requests.post(
-            f"{BASE_URL}/api/leaderboard/submit",
-            headers={"Authorization": f"Bearer {user_token}"},
-            json={
-                "game_id": game_id,
-                "score": 1000,
-                "play_time": 120
-            }
-        )
-        assert response.status_code == 200
-        data = response.json()
-        assert data.get("success") == True
-        print(f"Score submitted successfully. New high score: {data.get('new_high_score')}")
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v", "--tb=short"])

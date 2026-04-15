@@ -144,7 +144,7 @@ export default function ChallengesPage() {
               Join Challenges
             </h2>
             <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
-              Complete daily and weekly challenges to earn points, badges, and climb the leaderboard!
+              Complete daily and weekly challenges to earn badges and keep your activity going.
             </p>
             <Button 
               onClick={() => window.location.href = "/profile"}

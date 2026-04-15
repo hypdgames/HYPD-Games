@@ -150,7 +150,7 @@ export default function GamePlayer() {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ game_id: gameId, duration_seconds: durationSeconds, score: null }),
+        body: JSON.stringify({ game_id: gameId, duration_seconds: durationSeconds }),
       });
     } catch (e) { console.error("Failed to record play session:", e); }
   };

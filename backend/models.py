@@ -48,7 +48,7 @@ class User(Base):
     is_banned = Column(Boolean, default=False, index=True)
     ban_reason = Column(String(500), nullable=True)
     saved_games = Column(JSON, default=list)  # List of game IDs
-    high_scores = Column(JSON, default=dict)  # Dict of game_id: score
+    high_scores = Column(JSON, default=dict)  # Legacy score data retained in DB; no longer exposed
     total_play_time = Column(Integer, default=0)  # Total seconds played
     total_games_played = Column(Integer, default=0)
     avatar_url = Column(Text, nullable=True)
@@ -63,13 +63,13 @@ class User(Base):
     total_login_days = Column(Integer, default=0)
     streak_points = Column(Integer, default=0)
     
-    # Wallet/Coins system
-    coin_balance = Column(Integer, default=0)  # Current coin balance
-    total_coins_purchased = Column(Integer, default=0)  # Lifetime coins purchased
-    total_coins_spent = Column(Integer, default=0)  # Lifetime coins spent
-    total_coins_earned = Column(Integer, default=0)  # Lifetime coins earned (bonus/rewards)
-    is_ad_free = Column(Boolean, default=False)  # Currently has ad-free status
-    ad_free_until = Column(DateTime(timezone=True), nullable=True)  # When ad-free expires
+    # Legacy wallet/coins columns remain in the database for compatibility, but the feature is retired
+    coin_balance = Column(Integer, default=0)
+    total_coins_purchased = Column(Integer, default=0)
+    total_coins_spent = Column(Integer, default=0)
+    total_coins_earned = Column(Integer, default=0)
+    is_ad_free = Column(Boolean, default=False)
+    ad_free_until = Column(DateTime(timezone=True), nullable=True)
     
     # Relationships
     play_sessions = relationship('PlaySession', back_populates='user', cascade='all, delete-orphan')
@@ -91,18 +91,10 @@ class User(Base):
             "bio": self.bio,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "last_active_at": self.last_active_at.isoformat() if self.last_active_at else None,
-            # Wallet info (always include)
-            "coin_balance": self.coin_balance or 0,
-            "is_ad_free": self.is_ad_free or False,
-            "ad_free_until": self.ad_free_until.isoformat() if self.ad_free_until else None
         }
         if include_private:
             data["email"] = self.email
             data["saved_games"] = self.saved_games or []
-            data["high_scores"] = self.high_scores or {}
-            data["total_coins_purchased"] = self.total_coins_purchased or 0
-            data["total_coins_spent"] = self.total_coins_spent or 0
-            data["total_coins_earned"] = self.total_coins_earned or 0
         return data
 
 

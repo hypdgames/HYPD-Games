@@ -1,37 +1,28 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Heart, Coins, Users } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Heart, Users } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { API_URL } from "@/lib/api";
 import { useAuthStore } from "@/store";
 import { toast } from "sonner";
 import type { Game } from "@/types";
 
-import type {
-  Friend,
-  FriendRequest,
-  SearchUser,
-  CoinPackage,
-  Transaction,
-} from "./types";
+import type { Friend, FriendRequest, SearchUser } from "./types";
 
 import { AuthView } from "./components/AuthView";
 import { ProfileHeader } from "./components/ProfileHeader";
 import { GamesTab } from "./components/GamesTab";
 import { FriendsTab } from "./components/FriendsTab";
-import { WalletTab } from "./components/WalletTab";
 import { AdminSection } from "./components/AdminSection";
 
 export default function ProfilePage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const tabParam = searchParams.get("tab");
   const { user, token, login, register, logout, settings } =
     useAuthStore();
 
-  const defaultTab = tabParam === "wallet" ? "wallet" : "games";
+  const defaultTab = "games";
 
   const [savedGames, setSavedGames] = useState<Game[]>([]);
 
@@ -42,12 +33,6 @@ export default function ProfilePage() {
   const [searchResults, setSearchResults] = useState<SearchUser[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [friendsLoading, setFriendsLoading] = useState(false);
-
-  // Wallet state
-  const [walletPackages, setWalletPackages] = useState<CoinPackage[]>([]);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [walletLoading, setWalletLoading] = useState(false);
-  const [purchasesEnabled, setPurchasesEnabled] = useState(false);
 
   // --- Data Fetching ---
 
@@ -93,36 +78,6 @@ export default function ProfilePage() {
       console.error("Error fetching friends:", e);
     }
     setFriendsLoading(false);
-  };
-
-  const fetchWalletData = async () => {
-    setWalletLoading(true);
-    try {
-      const packagesRes = await fetch(`${API_URL}/api/wallet/packages`);
-      if (packagesRes.ok) {
-        const data = await packagesRes.json();
-        setWalletPackages(data.packages || []);
-        setPurchasesEnabled(data.purchases_enabled || false);
-      }
-    } catch (e) {
-      console.error("Error fetching wallet data:", e);
-    }
-    setWalletLoading(false);
-  };
-
-  const fetchTransactions = async () => {
-    if (!token) return;
-    try {
-      const res = await fetch(`${API_URL}/api/wallet/transactions?limit=20`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setTransactions(data.transactions || []);
-      }
-    } catch (e) {
-      console.error("Error fetching transactions:", e);
-    }
   };
 
   // --- Friend Actions ---
@@ -228,8 +183,6 @@ export default function ProfilePage() {
     if (user && token) {
       fetchSavedGames();
       fetchFriends();
-      fetchWalletData();
-      fetchTransactions();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, token]);
@@ -274,18 +227,10 @@ export default function ProfilePage() {
 
       <div className="px-5">
         <Tabs defaultValue={defaultTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-5">
+          <TabsList className="grid w-full grid-cols-2 mb-5">
             <TabsTrigger value="games" className="flex items-center gap-1">
               <Heart className="w-4 h-4" />
               <span className="hidden sm:inline">Games</span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="wallet"
-              className="flex items-center gap-1"
-              data-testid="wallet-tab"
-            >
-              <Coins className="w-4 h-4" />
-              <span className="hidden sm:inline">Coins</span>
             </TabsTrigger>
             <TabsTrigger value="friends" className="flex items-center gap-1">
               <Users className="w-4 h-4" />
@@ -298,18 +243,7 @@ export default function ProfilePage() {
           </TabsList>
 
           <TabsContent value="games">
-            <GamesTab user={user} savedGames={savedGames} />
-          </TabsContent>
-
-          <TabsContent value="wallet" data-testid="wallet-tab-content">
-            <WalletTab
-              user={user}
-              token={token!}
-              walletPackages={walletPackages}
-              transactions={transactions}
-              walletLoading={walletLoading}
-              purchasesEnabled={purchasesEnabled}
-            />
+            <GamesTab savedGames={savedGames} />
           </TabsContent>
 
           <TabsContent value="friends">

@@ -1,6 +1,6 @@
 """
 Redis Caching Module for Hypd Games
-Provides caching for game feed, leaderboards, and analytics
+Provides caching for game feed and analytics
 """
 
 import os
@@ -31,8 +31,6 @@ CACHE_KEYS = {
     "games_feed": "hypd:games:feed",
     "game": "hypd:game:",
     "categories": "hypd:categories",
-    "leaderboard_global": "hypd:leaderboard:global",
-    "leaderboard_game": "hypd:leaderboard:game:",
     "user_profile": "hypd:user:",
     "analytics_daily": "hypd:analytics:daily:",
     "challenges_active": "hypd:challenges:active",
@@ -43,7 +41,6 @@ CACHE_TTLS = {
     "games_feed": 60,  # 1 minute
     "game": 300,  # 5 minutes
     "categories": 3600,  # 1 hour
-    "leaderboard": 30,  # 30 seconds (frequently updated)
     "user_profile": 300,  # 5 minutes
     "analytics": 300,  # 5 minutes
     "challenges": 60,  # 1 minute
@@ -123,33 +120,6 @@ def set_games_feed(games: list, category: Optional[str] = None) -> bool:
 def invalidate_games_cache() -> int:
     """Invalidate all games-related cache"""
     return delete_pattern("hypd:games:*")
-
-
-def get_leaderboard(leaderboard_type: str, game_id: Optional[str] = None) -> Optional[list]:
-    """Get cached leaderboard"""
-    if game_id:
-        key = f"{CACHE_KEYS['leaderboard_game']}{game_id}"
-    else:
-        key = CACHE_KEYS['leaderboard_global']
-    return get_cache(key)
-
-
-def set_leaderboard(data: list, leaderboard_type: str, game_id: Optional[str] = None) -> bool:
-    """Cache leaderboard data"""
-    if game_id:
-        key = f"{CACHE_KEYS['leaderboard_game']}{game_id}"
-    else:
-        key = CACHE_KEYS['leaderboard_global']
-    return set_cache(key, data, CACHE_TTLS["leaderboard"])
-
-
-def invalidate_leaderboard(game_id: Optional[str] = None) -> bool:
-    """Invalidate leaderboard cache"""
-    if game_id:
-        return delete_cache(f"{CACHE_KEYS['leaderboard_game']}{game_id}")
-    else:
-        delete_pattern("hypd:leaderboard:*")
-        return True
 
 
 def is_redis_available() -> bool:

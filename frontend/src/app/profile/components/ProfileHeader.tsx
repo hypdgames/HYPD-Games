@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { LogOut, Heart, Trophy, Coins, Users } from "lucide-react";
+import { LogOut, Heart, Gamepad2, Users } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import type { User, AppSettings } from "@/types";
 
@@ -47,11 +47,10 @@ export function ProfileHeader({ user, friendsCount, onLogout }: ProfileHeaderPro
         </motion.div>
 
         {/* Stats — soft cards (Hook's card style) */}
-        <div className="grid grid-cols-4 gap-2.5 mb-6">
+        <div className="grid grid-cols-3 gap-2.5 mb-6">
           {[
             { icon: Heart, color: "text-red-500", val: user.saved_games?.length || 0, label: "Saved" },
-            { icon: Trophy, color: "text-yellow-500", val: Object.keys(user.high_scores || {}).length, label: "Scores" },
-            { icon: Coins, color: "text-lime", val: user.coin_balance || 0, label: "Coins" },
+            { icon: Gamepad2, color: "text-lime", val: user.total_games_played || 0, label: "Played" },
             { icon: Users, color: "text-blue-500", val: friendsCount, label: "Friends" },
           ].map(({ icon: Icon, color, val, label }) => (
             <div key={label} className="soft-card text-center">

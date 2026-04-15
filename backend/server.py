@@ -35,13 +35,11 @@ from database import get_db, engine, Base
 from models import (
     User, Game, PlaySession, AppSettings,
     Friendship, FriendshipStatus, Challenge, ChallengeParticipant,
-    ChallengeType, ChallengeStatus, LeaderboardEntry, AnalyticsEvent, DailyStats,
-    WalletTransaction, TransactionType, TransactionStatus, CoinPackage, PremiumGame, UserUnlockedGame,
+    ChallengeType, ChallengeStatus, AnalyticsEvent, DailyStats,
     IdleGameState, GameComment, CommentLike
 )
 from cache import (
     get_games_feed, set_games_feed, invalidate_games_cache,
-    get_leaderboard, set_leaderboard, invalidate_leaderboard,
     is_redis_available, get_cache, set_cache, delete_cache
 )
 
@@ -63,11 +61,6 @@ security_logger.setLevel(logging.INFO)
 JWT_SECRET = os.environ.get('JWT_SECRET')
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRATION_HOURS = 24
-
-# Stripe Configuration
-STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY')
-if STRIPE_API_KEY:
-    logger.info("Stripe API key configured")
 
 # Supabase Configuration
 SUPABASE_URL = os.environ.get('SUPABASE_URL')
@@ -371,13 +364,7 @@ class UserResponse(BaseModel):
     email: str
     is_admin: bool
     saved_games: List[str] = []
-    high_scores: dict = {}
     created_at: Optional[str] = None
-    # Wallet fields
-    coin_balance: int = 0
-    total_coins_purchased: int = 0
-    total_coins_spent: int = 0
-    total_coins_earned: int = 0
 
 class GameCreate(BaseModel):
     title: str
@@ -430,7 +417,6 @@ class GameFeedResponse(BaseModel):
 class PlaySessionCreate(BaseModel):
     game_id: str
     duration_seconds: int
-    score: Optional[int] = None
 
 # ==================== AUTH HELPERS ====================
 
@@ -531,8 +517,7 @@ async def register(user_data: UserCreate, request: Request, db: AsyncSession = D
         email=user_data.email,
         hashed_password=hash_password(user_data.password),
         is_admin=False,
-        saved_games=[],
-        high_scores={}
+        saved_games=[]
     )
     
     db.add(new_user)
@@ -1753,8 +1738,7 @@ async def record_play_session(
         id=str(uuid.uuid4()),
         game_id=session.game_id,
         user_id=user.id if user else None,
-        duration_seconds=session.duration_seconds,
-        score=session.score
+        duration_seconds=session.duration_seconds
     )
     
     db.add(new_session)
@@ -1879,424 +1863,50 @@ async def upload_favicon(
         logger.error(f"Error uploading favicon: {e}")
         raise HTTPException(status_code=500, detail="Failed to upload favicon. Please try again.")
 
-# ==================== WALLET / COINS SYSTEM ====================
+# ==================== RETIRED SITE FEATURES ====================
 
-# Stripe is optional - purchases disabled if not configured
-STRIPE_ENABLED = False
-try:
-    import stripe
-    # Only enable if we have a real API key (not the placeholder)
-    if STRIPE_API_KEY and not STRIPE_API_KEY.startswith("sk_test_emergent"):
-        stripe.api_key = STRIPE_API_KEY
-        STRIPE_ENABLED = True
-        logger.info("Stripe payments enabled")
-    else:
-        logger.info("Stripe API key not configured - purchases disabled")
-except ImportError:
-    logger.info("Stripe SDK not installed - purchases disabled")
+COINS_FEATURE_REMOVED = "Coins and wallet features have been removed from HYPD Games."
+SCORES_FEATURE_REMOVED = "Scores and leaderboards have been removed from HYPD Games."
 
-# Coin package definitions (backend-controlled for security)
-COIN_PACKAGES = {
-    "starter": {"name": "Starter Pack", "coins": 100, "price": 0.99, "bonus": 0},
-    "popular": {"name": "Popular Pack", "coins": 550, "price": 4.99, "bonus": 50},
-    "value": {"name": "Value Pack", "coins": 1200, "price": 9.99, "bonus": 200},
-    "mega": {"name": "Mega Pack", "coins": 2700, "price": 19.99, "bonus": 700},
-    "ultimate": {"name": "Ultimate Pack", "coins": 7000, "price": 49.99, "bonus": 2000},
-}
-
-class WalletPurchaseRequest(BaseModel):
-    package_id: str
-    origin_url: str  # Frontend origin for success/cancel URLs
-
-class WalletSpendRequest(BaseModel):
-    spend_type: str  # 'premium_game'
-    game_id: Optional[str] = None  # For premium_game unlock
 
 @api_router.get("/wallet")
-async def get_wallet(user: User = Depends(get_current_user)):
-    """Get user's wallet information"""
-    return {
-        "coin_balance": user.coin_balance or 0,
-        "total_coins_purchased": user.total_coins_purchased or 0,
-        "total_coins_spent": user.total_coins_spent or 0,
-        "total_coins_earned": user.total_coins_earned or 0
-    }
+async def get_wallet():
+    raise HTTPException(status_code=410, detail=COINS_FEATURE_REMOVED)
+
 
 @api_router.get("/wallet/packages")
 async def get_coin_packages():
-    """Get available coin packages for purchase"""
-    packages = []
-    for pkg_id, pkg in COIN_PACKAGES.items():
-        packages.append({
-            "package_id": pkg_id,
-            "name": pkg["name"],
-            "coins": pkg["coins"],
-            "bonus_coins": pkg["bonus"],
-            "total_coins": pkg["coins"] + pkg["bonus"],
-            "price_usd": pkg["price"],
-            "is_popular": pkg_id == "popular"
-        })
-    return {
-        "packages": sorted(packages, key=lambda x: x["price_usd"]),
-        "purchases_enabled": STRIPE_ENABLED
-    }
+    raise HTTPException(status_code=410, detail=COINS_FEATURE_REMOVED)
+
 
 @api_router.post("/wallet/purchase")
-async def create_purchase_checkout(
-    request: Request,
-    purchase: WalletPurchaseRequest,
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-):
-    """Create Stripe checkout session for coin purchase"""
-    if not STRIPE_ENABLED:
-        raise HTTPException(status_code=503, detail="Coin purchases are coming soon! Stay tuned.")
-    
-    # Validate package
-    if purchase.package_id not in COIN_PACKAGES:
-        raise HTTPException(status_code=400, detail="Invalid package selected")
-    
-    package = COIN_PACKAGES[purchase.package_id]
-    
-    # Build URLs from frontend origin (not hardcoded)
-    success_url = f"{purchase.origin_url}/wallet?payment=success&session_id={{CHECKOUT_SESSION_ID}}"
-    cancel_url = f"{purchase.origin_url}/wallet?payment=cancelled"
-    
-    try:
-        # Create Stripe checkout session using standard SDK
-        session = stripe.checkout.Session.create(
-            payment_method_types=["card"],
-            line_items=[{
-                "price_data": {
-                    "currency": "usd",
-                    "product_data": {
-                        "name": package["name"],
-                        "description": f"{package['coins']} coins" + (f" + {package['bonus']} bonus" if package["bonus"] > 0 else ""),
-                    },
-                    "unit_amount": int(package["price"] * 100),  # Stripe uses cents
-                },
-                "quantity": 1,
-            }],
-            mode="payment",
-            success_url=success_url,
-            cancel_url=cancel_url,
-            metadata={
-                "user_id": user.id,
-                "package_id": purchase.package_id,
-                "coins": str(package["coins"]),
-                "bonus_coins": str(package["bonus"]),
-                "type": "coin_purchase"
-            }
-        )
-        
-        # Create pending transaction record
-        transaction = WalletTransaction(
-            id=str(uuid.uuid4()),
-            user_id=user.id,
-            transaction_type=TransactionType.PURCHASE,
-            status=TransactionStatus.PENDING,
-            coins=package["coins"] + package["bonus"],
-            amount_usd=package["price"],
-            stripe_session_id=session.id,
-            package_id=purchase.package_id,
-            description=f"Purchase: {package['name']}",
-            extra_data={
-                "package_name": package["name"],
-                "base_coins": package["coins"],
-                "bonus_coins": package["bonus"]
-            }
-        )
-        db.add(transaction)
-        await db.commit()
-        
-        logger.info(f"Created checkout session for user {user.id}, package: {purchase.package_id}")
-        
-        return {
-            "checkout_url": session.url,
-            "session_id": session.id
-        }
-        
-    except stripe.error.AuthenticationError as e:
-        logger.error(f"Stripe authentication error: {e}")
-        raise HTTPException(status_code=500, detail="Payment system configuration error. Please contact support.")
-    except stripe.error.StripeError as e:
-        logger.error(f"Stripe error: {e}")
-        raise HTTPException(status_code=500, detail="Payment processing error. Please try again.")
-    except Exception as e:
-        logger.error(f"Checkout error: {e}")
-        raise HTTPException(status_code=500, detail="Failed to create checkout session")
+async def create_purchase_checkout():
+    raise HTTPException(status_code=410, detail=COINS_FEATURE_REMOVED)
+
 
 @api_router.get("/wallet/checkout/status/{session_id}")
-async def check_payment_status(
-    session_id: str,
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-):
-    """Check payment status and credit coins if successful"""
-    if not STRIPE_ENABLED:
-        raise HTTPException(status_code=503, detail="Payment system not available")
-    
-    # Find the transaction
-    result = await db.execute(
-        select(WalletTransaction).where(WalletTransaction.stripe_session_id == session_id)
-    )
-    transaction = result.scalar_one_or_none()
-    
-    if not transaction:
-        raise HTTPException(status_code=404, detail="Transaction not found")
-    
-    # Verify it belongs to this user
-    if transaction.user_id != user.id:
-        raise HTTPException(status_code=403, detail="Access denied")
-    
-    # If already completed, return status
-    if transaction.status == TransactionStatus.COMPLETED:
-        return {
-            "status": "completed",
-            "payment_status": "paid",
-            "coins_credited": transaction.coins,
-            "new_balance": user.coin_balance
-        }
-    
-    # Check with Stripe using standard SDK
-    try:
-        session = stripe.checkout.Session.retrieve(session_id)
-        
-        if session.payment_status == "paid" and transaction.status == TransactionStatus.PENDING:
-            # Credit coins to user (only once)
-            await db.execute(
-                update(User)
-                .where(User.id == user.id)
-                .values(
-                    coin_balance=User.coin_balance + transaction.coins,
-                    total_coins_purchased=User.total_coins_purchased + transaction.coins
-                )
-            )
-            
-            # Update transaction
-            transaction.status = TransactionStatus.COMPLETED
-            transaction.completed_at = datetime.now(timezone.utc)
-            
-            await db.commit()
-            await db.refresh(user)
-            
-            logger.info(f"Credited {transaction.coins} coins to user {user.id}")
-            
-            return {
-                "status": "completed",
-                "payment_status": "paid",
-                "coins_credited": transaction.coins,
-                "new_balance": user.coin_balance
-            }
-        
-        elif session.status == "expired":
-            transaction.status = TransactionStatus.FAILED
-            await db.commit()
-            
-            return {
-                "status": "expired",
-                "payment_status": "failed",
-                "coins_credited": 0
-            }
-        
-        return {
-            "status": session.status,
-            "payment_status": session.payment_status,
-            "coins_credited": 0
-        }
-        
-    except Exception as e:
-        logger.error(f"Error checking payment status: {e}")
-        raise HTTPException(status_code=500, detail="Failed to check payment status")
+async def check_payment_status(session_id: str):
+    raise HTTPException(status_code=410, detail=COINS_FEATURE_REMOVED)
+
 
 @api_router.post("/webhook/stripe")
-async def stripe_webhook(request: Request, db: AsyncSession = Depends(get_db)):
-    """Handle Stripe webhook events"""
-    if not STRIPE_ENABLED:
-        return {"status": "disabled"}
-    
-    payload = await request.body()
-    sig_header = request.headers.get("Stripe-Signature")
-    endpoint_secret = os.environ.get("STRIPE_WEBHOOK_SECRET")
-    
-    try:
-        # Verify webhook signature if secret is configured
-        if endpoint_secret and sig_header:
-            event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
-        else:
-            # For testing without webhook secret
-            import json
-            event = stripe.Event.construct_from(json.loads(payload), stripe.api_key)
-        
-        # Handle checkout.session.completed event
-        if event.type == "checkout.session.completed":
-            session = event.data.object
-            
-            if session.payment_status == "paid":
-                # Find and update transaction
-                result = await db.execute(
-                    select(WalletTransaction).where(
-                        WalletTransaction.stripe_session_id == session.id
-                    )
-                )
-                transaction = result.scalar_one_or_none()
-                
-                if transaction and transaction.status == TransactionStatus.PENDING:
-                    # Credit coins
-                    await db.execute(
-                        update(User)
-                        .where(User.id == transaction.user_id)
-                        .values(
-                            coin_balance=User.coin_balance + transaction.coins,
-                            total_coins_purchased=User.total_coins_purchased + transaction.coins
-                        )
-                    )
-                    
-                    transaction.status = TransactionStatus.COMPLETED
-                    transaction.completed_at = datetime.now(timezone.utc)
-                    transaction.stripe_payment_id = session.payment_intent
-                    
-                    await db.commit()
-                    logger.info(f"Webhook: Credited {transaction.coins} coins to user {transaction.user_id}")
-        
-        return {"status": "ok"}
-        
-    except stripe.error.SignatureVerificationError as e:
-        logger.error(f"Webhook signature verification failed: {e}")
-        raise HTTPException(status_code=400, detail="Invalid signature")
-    except Exception as e:
-        logger.error(f"Webhook error: {e}")
-        return {"status": "error", "message": str(e)}
+async def stripe_webhook():
+    raise HTTPException(status_code=410, detail=COINS_FEATURE_REMOVED)
+
 
 @api_router.post("/wallet/spend")
-async def spend_coins(
-    spend_request: WalletSpendRequest,
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-):
-    """Spend coins on features (premium games)"""
-    
-    if spend_request.spend_type == "premium_game":
-        # Unlock premium game
-        if not spend_request.game_id:
-            raise HTTPException(status_code=400, detail="Game ID required")
-        
-        # Check if game is premium
-        result = await db.execute(
-            select(PremiumGame).where(
-                PremiumGame.game_id == spend_request.game_id,
-                PremiumGame.is_active == True
-            )
-        )
-        premium_game = result.scalar_one_or_none()
-        
-        if not premium_game:
-            raise HTTPException(status_code=404, detail="Game is not a premium game or not found")
-        
-        # Check if already unlocked
-        result = await db.execute(
-            select(UserUnlockedGame).where(
-                UserUnlockedGame.user_id == user.id,
-                UserUnlockedGame.game_id == spend_request.game_id
-            )
-        )
-        if result.scalar_one_or_none():
-            raise HTTPException(status_code=400, detail="Game already unlocked")
-        
-        coins_needed = premium_game.coin_price
-        
-        if (user.coin_balance or 0) < coins_needed:
-            raise HTTPException(status_code=400, detail=f"Insufficient coins. Need {coins_needed}, have {user.coin_balance or 0}")
-        
-        # Get game info for description
-        game_result = await db.execute(select(Game).where(Game.id == spend_request.game_id))
-        game = game_result.scalar_one_or_none()
-        game_title = game.title if game else "Unknown Game"
-        
-        # Create transaction
-        transaction = WalletTransaction(
-            id=str(uuid.uuid4()),
-            user_id=user.id,
-            transaction_type=TransactionType.SPEND,
-            status=TransactionStatus.COMPLETED,
-            coins=-coins_needed,
-            spend_type="premium_game",
-            spend_reference=spend_request.game_id,
-            description=f"Unlocked: {game_title}",
-            completed_at=datetime.now(timezone.utc)
-        )
-        db.add(transaction)
-        
-        # Create unlock record
-        unlock = UserUnlockedGame(
-            id=str(uuid.uuid4()),
-            user_id=user.id,
-            game_id=spend_request.game_id
-        )
-        db.add(unlock)
-        
-        # Update user balance
-        await db.execute(
-            update(User)
-            .where(User.id == user.id)
-            .values(
-                coin_balance=User.coin_balance - coins_needed,
-                total_coins_spent=User.total_coins_spent + coins_needed
-            )
-        )
-        
-        await db.commit()
-        
-        logger.info(f"User {user.id} unlocked premium game {spend_request.game_id} for {coins_needed} coins")
-        
-        return {
-            "success": True,
-            "coins_spent": coins_needed,
-            "new_balance": (user.coin_balance or 0) - coins_needed,
-            "game_id": spend_request.game_id,
-            "message": f"Unlocked {game_title}!"
-        }
-    
-    else:
-        raise HTTPException(status_code=400, detail="Invalid spend type")
+async def spend_coins():
+    raise HTTPException(status_code=410, detail=COINS_FEATURE_REMOVED)
+
 
 @api_router.get("/wallet/transactions")
-async def get_transactions(
-    limit: int = 20,
-    offset: int = 0,
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-):
-    """Get user's transaction history"""
-    result = await db.execute(
-        select(WalletTransaction)
-        .where(WalletTransaction.user_id == user.id)
-        .order_by(desc(WalletTransaction.created_at))
-        .offset(offset)
-        .limit(limit)
-    )
-    transactions = result.scalars().all()
-    
-    return {
-        "transactions": [t.to_dict() for t in transactions],
-        "offset": offset,
-        "limit": limit
-    }
+async def get_transactions():
+    raise HTTPException(status_code=410, detail=COINS_FEATURE_REMOVED)
+
 
 @api_router.get("/wallet/unlocked-games")
-async def get_unlocked_games(
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-):
-    """Get list of premium games user has unlocked"""
-    result = await db.execute(
-        select(UserUnlockedGame).where(UserUnlockedGame.user_id == user.id)
-    )
-    unlocked = result.scalars().all()
-    
-    return {
-        "unlocked_game_ids": [u.game_id for u in unlocked]
-    }
+async def get_unlocked_games():
+    raise HTTPException(status_code=410, detail=COINS_FEATURE_REMOVED)
 
 # ==================== GAMEMONETIZE INTEGRATION ====================
 
@@ -2648,11 +2258,6 @@ class ChallengeCreate(BaseModel):
     friend_id: Optional[str] = None  # For friend challenges
     ends_at: Optional[str] = None
 
-class ScoreSubmission(BaseModel):
-    game_id: str
-    score: int
-    play_time: int = 0  # seconds
-
 # ---- User Search ----
 
 @api_router.get("/users/search")
@@ -2923,117 +2528,18 @@ async def remove_friend(
 # ---- Leaderboards ----
 
 @api_router.get("/leaderboard/global")
-async def get_global_leaderboard(
-    limit: int = 50,
-    db: AsyncSession = Depends(get_db)
-):
-    """Get global leaderboard (top players by total play time and games)"""
-    limit = max(1, min(limit, 100))
-    cache_key = f"leaderboard:global:{limit}"
-    cached = _cache_get(cache_key, ttl=120)
-    if cached is not None:
-        response = JSONResponse(content={"leaderboard": cached, "cached": True})
-        response.headers["Cache-Control"] = "public, max-age=60, stale-while-revalidate=120"
-        return response
-    
-    result = await db.execute(
-        select(
-            User.id,
-            User.username,
-            User.avatar_url,
-            User.total_games_played,
-            User.total_play_time,
-        )
-        .order_by(desc(User.total_games_played), desc(User.total_play_time))
-        .limit(limit)
-    )
-    users = result.all()
-    
-    leaderboard = []
-    for i, user_row in enumerate(users, 1):
-        leaderboard.append({
-            "rank": i,
-            "user": {"id": user_row.id, "username": user_row.username, "avatar_url": user_row.avatar_url},
-            "total_games": user_row.total_games_played or 0,
-            "total_time": user_row.total_play_time or 0
-        })
-    
-    _cache_set(cache_key, leaderboard)
-    
-    response = JSONResponse(content={"leaderboard": leaderboard, "cached": False})
-    response.headers["Cache-Control"] = "public, max-age=60, stale-while-revalidate=120"
-    return response
+async def get_global_leaderboard():
+    raise HTTPException(status_code=410, detail=SCORES_FEATURE_REMOVED)
+
 
 @api_router.get("/leaderboard/game/{game_id}")
-async def get_game_leaderboard(
-    game_id: str,
-    limit: int = 50,
-    db: AsyncSession = Depends(get_db)
-):
-    """Get leaderboard for a specific game"""
-    limit = max(1, min(limit, 100))
-    cache_key = f"leaderboard:game:{game_id}:{limit}"
-    cached = _cache_get(cache_key, ttl=120)
-    if cached is not None:
-        response = JSONResponse(content={"leaderboard": cached, "cached": True})
-        response.headers["Cache-Control"] = "public, max-age=60, stale-while-revalidate=120"
-        return response
-    
-    # Only fetch users who have high_scores (filter in DB where possible)
-    result = await db.execute(
-        select(User.id, User.username, User.avatar_url, User.high_scores).where(User.high_scores.is_not(None))
-    )
-    users = result.all()
-    
-    scores = []
-    for user_row in users:
-        if user_row.high_scores and game_id in user_row.high_scores:
-            scores.append({
-                "user": {"id": user_row.id, "username": user_row.username, "avatar_url": user_row.avatar_url},
-                "score": user_row.high_scores[game_id]
-            })
-    
-    scores.sort(key=lambda x: x["score"], reverse=True)
-    scores = scores[:limit]
-    leaderboard = [{"rank": i + 1, **s} for i, s in enumerate(scores)]
-    
-    _cache_set(cache_key, leaderboard)
-    
-    response = JSONResponse(content={"leaderboard": leaderboard, "cached": False})
-    response.headers["Cache-Control"] = "public, max-age=60, stale-while-revalidate=120"
-    return response
+async def get_game_leaderboard(game_id: str):
+    raise HTTPException(status_code=410, detail=SCORES_FEATURE_REMOVED)
+
 
 @api_router.post("/leaderboard/submit")
-async def submit_score(
-    submission: ScoreSubmission,
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-):
-    """Submit a score for a game"""
-    # Update user's high score if this is higher
-    high_scores = user.high_scores or {}
-    current_high = high_scores.get(submission.game_id, 0)
-    
-    if submission.score > current_high:
-        high_scores[submission.game_id] = submission.score
-        user.high_scores = high_scores
-    
-    # Update play stats
-    user.total_games_played = (user.total_games_played or 0) + 1
-    user.total_play_time = (user.total_play_time or 0) + submission.play_time
-    user.last_active_at = datetime.now(timezone.utc)
-    
-    await db.commit()
-    
-    # Invalidate leaderboard cache
-    invalidate_leaderboard(submission.game_id)
-    invalidate_leaderboard()
-    
-    return {
-        "success": True,
-        "new_high_score": submission.score > current_high,
-        "high_score": high_scores.get(submission.game_id, submission.score)
-    }
+async def submit_score():
+    raise HTTPException(status_code=410, detail=SCORES_FEATURE_REMOVED)
 
 # ---- Challenges ----
 

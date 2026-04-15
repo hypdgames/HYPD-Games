@@ -34,13 +34,9 @@ export interface User {
   email: string;
   is_admin: boolean;
   saved_games: string[];
-  high_scores: Record<string, number>;
   created_at: string;
-  // Wallet fields
-  coin_balance?: number;
-  total_coins_purchased?: number;
-  total_coins_spent?: number;
-  total_coins_earned?: number;
+  total_games_played?: number;
+  total_play_time?: number;
 }
 
 // Auth types
@@ -77,7 +73,6 @@ export interface AppSettings {
 export interface PlaySession {
   game_id: string;
   duration_seconds: number;
-  score?: number;
 }
 
 // API Response types
