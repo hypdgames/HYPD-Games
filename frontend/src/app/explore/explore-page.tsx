@@ -10,7 +10,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import type { Game } from "@/types";
 const EXPLORE_CACHE_KEY = "hypd:explore_data";
 const EXPLORE_CACHE_TTL = 300 * 1000;
-const EXPLORE_LIMIT = 500;
+const SEARCH_CATALOG_LIMIT = 500;
 
 interface ExploreCategorySummary {
   name: string;
@@ -21,7 +21,7 @@ interface ExploreCategorySummary {
 }
 
 interface ExploreCachePayload {
-  games: Game[];
+  newGames: Game[];
   categories: ExploreCategorySummary[];
 }
 
@@ -205,9 +205,12 @@ function CategoryPage({ name, onBack, onClick }: { name: string; onBack: () => v
 export default function ExplorePage() {
   const router = useRouter();
 
-  const [games, setGames] = useState<Game[]>([]);
+  const [newGames, setNewGames] = useState<Game[]>([]);
+  const [searchGames, setSearchGames] = useState<Game[]>([]);
   const [categoriesWithGames, setCategoriesWithGames] = useState<ExploreCategorySummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchCatalogLoaded, setSearchCatalogLoaded] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchActive, setSearchActive] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -215,23 +218,21 @@ export default function ExplorePage() {
 
   useEffect(() => {
     const cached = sessionGet<ExploreCachePayload>(EXPLORE_CACHE_KEY, EXPLORE_CACHE_TTL);
-    if (cached && !Array.isArray(cached) && Array.isArray(cached.games) && Array.isArray(cached.categories)) {
-      setGames(cached.games);
+    if (cached && !Array.isArray(cached) && Array.isArray(cached.newGames) && Array.isArray(cached.categories)) {
+      setNewGames(cached.newGames);
       setCategoriesWithGames(cached.categories);
       setLoading(false);
       return;
     }
 
-    Promise.all([
-      fetch(`${API_URL}/api/games?feed_only=false&limit=${EXPLORE_LIMIT}`).then(res => res.ok ? res.json() : []),
-      fetch(`${API_URL}/api/categories/details`).then(res => res.ok ? res.json() : { categories: [] }),
-    ])
-      .then(([gData, categoryData]) => {
+    fetch(`${API_URL}/api/categories/details`)
+      .then(res => res.ok ? res.json() : { categories: [], new_games: [] })
+      .then((categoryData) => {
         const payload = {
-          games: gData as Game[],
+          newGames: (categoryData.new_games || []) as Game[],
           categories: (categoryData.categories || []) as ExploreCategorySummary[],
         };
-        setGames(payload.games);
+        setNewGames(payload.newGames);
         setCategoriesWithGames(payload.categories);
         sessionSet(EXPLORE_CACHE_KEY, payload);
         setLoading(false);
@@ -241,19 +242,36 @@ export default function ExplorePage() {
 
   useEffect(() => { if (searchActive) setTimeout(() => searchRef.current?.focus(), 100); }, [searchActive]);
 
-  const playGame = (id: string) => router.push(`/play/${id}`);
+  const ensureSearchCatalog = useCallback(async () => {
+    if (searchCatalogLoaded || searchLoading) return;
+    setSearchLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/games?feed_only=false&limit=${SEARCH_CATALOG_LIMIT}`);
+      if (res.ok) {
+        setSearchGames(await res.json());
+        setSearchCatalogLoaded(true);
+      }
+    } catch {
+      // Keep the search overlay usable even if this fetch fails.
+    } finally {
+      setSearchLoading(false);
+    }
+  }, [searchCatalogLoaded, searchLoading]);
 
-  const newGames = useMemo(
-    () => [...games].sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()).slice(0, 10),
-    [games]
-  );
+  useEffect(() => {
+    if (searchActive) {
+      ensureSearchCatalog();
+    }
+  }, [ensureSearchCatalog, searchActive]);
+
+  const playGame = (id: string) => router.push(`/play/${id}`);
 
   const searchResults = useMemo(
     () =>
       searchQuery.trim()
-        ? games.filter(g => g.title.toLowerCase().includes(searchQuery.toLowerCase()) || (g.description || "").toLowerCase().includes(searchQuery.toLowerCase()))
+        ? searchGames.filter(g => g.title.toLowerCase().includes(searchQuery.toLowerCase()) || (g.description || "").toLowerCase().includes(searchQuery.toLowerCase()))
         : [],
-    [games, searchQuery]
+    [searchGames, searchQuery]
   );
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-10 h-10 text-violet animate-spin" /></div>;
@@ -284,7 +302,11 @@ export default function ExplorePage() {
               </div>
             </div>
             <div className="flex-1 overflow-y-auto pt-3 px-5">
-              {searchQuery.trim() === "" ? (
+              {searchLoading && searchGames.length === 0 ? (
+                <div className="flex justify-center py-16">
+                  <Loader2 className="w-8 h-8 text-violet animate-spin" />
+                </div>
+              ) : searchQuery.trim() === "" ? (
                 <p className="text-center text-muted-foreground text-sm pt-16">Start typing to search</p>
               ) : searchResults.length === 0 ? (
                 <p className="text-center text-muted-foreground text-sm pt-16">No results for &ldquo;{searchQuery}&rdquo;</p>

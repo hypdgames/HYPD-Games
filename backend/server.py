@@ -1127,10 +1127,25 @@ async def get_category_details(db: AsyncSession = Depends(get_db)):
     rows = result.all()
 
     categories: dict[str, dict] = {}
+    new_games: list[dict] = []
     for row in rows:
         category_name = (row.category or "").strip()
         if not category_name:
             continue
+
+        if len(new_games) < 10:
+            new_games.append(
+                {
+                    "id": row.id,
+                    "title": row.title,
+                    "description": row.description,
+                    "category": category_name,
+                    "thumbnail_url": row.thumbnail_url,
+                    "icon_url": row.icon_url,
+                    "play_count": row.play_count or 0,
+                    "created_at": row.created_at.isoformat() if row.created_at else None,
+                }
+            )
 
         entry = categories.setdefault(
             category_name,
@@ -1168,6 +1183,7 @@ async def get_category_details(db: AsyncSession = Depends(get_db)):
             )
 
     data = {
+        "new_games": new_games,
         "categories": sorted(
             [
                 {

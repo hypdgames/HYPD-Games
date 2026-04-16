@@ -65,6 +65,7 @@ export default function AdminDashboard() {
   const [selectedGmzGames, setSelectedGmzGames] = useState<Set<string>>(new Set());
   const [gmzCategories, setGmzCategories] = useState<{id: string; name: string; icon: string}[]>([]);
   const [gmzImporting, setGmzImporting] = useState(false);
+  const [gmzBootstrapped, setGmzBootstrapped] = useState(false);
 
   // Analytics state
   const [analyticsOverview, setAnalyticsOverview] = useState<AnalyticsOverview | null>(null);
@@ -331,12 +332,6 @@ export default function AdminDashboard() {
     setAnalyticsLoading(false);
   };
 
-
-  useEffect(() => {
-    fetchGmzCategories();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   // GameMonetize state for search
   const [gmzSearch, setGmzSearch] = useState("");
 
@@ -395,6 +390,15 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error("Error fetching GameMonetize categories:", error);
     }
+  };
+
+  const bootstrapGmzTab = async () => {
+    if (!gamemonetizeEnabled || gmzBootstrapped) return;
+    await Promise.all([
+      fetchGmzCategories(),
+      fetchGmzGames(gmzCategory, 1, false, gmzSearch, gmzSort),
+    ]);
+    setGmzBootstrapped(true);
   };
 
   const toggleGmzGameSelection = (id: string) => {
@@ -600,7 +604,13 @@ export default function AdminDashboard() {
         <Tabs defaultValue="games" className="w-full" onValueChange={(v) => {
           if (v === "analytics") fetchAnalytics();
           if (v === "users") { fetchUsers(); fetchUserStats(); }
-          if (v === "gamemonetize" && gamemonetizeEnabled) fetchGmzGames(gmzCategory);
+          if (v === "gamemonetize") {
+            if (gmzBootstrapped) {
+              fetchGmzGames(gmzCategory, 1, false, gmzSearch, gmzSort);
+            } else {
+              bootstrapGmzTab();
+            }
+          }
         }}>
           <TabsList className={`grid w-full mb-6 ${gamemonetizeEnabled ? 'grid-cols-6' : 'grid-cols-5'}`}>
             <TabsTrigger value="games" className="flex items-center gap-1 text-xs sm:text-sm" data-testid="games-tab">
