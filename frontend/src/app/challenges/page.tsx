@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
 import { motion } from "framer-motion";
 import { 
   Target, Trophy, Calendar, Clock, Users, 
@@ -11,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { API_URL } from "@/lib/api";
 import { useAuthStore } from "@/store";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { PageBrandHeader } from "@/components/page-brand-header";
 import { toast } from "sonner";
 
 interface Challenge {
@@ -31,7 +30,7 @@ interface Challenge {
 }
 
 export default function ChallengesPage() {
-  const { token, settings } = useAuthStore();
+  const { token } = useAuthStore();
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<"all" | "daily" | "weekly">("all");
@@ -117,21 +116,8 @@ export default function ChallengesPage() {
 
   return (
     <div className="min-h-screen bg-background pb-24" data-testid="challenges-page">
-      {/* Header */}
       <div className="glass p-4 border-b border-border">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            {settings?.logo_url ? (
-              <Image src={settings.logo_url} alt="Logo" width={120} height={32} className="h-8 w-auto object-contain" />
-            ) : (
-              <h1 className="font-heading text-xl text-lime tracking-tight">
-                HYPD
-              </h1>
-            )}
-            <span className="text-muted-foreground">Challenges</span>
-          </div>
-          <ThemeToggle />
-        </div>
+        <PageBrandHeader />
       </div>
 
       <div className="p-4">

@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { LogOut, Heart, Gamepad2, Users } from "lucide-react";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { PageBrandHeader } from "@/components/page-brand-header";
 import type { User, AppSettings } from "@/types";
 
 interface ProfileHeaderProps {
@@ -15,11 +15,8 @@ interface ProfileHeaderProps {
 export function ProfileHeader({ user, friendsCount, onLogout }: ProfileHeaderProps) {
   return (
     <>
-      {/* Centered title (Hook style) */}
-      <div className="pt-5 pb-2 text-center relative">
-        <h1 className="text-2xl font-extrabold text-foreground">Profile</h1>
-        <div className="absolute right-5 top-5 flex items-center gap-2">
-          <ThemeToggle />
+      <PageBrandHeader
+        rightSlot={
           <button
             onClick={onLogout}
             className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground active:scale-90 transition-transform"
@@ -27,8 +24,8 @@ export function ProfileHeader({ user, friendsCount, onLogout }: ProfileHeaderPro
           >
             <LogOut className="w-[18px] h-[18px]" />
           </button>
-        </div>
-      </div>
+        }
+      />
 
       <div className="px-5 pt-4">
         {/* Avatar */}

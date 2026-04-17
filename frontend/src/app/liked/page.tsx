@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import { API_URL } from "@/lib/api";
 import { useAuthStore } from "@/store";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { PageBrandHeader } from "@/components/page-brand-header";
 import type { Game } from "@/types";
 
 export default function LikedPage() {
@@ -37,12 +37,7 @@ export default function LikedPage() {
 
   return (
     <div className="min-h-screen hook-gradient-bg pb-28" data-testid="liked-page">
-      <div className="pt-5 pb-4 text-center relative">
-        <h1 className="text-2xl font-extrabold text-foreground">Liked</h1>
-        <div className="absolute right-5 top-5">
-          <ThemeToggle />
-        </div>
-      </div>
+      <PageBrandHeader className="pb-4" />
 
       <div className="px-5">
         {loading ? (

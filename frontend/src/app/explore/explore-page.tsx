@@ -6,7 +6,7 @@ import { Search, ChevronRight, Play, ArrowLeft, Loader2, X } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { API_URL } from "@/lib/api";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { PageBrandHeader } from "@/components/page-brand-header";
 import type { Game } from "@/types";
 const EXPLORE_CACHE_KEY = "hypd:explore_data";
 const EXPLORE_CACHE_TTL = 300 * 1000;
@@ -191,9 +191,14 @@ function CategoryPage({ name, onBack, onClick }: { name: string; onBack: () => v
 
   return (
     <div className="min-h-screen hook-gradient-bg pb-28">
-      <div className="sticky top-0 z-30 bg-background/90 backdrop-blur-xl px-5 py-3.5 flex items-center gap-3">
-        <button onClick={onBack} className="w-10 h-10 rounded-full bg-muted flex items-center justify-center" data-testid="back-btn"><ArrowLeft className="w-5 h-5" /></button>
-        <h1 className="font-bold text-lg">{name}</h1><span className="text-muted-foreground text-sm">({games.length})</span>
+      <div className="sticky top-0 z-30 bg-background/90 backdrop-blur-xl">
+        <PageBrandHeader
+          rightSlot={
+            <button onClick={onBack} className="w-10 h-10 rounded-full bg-muted flex items-center justify-center" data-testid="back-btn">
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+          }
+        />
       </div>
       {loading ? (
         <div className="flex justify-center py-16">
@@ -291,10 +296,7 @@ export default function ExplorePage() {
 
   return (
     <div className="min-h-screen hook-gradient-bg pb-28" data-testid="explore-page">
-      <div className="px-5 pt-5 pb-3 flex items-center justify-between">
-        <h1 className="text-2xl font-extrabold text-foreground">Discover</h1>
-        <ThemeToggle />
-      </div>
+      <PageBrandHeader />
 
       <div className="px-5 mb-5 relative">
         <Search className="absolute left-9 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground z-10" />

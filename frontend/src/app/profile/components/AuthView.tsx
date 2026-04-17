@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { User, Mail, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { PageBrandHeader } from "@/components/page-brand-header";
 import { toast } from "sonner";
 
 interface AuthViewProps {
@@ -45,11 +45,7 @@ export function AuthView({ onLogin, onRegister }: AuthViewProps) {
 
   return (
     <div className="min-h-screen hook-gradient-bg pb-28" data-testid="profile-page">
-      {/* Centered title */}
-      <div className="pt-5 pb-2 text-center relative">
-        <h1 className="text-2xl font-extrabold text-foreground">Profile</h1>
-        <div className="absolute right-5 top-5"><ThemeToggle /></div>
-      </div>
+      <PageBrandHeader />
 
       <div className="px-5 pt-6 max-w-md mx-auto">
         {/* Avatar */}

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Gamepad2, Globe, Upload, Users, BarChart3, Settings, Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { API_URL } from "@/lib/api";
+import { PageBrandHeader } from "@/components/page-brand-header";
 import { useAuthStore } from "@/store";
 import { toast } from "sonner";
 import type { Game } from "@/types";
@@ -580,24 +581,17 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-background pb-24" data-testid="admin-dashboard">
-      {/* Header */}
       <div className="glass p-4 border-b border-border sticky top-0 z-30">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => router.back()}
-            className="w-10 h-10 rounded-full bg-card border border-border flex items-center justify-center hover:bg-lime/10 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5 text-foreground" />
-          </button>
-          <div>
-            <h1 className="font-heading text-xl text-foreground">
-              Admin Dashboard
-            </h1>
-            <p className="text-xs text-muted-foreground">
-              Manage games & settings
-            </p>
-          </div>
-        </div>
+        <PageBrandHeader
+          rightSlot={
+            <button
+              onClick={() => router.back()}
+              className="w-10 h-10 rounded-full bg-card border border-border flex items-center justify-center hover:bg-lime/10 transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5 text-foreground" />
+            </button>
+          }
+        />
       </div>
 
       <div className="p-6 max-w-4xl mx-auto">
