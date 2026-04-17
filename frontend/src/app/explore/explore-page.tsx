@@ -38,6 +38,19 @@ function sessionSet(key: string, data: unknown): void {
   try { sessionStorage.setItem(key, JSON.stringify({ data, ts: Date.now() })); } catch {}
 }
 
+async function fetchExplorePayload(): Promise<ExploreCachePayload> {
+  const res = await fetch(`${API_URL}/api/categories/details`, { cache: "no-store" });
+  if (!res.ok) {
+    return { newGames: [], categories: [] };
+  }
+
+  const categoryData = await res.json();
+  return {
+    newGames: (categoryData.new_games || []) as Game[],
+    categories: (categoryData.categories || []) as ExploreCategorySummary[],
+  };
+}
+
 const CATEGORY_GRADIENTS: Record<string, string> = {
   Racing: "from-orange-500 to-red-600", Action: "from-red-500 to-rose-700",
   Puzzle: "from-blue-500 to-indigo-600", Adventure: "from-emerald-500 to-teal-600",
@@ -157,7 +170,9 @@ function CategoryPage({ name, onBack, onClick }: { name: string; onBack: () => v
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    fetch(`${API_URL}/api/games?feed_only=false&category=${encodeURIComponent(name)}&limit=1000`)
+    fetch(`${API_URL}/api/games?feed_only=false&category=${encodeURIComponent(name)}&limit=1000`, {
+      cache: "no-store",
+    })
       .then(res => res.ok ? res.json() : [])
       .then((data: Game[]) => {
         if (!cancelled) {
@@ -222,16 +237,10 @@ export default function ExplorePage() {
       setNewGames(cached.newGames);
       setCategoriesWithGames(cached.categories);
       setLoading(false);
-      return;
     }
 
-    fetch(`${API_URL}/api/categories/details`)
-      .then(res => res.ok ? res.json() : { categories: [], new_games: [] })
-      .then((categoryData) => {
-        const payload = {
-          newGames: (categoryData.new_games || []) as Game[],
-          categories: (categoryData.categories || []) as ExploreCategorySummary[],
-        };
+    fetchExplorePayload()
+      .then((payload) => {
         setNewGames(payload.newGames);
         setCategoriesWithGames(payload.categories);
         sessionSet(EXPLORE_CACHE_KEY, payload);
@@ -246,7 +255,9 @@ export default function ExplorePage() {
     if (searchCatalogLoaded || searchLoading) return;
     setSearchLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/games?feed_only=false&limit=${SEARCH_CATALOG_LIMIT}`);
+      const res = await fetch(`${API_URL}/api/games?feed_only=false&limit=${SEARCH_CATALOG_LIMIT}`, {
+        cache: "no-store",
+      });
       if (res.ok) {
         setSearchGames(await res.json());
         setSearchCatalogLoaded(true);

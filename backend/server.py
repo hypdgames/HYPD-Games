@@ -109,7 +109,7 @@ def _cache_set(key: str, data) -> None:
 def _invalidate_games_cache() -> None:
     """Bust games/categories caches. Call after any admin game mutation."""
     for k in list(_api_cache):
-        if k.startswith("games:") or k == "categories":
+        if k.startswith("games:") or k.startswith("categories") or k == "categories":
             del _api_cache[k]
 
 def _invalidate_video_batch_cache() -> None:
